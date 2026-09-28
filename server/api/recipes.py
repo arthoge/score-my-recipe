@@ -209,27 +209,52 @@ async def get_countries(lang: str, include_synonyms: bool = False) -> list[types
     ]
 
 
+# Per-ingredient entry returned by the cached lookup:
+# (taxonomy id, localized label, localized synonyms, has_ef_score).
+# ``has_ef_score`` is True when the ingredient resolves (via its node and
+# parents) to an Agribalyse row carrying a non-empty EF score — i.e. it is
+# scorable in the green-score computation (see api.score.gather_ef_metrics).
+IngredientEntry = tuple[str, str, list[str], bool]
+
+
 @async_lru_cache(maxsize=200)
-async def _get_ingredients_entries(lang: str) -> off.TaxonomyLangLabelType:
-    """Internal version of get_ingredients that caches the result for a given language code"""
+async def _get_ingredients_entries(lang: str) -> list[IngredientEntry]:
+    """Internal version of get_ingredients that caches the result for a given language code.
+
+    Each ingredient is resolved to an Agribalyse row (searching the node then
+    its parents, like the green-score computation) so the returned entries carry
+    a ``has_ef_score`` flag telling whether the ingredient can be scored.
+    """
     ingredients_taxonomy = await off.get_ingredients_taxonomy()
-    ingredients_list = off.taxonomy_lang_label_and_synonyms(lang, ingredients_taxonomy.iter_nodes())
+    raw_entries = off.taxonomy_lang_label_and_synonyms(lang, ingredients_taxonomy.iter_nodes())
+    entries: list[IngredientEntry] = []
+    for ingredient_id, label, synonyms, _ in raw_entries:
+        node = ingredients_taxonomy[ingredient_id]
+        _, _, row = agribalyse.find_agribalyse_row(node)
+        # An ingredient is scorable only when it matches an Agribalyse row AND
+        # that row carries a score
+        has_ef_score = bool(row and row.get("score"))
+        entries.append((ingredient_id, label, synonyms, has_ef_score))
     # sort by id for predictable order
-    ingredients_list.sort(key=lambda x: x[0])
-    return ingredients_list
+    entries.sort(key=lambda x: x[0])
+    return entries
 
 
-async def get_ingredients(lang: str, include_synonyms: bool = False) -> list[types.Ingredient]:
-    """Get the list of ingredients relevant for green-score computation"""
+async def get_ingredients(
+    lang: str, include_synonyms: bool = False
+) -> list[types.SuggestedIngredient]:
+    """Get the list of ingredients relevant for green-score computation.
+    """
     lang = two_letter_lang_code(lang)
     _ingredients = await _get_ingredients_entries(lang)
     return [
-        types.Ingredient(
+        types.SuggestedIngredient(
             id=ingredient_id,
             label=ingredient_label,
             synonyms=ingredient_synonyms if include_synonyms else None,
+            has_ef_score=has_ef_score,
         )
-        for ingredient_id, ingredient_label, ingredient_synonyms, _ in _ingredients
+        for ingredient_id, ingredient_label, ingredient_synonyms, has_ef_score in _ingredients
     ]
 
 

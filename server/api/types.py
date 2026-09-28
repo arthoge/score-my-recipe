@@ -350,6 +350,30 @@ class Ingredient(SuggestedTaxonomyItem):
     )
 
 
+class SuggestedIngredient(Ingredient):
+    """An ingredient returned by the autocomplete API (``get_ingredients``),
+    annotated with whether it can be scored in the green-score computation.
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"id": "en:apple", "label": "Apple", "has_ef_score": True},
+                {"id": "en:water", "label": "Water", "has_ef_score": False},
+            ]
+        }
+    )
+
+    has_ef_score: Annotated[
+        bool,
+        Field(
+            description="Whether the ingredient resolves to an Agribalyse row "
+            "with an EF score, i.e. whether it can be scored in the "
+            "green-score computation."
+        ),
+    ]
+
+
 class IngredientsRequest(TaxonomyRequest):
     model_config = ConfigDict(
         json_schema_extra={"examples": [{"lang": "en", "include_synonyms": True}]}
@@ -365,15 +389,15 @@ class IngredientsResponse(BaseModel):
             "examples": [
                 {
                     "ingredients": [
-                        {"id": "en:apple", "label": "Apple"},
-                        {"id": "en:wheat-flour", "label": "Wheat flour"},
+                        {"id": "en:apple", "label": "Apple", "has_ef_score": True},
+                        {"id": "en:wheat-flour", "label": "Wheat flour", "has_ef_score": False},
                     ]
                 }
             ]
         }
     )
 
-    ingredients: list[Ingredient]
+    ingredients: list[SuggestedIngredient]
 
 
 class Unit(SuggestedTaxonomyItem):
