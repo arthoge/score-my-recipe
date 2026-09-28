@@ -769,7 +769,7 @@ class RecomputeQuantityResponse(CamelModel):
     """
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"quantity_g": 2000, "value": 2, "unit": "kg"}]}
+        json_schema_extra={"examples": [{"quantityG": 2000, "value": 2, "unit": "kg"}]}
     )
 
     quantity_g: Annotated[float, Field(description="New quantity in grams")]

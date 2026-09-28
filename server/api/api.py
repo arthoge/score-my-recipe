@@ -69,6 +69,7 @@ async def health() -> dict:
 
 
 @app.post("/v1/parse_text")
+@types.async_validate_model
 async def parse_text(request: types.RecipeParseRequest) -> types.RecipeParseResponse:
     """Parse a text and return a list of ingredients with quantities and eventual modifiers"""
     ingredients = await recipes.parse_text(request.text, request.lang)

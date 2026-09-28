@@ -97,6 +97,7 @@ async def get_ingredients_taxonomy() -> taxonomy.Taxonomy:
     return ingredients_taxonomy
 
 
+@async_cache(maxsize=1)
 async def get_units_taxonomy() -> taxonomy.Taxonomy:
     """Get the units taxonomy from Open Food Facts API.
 

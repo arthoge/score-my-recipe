@@ -18,8 +18,8 @@ from api.lang import two_letter_lang_code
 logger = logging.getLogger(__name__)
 
 
-# A numeric value (with an eventual dot) and a unit
-QUANTITY_UNIT_REGEX = re.compile(r"^\s*(?P<value>\d+(\.\d+)?)\s*(?P<unit>\w+)?\s*$")
+# A numeric value (with an eventual dot) and a eventual unit
+QUANTITY_UNIT_REGEX = re.compile(r"^\s*(?P<value>\d+(\.\d+)?)\s*(?P<unit>.+)?\s*$")
 
 
 def off_ingredient_to_recipe_ingredient(
