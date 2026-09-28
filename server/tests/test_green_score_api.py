@@ -48,4 +48,6 @@ def test_api_empty_recipe():
         "numericScore": None,
         "letterGrade": None,
         "missingIngredientIds": [],
+        "notes": None,
+        "ingredientsNotes": None,
     }

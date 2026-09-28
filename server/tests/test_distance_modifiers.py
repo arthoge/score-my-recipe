@@ -240,7 +240,9 @@ def test_global_distance_modifier_ignores_missing_ratio():
             ),
         ]
     )
-    assert score.global_distance_modifier(recipe_metrics) == pytest.approx(FRANCE_DISTANCE_MODIFIER * 0.5)
+    assert score.global_distance_modifier(recipe_metrics) == pytest.approx(
+        FRANCE_DISTANCE_MODIFIER * 0.5
+    )
 
 
 # --- compute_green_score integration --------------------------------------

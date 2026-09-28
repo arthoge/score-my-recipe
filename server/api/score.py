@@ -17,9 +17,7 @@ import api.types as types
 logger = logging.getLogger(__name__)
 
 
-def safe_zip_recipe_metrics(
-    recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics
-):
+def safe_zip_recipe_metrics(recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics):
     """Zip a recipe and its metrics, checking that they have the same ingredient ids at each line.
 
     Raises a ValueError if the lengths differ or some ingredients does not match.
@@ -227,7 +225,9 @@ async def gather_labels_bonus(
             metric.labels_bonus = max_bonus
 
 
-async def gather_epi_modifiers(recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics):
+async def gather_epi_modifiers(
+    recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics
+):
     """Gather the EPI bonus/malus points from origins for the recipe.
 
     No origins is equivalent to world, that is the worst case.
@@ -248,7 +248,9 @@ async def gather_epi_modifiers(recipe: types.RecipeInput, recipe_metrics: score_
 
 
 async def gather_distances_modifiers(
-    recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics, country: Optional[str] = None
+    recipe: types.RecipeInput,
+    recipe_metrics: score_types.RecipeMetrics,
+    country: Optional[str] = None,
 ):
     """Gather the distance bonus/malus points from origins for the recipe.
 
@@ -324,7 +326,9 @@ def global_distance_modifier(recipe_metrics: score_types.RecipeMetrics) -> Optio
     return sum(modifiers) if modifiers else None
 
 
-def global_seasonality_modifier(recipe: types.RecipeInput) -> float:
+def global_seasonality_modifier(
+    recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics
+) -> float:
     """Gather the seasonality bonus/malus points.
 
     This is a global modifier based only on fresh vegetables and fruits
@@ -334,6 +338,7 @@ def global_seasonality_modifier(recipe: types.RecipeInput) -> float:
         ingredient.weight for ingredient in recipe if ingredient.is_fresh_plant
     )
     if total_fresh_plant_weight == 0:
+        recipe_metrics.add_note("No fresh produce ingredients: no seasonality bonus/malus")
         return 0.0
     total_in_season_weight = sum(
         ingredient.weight
@@ -342,6 +347,9 @@ def global_seasonality_modifier(recipe: types.RecipeInput) -> float:
     )
     # all fresh produce ingredients are in season, return the maximum bonus
     if total_fresh_plant_weight == total_in_season_weight:
+        recipe_metrics.add_note(
+            "All fresh produce ingredients are in season: maximum seasonality bonus"
+        )
         return 5.0
     else:
         ratio = total_in_season_weight / total_fresh_plant_weight
@@ -392,14 +400,20 @@ async def compute_green_score(
         labels_bonus = global_labels_bonus(recipe_metrics)
         epi_modifier = global_epi_modifier(recipe_metrics)
         distances_modifier = global_distance_modifier(recipe_metrics)
-        seasonality_modifier = global_seasonality_modifier(recipe)
+        seasonality_modifier = global_seasonality_modifier(recipe, recipe_metrics)
         # TODO account for packaging, origins and seasonality in the green-score computation
         numeric_score = (
-            normalized_ef_score + labels_bonus + (epi_modifier or 0.0) + (distances_modifier or 0.0) + seasonality_modifier
+            normalized_ef_score
+            + labels_bonus
+            + (epi_modifier or 0.0)
+            + (distances_modifier or 0.0)
+            + seasonality_modifier
         )
         # normalize to 0-100 range
         numeric_score = min(max(numeric_score, 0.0), 100.0)
         letter_grade = score_to_letter(numeric_score)
+        notes = recipe_metrics.notes
+        ingredients_notes = recipe_metrics.ingredients_notes
     else:
         normalized_ef_score = None
         labels_bonus = None
@@ -408,6 +422,8 @@ async def compute_green_score(
         seasonality_modifier = None
         numeric_score = None
         letter_grade = None
+        notes = None
+        ingredients_notes = None
     return types.GreenScoreResponse(
         global_ef_score=ef_score,
         labels_bonus=labels_bonus,
@@ -417,4 +433,6 @@ async def compute_green_score(
         numeric_score=numeric_score,
         letter_grade=letter_grade,
         missing_ingredient_ids=missing_ingredient_ids,
+        notes=notes,
+        ingredients_notes=ingredients_notes,
     )

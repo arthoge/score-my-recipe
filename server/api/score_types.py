@@ -68,7 +68,7 @@ class IngredientMetrics(NotesMixin):
     )
 
 
-class RecipeMetrics(BaseModel):
+class RecipeMetrics(NotesMixin):
     """Metrics gathered for a recipe during green-score computation.
 
     Wraps the per-ingredient :class:`IngredientMetrics` computed by the score
@@ -82,3 +82,14 @@ class RecipeMetrics(BaseModel):
         default_factory=list,
         description="Per-ingredient metrics, one entry per recipe ingredient",
     )
+
+    @property
+    def ingredients_notes(self):
+        """Return a dictionary of all notes from the ingredients metrics
+        keyed by ingredient id.
+        """
+        return {
+            metric.id: metric.notes
+            for metric in self.metrics
+            if metric.notes
+        }
