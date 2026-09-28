@@ -44,7 +44,10 @@ def test_api_empty_recipe():
         "labelsBonus": None,
         "epiModifier": None,
         "distancesModifier": None,
+        "seasonalityModifier": None,
         "numericScore": None,
         "letterGrade": None,
         "missingIngredientIds": [],
+        "notes": None,
+        "ingredientsNotes": None,
     }

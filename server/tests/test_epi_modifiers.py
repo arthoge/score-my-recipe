@@ -12,7 +12,7 @@ import pytest
 
 from api.score_data import DEFAULT_DISTANCE_MODIFIER
 from api import score, score_data
-from api.score_types import IngredientMetrics
+from api.score_types import IngredientMetrics, RecipeMetrics
 from tests.helpers import (
     FRANCE_DISTANCE_MODIFIER,
     WORLD_EPI_MODIFIER,
@@ -144,10 +144,10 @@ async def test_gather_epi_modifiers_no_origin_defaults_to_world(agribalyse_index
         patch_ingredients_taxonomy(ingredients_taxonomy),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_epi_modifiers(recipe, metrics)
-    assert metrics[0].epi_modifier == WORLD_EPI_MODIFIER
-    assert any("no origin provided" in n for n in (metrics[0].notes or []))
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_epi_modifiers(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].epi_modifier == WORLD_EPI_MODIFIER
+    assert any("no origin provided" in n for n in (recipe_metrics.metrics[0].notes or []))
 
 
 @pytest.mark.asyncio
@@ -165,10 +165,10 @@ async def test_gather_epi_modifiers_known_origin(agribalyse_index):
         patch_ingredients_taxonomy(ingredients_taxonomy),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_epi_modifiers(recipe, metrics)
-    assert metrics[0].epi_modifier == FRANCE_EPI_MODIFIER
-    assert metrics[0].notes is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_epi_modifiers(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].epi_modifier == FRANCE_EPI_MODIFIER
+    assert recipe_metrics.metrics[0].notes is None
 
 
 @pytest.mark.asyncio
@@ -186,10 +186,10 @@ async def test_gather_epi_modifiers_unknown_origin_defaults_to_world(agribalyse_
         patch_ingredients_taxonomy(ingredients_taxonomy),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_epi_modifiers(recipe, metrics)
-    assert metrics[0].epi_modifier == WORLD_EPI_MODIFIER
-    assert any("not found" in n for n in (metrics[0].notes or []))
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_epi_modifiers(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].epi_modifier == WORLD_EPI_MODIFIER
+    assert any("not found" in n for n in (recipe_metrics.metrics[0].notes or []))
 
 
 @pytest.mark.asyncio
@@ -201,11 +201,11 @@ async def test_gather_epi_modifiers_skips_missing_ingredient(agribalyse_index):
         patch_ingredients_taxonomy(ingredients_taxonomy),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_epi_modifiers(recipe, metrics)
-    assert metrics[0].epi_modifier is None
-    assert metrics[0].missing is True
-    assert metrics[0].notes is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_epi_modifiers(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].epi_modifier is None
+    assert recipe_metrics.metrics[0].missing is True
+    assert recipe_metrics.metrics[0].notes is None
 
 
 # --- global_epi_modifier ---------------------------------------------------
@@ -213,28 +213,34 @@ async def test_gather_epi_modifiers_skips_missing_ingredient(agribalyse_index):
 
 def test_global_epi_modifier_weighted_average():
     """The global modifier is the ratio-weighted average of per-ingredient modifiers."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, epi_modifier=FRANCE_EPI_MODIFIER, ratio=0.25),
-        IngredientMetrics(id="i2", weight=300, epi_modifier=ARGENTINA_EPI_MODIFIER, ratio=0.75),
-    ]
-    assert score.global_epi_modifier(metrics) == pytest.approx(
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, epi_modifier=FRANCE_EPI_MODIFIER, ratio=0.25),
+            IngredientMetrics(id="i2", weight=300, epi_modifier=ARGENTINA_EPI_MODIFIER, ratio=0.75),
+        ]
+    )
+    assert score.global_epi_modifier(recipe_metrics) == pytest.approx(
         FRANCE_EPI_MODIFIER * 0.25 + ARGENTINA_EPI_MODIFIER * 0.75
     )
 
 
 def test_global_epi_modifier_none_when_no_modifiers():
     """With no modifier at all, the global modifier is None."""
-    metrics = [IngredientMetrics(id="i1", weight=100, epi_modifier=None, ratio=1.0)]
-    assert score.global_epi_modifier(metrics) is None
+    recipe_metrics = RecipeMetrics(
+        metrics=[IngredientMetrics(id="i1", weight=100, epi_modifier=None, ratio=1.0)]
+    )
+    assert score.global_epi_modifier(recipe_metrics) is None
 
 
 def test_global_epi_modifier_ignores_missing_ratio():
     """Ingredients without a ratio (missing) don't contribute."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, epi_modifier=FRANCE_EPI_MODIFIER, ratio=0.5),
-        IngredientMetrics(id="i2", weight=100, epi_modifier=ARGENTINA_EPI_MODIFIER, ratio=None),
-    ]
-    assert score.global_epi_modifier(metrics) == pytest.approx(FRANCE_EPI_MODIFIER * 0.5)
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, epi_modifier=FRANCE_EPI_MODIFIER, ratio=0.5),
+            IngredientMetrics(id="i2", weight=100, epi_modifier=ARGENTINA_EPI_MODIFIER, ratio=None),
+        ]
+    )
+    assert score.global_epi_modifier(recipe_metrics) == pytest.approx(FRANCE_EPI_MODIFIER * 0.5)
 
 
 # --- compute_green_score integration --------------------------------------

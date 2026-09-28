@@ -1,8 +1,11 @@
 """This is the programmatic API for recipes scoring.
-It contains all the business logic.
+
+Contains the recipe-level business logic: ingredient parsing and the
+origins/labels/countries/ingredients taxonomies.
 """
 
 import logging
+import re
 
 from async_lru import alru_cache as async_lru_cache
 
@@ -10,20 +13,39 @@ import api.agribalyse as agribalyse
 import api.off as off
 import api.types as types
 import api.score_data as score_data
+from api.lang import two_letter_lang_code
 
 logger = logging.getLogger(__name__)
+
+
+# A numeric value (with an eventual dot) and a eventual unit
+QUANTITY_UNIT_REGEX = re.compile(r"^\s*(?P<value>\d+(\.\d+)?)\s*(?P<unit>.+)?\s*$")
 
 
 def off_ingredient_to_recipe_ingredient(
     off_ingredient: types.OFFIngredient,
 ) -> types.RecipeIngredient:
     """Convert an OFFIngredient to a RecipeIngredient"""
-    return types.RecipeIngredient(
+    # handle original quantity and unit
+    quantity_value = None
+    quantity_unit = None
+    if off_ingredient.quantity is not None:
+        # get quantity / unit
+        matched = QUANTITY_UNIT_REGEX.match(off_ingredient.quantity)
+        if matched:
+            if matched.group("value"):
+                quantity_value = float(matched.group("value"))
+            if matched.group("unit"):
+                quantity_unit = matched.group("unit")
+    ingredient = types.RecipeIngredient(
         taxonomy_id=off_ingredient.id,
         codified_ingredient=off_ingredient.text,
         is_in_taxonomy=bool(off_ingredient.is_in_taxonomy),
         quantity_g=off_ingredient.quantity_g,
+        quantity_value=quantity_value,
+        quantity_unit=quantity_unit,
     )
+    return ingredient
 
 
 async def parse_text(text: str, lang: str) -> list[types.RecipeIngredient]:
@@ -36,11 +58,6 @@ async def parse_text(text: str, lang: str) -> list[types.RecipeIngredient]:
         off_ingredient_to_recipe_ingredient(ingredient) for ingredient in off_ingredients
     ]
     return ingredients
-
-
-def two_letter_lang_code(lang: str) -> str:
-    """Convert a language code to a 2-letter code"""
-    return lang.replace("_", "-").split("-")[0]
 
 
 @async_lru_cache(maxsize=200)

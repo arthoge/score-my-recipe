@@ -10,6 +10,7 @@ from api import types
 from tests.helpers import (
     create_taxonomy,
     create_taxonomy_node,
+    patch_language_check,
 )
 
 
@@ -51,7 +52,10 @@ def mock_countries_taxonomy():
     ]
     mocked_taxonomy = create_taxonomy(mock_nodes)
 
-    with patch("api.off.get_origins_taxonomy", new_callable=AsyncMock) as mock:
+    with (
+        patch("api.off.get_origins_taxonomy", new_callable=AsyncMock) as mock,
+        patch_language_check(),
+    ):
         mock.return_value = mocked_taxonomy
         yield mock
 
@@ -158,3 +162,9 @@ def test_get_origins_api_returns_synonyms_when_requested(mock_countries_taxonomy
     synonyms_by_id = {origin["id"]: origin["synonyms"] for origin in response.json()["origins"]}
     assert synonyms_by_id["en:france"] == ["French Republic"]
     assert synonyms_by_id["en:germany"] == ["Federal Republic of Germany"]
+
+
+def test_get_origins_api_invalid_language_returns_422(mock_countries_taxonomy):
+    """An unsupported language code (lang=zz) is rejected with HTTP 422."""
+    response = client.get("/v1/origins", params={"lang": "zz"})
+    assert response.status_code == 422
