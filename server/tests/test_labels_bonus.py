@@ -9,7 +9,7 @@ import pytest
 
 from api.score_data import DEFAULT_DISTANCE_MODIFIER
 from api import score
-from api.score_types import IngredientMetrics
+from api.score_types import IngredientMetrics, RecipeMetrics
 from tests.helpers import (
     WORLD_EPI_MODIFIER,
     create_taxonomy,
@@ -29,11 +29,13 @@ def test_safe_zip_matches():
         build_ingredient_obj("i1", "apple", "en:apple"),
         build_ingredient_obj("i2", "pear", "en:pear"),
     ]
-    metrics = [
-        IngredientMetrics(id="i1", weight=100),
-        IngredientMetrics(id="i2", weight=100),
-    ]
-    pairs = list(score.safe_zip_recipe_metrics(recipe, metrics))
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100),
+            IngredientMetrics(id="i2", weight=100),
+        ]
+    )
+    pairs = list(score.safe_zip_recipe_metrics(recipe, recipe_metrics))
     assert [ing.id for ing, _ in pairs] == ["i1", "i2"]
     assert [m.id for _, m in pairs] == ["i1", "i2"]
 
@@ -41,20 +43,22 @@ def test_safe_zip_matches():
 def test_safe_zip_raises_on_length_mismatch():
     """A length mismatch between recipe and metrics raises a ValueError."""
     recipe = [build_ingredient_obj("i1", "apple", "en:apple")]
-    metrics = [
-        IngredientMetrics(id="i1", weight=100),
-        IngredientMetrics(id="i2", weight=100),
-    ]
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100),
+            IngredientMetrics(id="i2", weight=100),
+        ]
+    )
     with pytest.raises(ValueError, match="different lengths"):
-        score.safe_zip_recipe_metrics(recipe, metrics)
+        score.safe_zip_recipe_metrics(recipe, recipe_metrics)
 
 
 def test_safe_zip_raises_on_id_mismatch():
     """A mismatched ingredient id (same length) raises a ValueError."""
     recipe = [build_ingredient_obj("i1", "apple", "en:apple")]
-    metrics = [IngredientMetrics(id="i_other", weight=100)]
+    recipe_metrics = RecipeMetrics(metrics=[IngredientMetrics(id="i_other", weight=100)])
     with pytest.raises(ValueError, match="different ingredient ids"):
-        score.safe_zip_recipe_metrics(recipe, metrics)
+        score.safe_zip_recipe_metrics(recipe, recipe_metrics)
 
 
 # --- labels_bonus_full ------------------------------------------------------
@@ -133,10 +137,10 @@ async def test_gather_labels_bonus_sets_metric_bonus(agribalyse_index):
     )
     recipe = [build_ingredient_obj("i1", "apple", "en:apple", labels=["en:eu-organic"])]
     with patch_ingredients_taxonomy(ingredients_taxonomy), patch_labels_taxonomy(labels_taxonomy):
-        metrics = await score.gather_ef_metrics(recipe)
-        score.compute_ratios(metrics)
-        await score.gather_labels_bonus(recipe, metrics)
-    assert metrics[0].labels_bonus == 15
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        score.compute_ratios(recipe_metrics)
+        await score.gather_labels_bonus(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].labels_bonus == 15
 
 
 @pytest.mark.asyncio
@@ -156,11 +160,11 @@ async def test_gather_labels_bonus_skips_missing_ingredient(agribalyse_index):
         build_ingredient_obj("i_water", "water", "en:water", labels=["en:eu-organic"]),
     ]
     with patch_ingredients_taxonomy(ingredients_taxonomy), patch_labels_taxonomy(labels_taxonomy):
-        metrics = await score.gather_ef_metrics(recipe)
-        score.compute_ratios(metrics)
-        await score.gather_labels_bonus(recipe, metrics)
-    apple = next(m for m in metrics if m.id == "i_apple")
-    water = next(m for m in metrics if m.id == "i_water")
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        score.compute_ratios(recipe_metrics)
+        await score.gather_labels_bonus(recipe, recipe_metrics)
+    apple = next(m for m in recipe_metrics.metrics if m.id == "i_apple")
+    water = next(m for m in recipe_metrics.metrics if m.id == "i_water")
     assert apple.labels_bonus is None  # no label on apple
     assert water.labels_bonus is None  # missing -> skipped
 
@@ -178,10 +182,10 @@ async def test_gather_labels_bonus_unknown_label_keeps_none(agribalyse_index):
     )
     recipe = [build_ingredient_obj("i1", "apple", "en:apple", labels=["en:unknown-label"])]
     with patch_ingredients_taxonomy(ingredients_taxonomy), patch_labels_taxonomy(labels_taxonomy):
-        metrics = await score.gather_ef_metrics(recipe)
-        score.compute_ratios(metrics)
-        await score.gather_labels_bonus(recipe, metrics)
-    assert metrics[0].labels_bonus is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        score.compute_ratios(recipe_metrics)
+        await score.gather_labels_bonus(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].labels_bonus is None
 
 
 @pytest.mark.asyncio
@@ -204,10 +208,10 @@ async def test_gather_labels_bonus_takes_max_bonus(agribalyse_index):
         build_ingredient_obj("i1", "apple", "en:apple", labels=["en:eu-organic", "en:demeter"])
     ]
     with patch_ingredients_taxonomy(ingredients_taxonomy), patch_labels_taxonomy(labels_taxonomy):
-        metrics = await score.gather_ef_metrics(recipe)
-        score.compute_ratios(metrics)
-        await score.gather_labels_bonus(recipe, metrics)
-    assert metrics[0].labels_bonus == 20
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        score.compute_ratios(recipe_metrics)
+        await score.gather_labels_bonus(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].labels_bonus == 20
 
 
 @pytest.mark.asyncio
@@ -223,10 +227,10 @@ async def test_gather_labels_bonus_ignores_ingredient_without_labels(agribalyse_
     )
     recipe = [build_ingredient_obj("i1", "apple", "en:apple")]  # no labels
     with patch_ingredients_taxonomy(ingredients_taxonomy), patch_labels_taxonomy(labels_taxonomy):
-        metrics = await score.gather_ef_metrics(recipe)
-        score.compute_ratios(metrics)
-        await score.gather_labels_bonus(recipe, metrics)
-    assert metrics[0].labels_bonus is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        score.compute_ratios(recipe_metrics)
+        await score.gather_labels_bonus(recipe, recipe_metrics)
+    assert recipe_metrics.metrics[0].labels_bonus is None
 
 
 # --- global_labels_bonus ----------------------------------------------------
@@ -234,28 +238,34 @@ async def test_gather_labels_bonus_ignores_ingredient_without_labels(agribalyse_
 
 def test_global_labels_bonus_weighted_average():
     """The global bonus is the ratio-weighted average of per-ingredient bonuses."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, labels_bonus=20, ratio=0.25),
-        IngredientMetrics(id="i2", weight=300, labels_bonus=10, ratio=0.75),
-    ]
-    assert score.global_labels_bonus(metrics) == pytest.approx(20 * 0.25 + 10 * 0.75)
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, labels_bonus=20, ratio=0.25),
+            IngredientMetrics(id="i2", weight=300, labels_bonus=10, ratio=0.75),
+        ]
+    )
+    assert score.global_labels_bonus(recipe_metrics) == pytest.approx(20 * 0.25 + 10 * 0.75)
 
 
 def test_global_labels_bonus_zero_when_no_bonuses():
     """With no bonus at all, the global bonus is 0.0 (not None)."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, labels_bonus=None, ratio=1.0),
-    ]
-    assert score.global_labels_bonus(metrics) == 0.0
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, labels_bonus=None, ratio=1.0),
+        ]
+    )
+    assert score.global_labels_bonus(recipe_metrics) == 0.0
 
 
 def test_global_labels_bonus_ignores_missing_ratio():
     """Ingredients without a ratio (missing) don't contribute."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, labels_bonus=20, ratio=0.5),
-        IngredientMetrics(id="i2", weight=100, labels_bonus=15, ratio=None),
-    ]
-    assert score.global_labels_bonus(metrics) == pytest.approx(20 * 0.5)
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, labels_bonus=20, ratio=0.5),
+            IngredientMetrics(id="i2", weight=100, labels_bonus=15, ratio=None),
+        ]
+    )
+    assert score.global_labels_bonus(recipe_metrics) == pytest.approx(20 * 0.5)
 
 
 # --- compute_green_score integration ----------------------------------------

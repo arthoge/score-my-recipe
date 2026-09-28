@@ -492,7 +492,7 @@ class RecipeIngredientInput(CamelModel):
                             "isInTaxonomy": True,
                         }
                     ],
-                    "seasonality": False,
+                    "isInSeason": False,
                     "origin": {
                         "id": "en:france",
                         "label": "France",
@@ -514,7 +514,10 @@ class RecipeIngredientInput(CamelModel):
     labels: Annotated[
         list[TaxonomyItem], Field(description="Labels / certifications (organic, fair-trade...)")
     ] = []
-    seasonality: Annotated[bool, Field(description="Whether the ingredient is seasonal")] = False
+    is_fresh_plant: Annotated[
+        bool, Field(description="Whether the ingredient is a fresh plant")
+    ] = False
+    is_in_season: Annotated[bool, Field(description="Whether the ingredient is in season")] = False
     origin: Annotated[
         Optional[TaxonomyItem], Field(description="Origin country/region, null if unspecified")
     ] = None
@@ -546,7 +549,7 @@ class GreenScoreRequest(CamelModel):
                                 "isInTaxonomy": True,
                             },
                             "labels": [],
-                            "seasonality": False,
+                            "isInSeason": False,
                             "origin": None,
                         },
                         {
@@ -559,7 +562,7 @@ class GreenScoreRequest(CamelModel):
                                 "isInTaxonomy": True,
                             },
                             "labels": [],
-                            "seasonality": False,
+                            "isInSeason": False,
                             "origin": None,
                         },
                     ],
@@ -691,6 +694,12 @@ class GreenScoreResponse(CamelModel):
             description="The modifier from ingredient origin distance, null if no ingredients have a score"
         ),
     ] = None
+    seasonality_modifier: Annotated[
+        Optional[float],
+        Field(
+            description="The modifier from ingredient seasonality, null if no ingredients have a score"
+        ),
+    ] = None
     numeric_score: Annotated[
         Optional[float],
         Field(
@@ -709,6 +718,21 @@ class GreenScoreResponse(CamelModel):
             description="List of ingredient ids that were missing from the Agribalyse computation"
         ),
     ] = []
+    notes: Annotated[
+        Optional[list[str]],
+        Field(
+            description="Notes about the recipe-level score computation "
+            "(e.g. seasonality), null when no ingredients have a score"
+        ),
+    ] = None
+    ingredients_notes: Annotated[
+        Optional[dict[str, list[str]]],
+        Field(
+            description="Per-ingredient notes keyed by ingredient id, "
+            "only entries with at least one note are included, "
+            "null if no ingredients have a score"
+        ),
+    ] = None
 
 
 class RecomputeQuantityRequest(LangRequest, CamelModel):

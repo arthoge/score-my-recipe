@@ -171,7 +171,8 @@ def build_ingredient_dict(
             {"id": taxonomy_id, "label": name, "isInTaxonomy": True} if taxonomy_id else None
         ),
         "labels": [{"id": lid, "label": lid, "isInTaxonomy": True} for lid in (labels or [])],
-        "seasonality": False,
+        "isInSeason": False,
+        "isFreshPlant": False,
         "origin": None,
     }
 
@@ -188,10 +189,15 @@ def build_ingredient_obj(
     weight: float = 100.0,
     labels: list[str] | None = None,
     origin: str | None = None,
+    is_fresh_plant: bool = False,
+    is_in_season: bool = False,
 ) -> types.RecipeIngredientInput:
     """Build a ``RecipeIngredientInput`` with a codified ingredient.
 
     :param origin: optional origin taxonomy id (e.g. ``"en:france"``)
+    :param is_fresh_plant: whether the ingredient is a fresh fruit/vegetable
+    :param is_in_season: whether the ingredient is in season (only meaningful
+        when ``is_fresh_plant`` is true)
     """
     return types.RecipeIngredientInput(
         id=id_,
@@ -199,5 +205,7 @@ def build_ingredient_obj(
         weight=weight,
         codified_ingredient=types.TaxonomyItem(id=taxonomy_id, label=name, is_in_taxonomy=True),
         labels=[build_label_obj(lid) for lid in (labels or [])],
+        is_fresh_plant=is_fresh_plant,
+        is_in_season=is_in_season,
         origin=build_origin_obj(origin) if origin else None,
     )
