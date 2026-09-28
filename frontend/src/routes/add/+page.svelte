@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { _, getLocale, locale } from '$lib/i18n';
+	import { _, getLocale } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { parseRecipeText, apiIngredientsToIngredients } from '$lib/api/recipe';
 	import OnboardingBanner from '$lib/ui/OnboardingBanner.svelte';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
+	import RecipeExamples from '$lib/ui/RecipeExamples.svelte';
 
 	let recipeText = $state('');
 	let isLoading = $state(false);
@@ -11,51 +12,6 @@
 
 	let onboardingRef = $state<ReturnType<typeof OnboardingBanner> | null>(null);
 	let isOnboardingDismissed = $state(true);
-
-	const recipeExamples: Record<string, Array<{ id: string; nameKey: string; text: string }>> = {
-		fr: [
-			{
-				id: 'quiche',
-				nameKey: 'examples.quiche',
-				text: "200g de pâte brisée\n200g de lardons\n3 œufs\n200ml de crème fraîche\n150ml de lait\n100g d'emmental râpé"
-			},
-			{
-				id: 'apple_pie',
-				nameKey: 'examples.apple_pie',
-				text: '1 pâte feuilletée\n4 pommes\n50g de sucre\n30g de beurre'
-			},
-			{
-				id: 'ratatouille',
-				nameKey: 'examples.ratatouille',
-				text: "500g de tomates\n300g de courgettes\n300g d'aubergines\n200g de poivrons\n100g d'oignons\n30ml d'huile d'olive"
-			}
-		],
-		en: [
-			{
-				id: 'quiche',
-				nameKey: 'examples.quiche',
-				text: '200g shortcrust pastry\n200g bacon lardons\n3 eggs\n200ml crème fraîche\n150ml milk\n100g grated emmental'
-			},
-			{
-				id: 'apple_pie',
-				nameKey: 'examples.apple_pie',
-				text: '1 puff pastry\n4 apples\n50g sugar\n30g butter'
-			},
-			{
-				id: 'ratatouille',
-				nameKey: 'examples.ratatouille',
-				text: '500g tomatoes\n300g zucchini\n300g eggplant\n200g bell peppers\n100g onions\n30ml olive oil'
-			}
-		]
-	};
-
-	let currentExamples = $derived(
-		($locale ?? getLocale()).startsWith('fr') ? recipeExamples.fr : recipeExamples.en
-	);
-
-	function loadExample(example: { text: string }) {
-		recipeText = example.text;
-	}
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
@@ -140,20 +96,7 @@
 			</div>
 
 			<!-- Example recipe shortcuts (honors UI language) -->
-			<div class="flex flex-wrap items-center gap-2 py-1">
-				<span class="text-base-content/70 text-xs font-medium">
-					{$_('examples.title', { default: 'Or try an example:' })}
-				</span>
-				{#each currentExamples as ex (ex.id)}
-					<button
-						type="button"
-						class="btn btn-outline btn-xs hover:btn-primary rounded-full font-normal"
-						onclick={() => loadExample(ex)}
-					>
-						{$_(ex.nameKey)}
-					</button>
-				{/each}
-			</div>
+			<RecipeExamples onselect={(text) => (recipeText = text)} />
 
 			<textarea
 				id="recipe-text"
