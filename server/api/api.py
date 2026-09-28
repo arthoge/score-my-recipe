@@ -7,8 +7,11 @@ this file should only handle the HTTP specific parts.
 
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import ValidationError
+from fastapi.responses import JSONResponse
 
 import api.recipes as recipes
 import api.exceptions as exceptions
@@ -20,6 +23,21 @@ app = FastAPI(
     description="A tool to compute Green-Score of recipes.",
     version="0.1.0",
 )
+
+
+@app.exception_handler(ValidationError)
+async def async_validation_exception_handler(
+    request: Request, exc: ValidationError
+) -> JSONResponse:
+    """Convert async model validation errors into HTTP 422 responses.
+
+    Async validators (e.g. the language/country code checks, run by
+    :func:`api.types.async_validate_model`) raise ``pydantic.ValidationError``
+    from within the endpoint. FastAPI only auto-converts its own
+    ``RequestValidationError`` (raised while parsing the request) to 422, so
+    without this handler the async ones would surface as a 500.
+    """
+    return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})
 
 
 # Allow anyone to call the API from their own apps

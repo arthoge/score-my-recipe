@@ -15,7 +15,7 @@ from api.api import app
 from api import recipes
 from api import exceptions
 
-from tests.helpers import create_taxonomy, create_taxonomy_node
+from tests.helpers import create_taxonomy, create_taxonomy_node, patch_language_check
 
 
 client = TestClient(app)
@@ -58,9 +58,6 @@ def mock_units_taxonomy():
 
     # the endpoint validates the language via checks.check_language_code; stub it
     # so we don't hit the network and can control accepted codes ("en"/"fr")
-    async def check_language_code(lang: str) -> bool:
-        return lang in {"en", "fr"}
-
     # reset the per-language caches so a previous run (with another taxonomy)
     # does not leak into this one
     recipes._get_units_entries.cache_clear()
@@ -68,11 +65,7 @@ def mock_units_taxonomy():
     try:
         with (
             patch("api.off.get_units_taxonomy", new_callable=AsyncMock) as mock_tax,
-            patch(
-                "api.checks.check_language_code",
-                new_callable=AsyncMock,
-                side_effect=check_language_code,
-            ),
+            patch_language_check(),
         ):
             mock_tax.return_value = mocked_taxonomy
             yield mock_tax

@@ -19,6 +19,7 @@ from api import types
 from tests.helpers import (
     create_taxonomy,
     create_taxonomy_node,
+    patch_language_check,
 )
 
 
@@ -63,7 +64,10 @@ def mock_units_taxonomy():
     # reset cache so a previous run (with another taxonomy) does not leak
     recipes._get_units_entries.cache_clear()
     try:
-        with patch("api.off.get_units_taxonomy", new_callable=AsyncMock) as mock:
+        with (
+            patch("api.off.get_units_taxonomy", new_callable=AsyncMock) as mock,
+            patch_language_check(),
+        ):
             mock.return_value = mocked_taxonomy
             yield mock
     finally:
@@ -211,3 +215,9 @@ def test_get_units_api_returns_synonyms_when_requested(mock_units_taxonomy):
     synonyms_by_id = {unit["id"]: unit["synonyms"] for unit in response.json()["units"]}
     assert synonyms_by_id["en:gram"] == ["g", "grams"]
     assert synonyms_by_id["en:cup"] == ["cups"]
+
+
+def test_get_units_api_invalid_language_returns_422(mock_units_taxonomy):
+    """An unsupported language code (lang=zz) is rejected with HTTP 422."""
+    response = client.get("/v1/units", params={"lang": "zz"})
+    assert response.status_code == 422

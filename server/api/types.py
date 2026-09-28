@@ -22,12 +22,14 @@ def async_validate_model(fn):
     and will be validated before
     the function is called. If validation fails, a ``ValidationError`` is raised.
     """
+
     @functools.wraps(fn)
     async def wrapper(*args, **kwargs):
         for arg in list(args) + list(kwargs.values()):
             if isinstance(arg, AsyncValidationModelMixin):
                 await arg.model_async_validate()
         return await fn(*args, **kwargs)
+
     return wrapper
 
 

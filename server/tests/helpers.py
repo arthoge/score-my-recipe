@@ -1,11 +1,13 @@
 """Shared helpers and mocks for the green-score test suite."""
 
 from contextlib import contextmanager
+from typing import Iterable
 from unittest.mock import AsyncMock, patch
 
 from openfoodfacts.taxonomy import Taxonomy, TaxonomyNode
 
 from api import types
+from api.recipes import two_letter_lang_code
 
 
 # useful constant when computing scores without origins
@@ -13,6 +15,29 @@ WORLD_EPI_MODIFIER = -3.0
 
 # useful constant when computing scores for France distance
 FRANCE_DISTANCE_MODIFIER = 3
+
+
+@contextmanager
+def patch_language_check(valid_codes: Iterable[str] = ("en", "fr", "es", "it", "de")):
+    """Patch ``api.checks.check_language_code`` to accept the given 2-letter codes.
+
+    Mirrors the production check (which normalizes the code to its 2-letter form
+    before looking it up in the OFF languages taxonomy) without hitting the
+    network: a code is valid iff its normalized 2-letter form is in
+    ``valid_codes``. This lets tests control which languages are accepted (and
+    reject ``"zz"``) deterministically.
+    """
+    valid = set(valid_codes)
+
+    async def check_language_code(lang: str) -> bool:
+        return two_letter_lang_code(lang) in valid
+
+    with patch(
+        "api.checks.check_language_code",
+        new_callable=AsyncMock,
+        side_effect=check_language_code,
+    ) as mock:
+        yield mock
 
 
 @contextmanager
