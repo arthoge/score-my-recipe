@@ -713,9 +713,6 @@ export interface components {
 		 *     from the OFF units taxonomy (e.g. ``xx:kg``), as a localized unit name
 		 *     resolvable through the units taxonomy (e.g. ``"kg"``, ``"tasse"``), or as
 		 *     the ``{ITEM_UNIT}`` sentinel for countable ingredients (e.g. "1 egg").
-		 *
-		 *     Unit names are resolved to their taxonomy id using ``lang`` (and the
-		 *     neutral ``xx`` language as a fallback).
 		 * @example {
 		 *       "lang": "en",
 		 *       "new_unit": "kg",
@@ -726,6 +723,11 @@ export interface components {
 		 *     }
 		 */
 		RecomputeQuantityRequest: {
+			/**
+			 * Lang
+			 * @description Language for the request (2 or 5 letter code)
+			 */
+			lang: string;
 			/**
 			 * Quantityg
 			 * @description Previous quantity in grams
@@ -751,11 +753,6 @@ export interface components {
 			 * @description New unit (unit name, taxonomy id or 'item')
 			 */
 			newUnit: string;
-			/**
-			 * Lang
-			 * @description Language code (2 or 5 letters) used to resolve unit names to their taxonomy id. Validated against the OFF languages taxonomy.
-			 */
-			lang: string;
 		};
 		/**
 		 * RecomputeQuantityResponse

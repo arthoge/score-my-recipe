@@ -312,7 +312,9 @@ async def recompute_quantity(
     language), or as the ``{types.ITEM_UNIT}`` sentinel for countable ingredients.
     The ``new_unit`` is only resolved when its conversion factor is actually
     needed (the unit cancels out in a plain cross-multiplication); ``old_unit``
-    is never resolved and is only compared as-is to detect an unchanged unit.
+    is only resolved when the units differ but share the same standard unit (so
+    the grams can be cross-multiplied through it), otherwise it is only compared
+    as-is to detect an unchanged unit.
 
     We do our best to recompute it in a simple manner,
     but some unit conversions will require calling the Open Food Facts parse API
@@ -343,12 +345,38 @@ async def recompute_quantity(
             f"Converting to the countable unit '{types.ITEM_UNIT}' is not supported yet."
         )
 
-    # Case 2: the new unit is a mass unit with a conversion factor.
-    new_quantity_g = await _quantity_from_mass_unit(new_value, new_unit, lang)
-    if new_quantity_g is not None:
-        return new_quantity_g, new_value, new_unit
+    # Resolve the new unit's standard_unit and conversion factor up front (needed for case 2 and case 3)
+    # Raises UnknownUnitError if the new unit is not a resolvable name.
+    new_standard_unit, new_factor = await _unit_conversion(new_unit, lang)
 
-    # Case 3: any other unit change (e.g. volume <-> mass).
+    # Case 2: the old and new units share the same standard_unit (e.g. both are
+    # mass, or both are volume) and the previous value is non-zero. Because both
+    # units live in the same dimension, the (unknown) density cancels out: the
+    # grams scale in the same proportion as the conversion factors, so we can
+    # cross-multiply through the standard unit.
+    #   new_quantity_g = quantity_g * (new_value * new_factor) / (old_value * old_factor)
+    # This is what makes e.g. "2 cups" -> "500 ml" computable without a density.
+    if old_value != 0 and old_unit != types.ITEM_UNIT:
+        old_standard_unit, old_factor = await _safe_unit_conversion(old_unit, lang)
+        if (
+            old_standard_unit is not None
+            and old_standard_unit == new_standard_unit
+            and old_factor is not None
+            and new_factor is not None
+        ):
+            return (
+                quantity_g * (new_value * new_factor) / (old_value * old_factor),
+                new_value,
+                new_unit,
+            )
+
+    # Case 3: the new unit is a mass unit -> absolute grams (new_value * factor).
+    # Fallback when the previous value is zero or the old unit has no usable
+    # conversion factor (e.g. ``item``, an unknown unit, or a different dimension).
+    if new_standard_unit == "g" and new_factor is not None:
+        return new_value * new_factor, new_value, new_unit
+
+    # Case 4: any other unit change (e.g. volume <-> mass).
     # TODO: call the Open Food Facts parse API to convert the unit.
     raise exceptions.UnitConversionNotSupportedError(
         f"Converting from unit '{old_unit}' to unit '{new_unit}' is not supported yet."
@@ -399,6 +427,22 @@ async def _unit_conversion(unit_id: str, lang: str) -> tuple[str | None, float |
     factor_raw = off._property_value(node, "conversion_factor")
     conversion_factor = float(factor_raw) if factor_raw is not None else None
     return standard_unit, conversion_factor
+
+
+async def _safe_unit_conversion(unit_id: str, lang: str) -> tuple[str | None, float | None]:
+    f"""Like :func:`_unit_conversion` but returns ``(None, None)`` instead of raising.
+
+    Used for the *old* unit in :func:`recompute_quantity`: it may be the
+    ``{types.ITEM_UNIT}`` sentinel or an unknown / unresolvable name, in which
+    case the same-standard-unit optimization simply does not apply and we fall
+    back to the other cases.
+    """
+    if unit_id == types.ITEM_UNIT:
+        return None, None
+    try:
+        return await _unit_conversion(unit_id, lang)
+    except exceptions.UnknownUnitError:
+        return None, None
 
 
 async def suggest_scored_ingredient(

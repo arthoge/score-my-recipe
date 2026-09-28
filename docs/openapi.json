@@ -1232,6 +1232,11 @@
       },
       "RecomputeQuantityRequest": {
         "properties": {
+          "lang": {
+            "type": "string",
+            "title": "Lang",
+            "description": "Language for the request (2 or 5 letter code)"
+          },
           "quantityG": {
             "type": "number",
             "minimum": 0.0,
@@ -1259,24 +1264,19 @@
             "type": "string",
             "title": "Newunit",
             "description": "New unit (unit name, taxonomy id or 'item')"
-          },
-          "lang": {
-            "type": "string",
-            "title": "Lang",
-            "description": "Language code (2 or 5 letters) used to resolve unit names to their taxonomy id. Validated against the OFF languages taxonomy."
           }
         },
         "type": "object",
         "required": [
+          "lang",
           "quantityG",
           "oldValue",
           "oldUnit",
           "newValue",
-          "newUnit",
-          "lang"
+          "newUnit"
         ],
         "title": "RecomputeQuantityRequest",
-        "description": "Request body for the ``POST /v1/recompute-quantity`` endpoint.\n\nEach unit (``old_unit`` / ``new_unit``) may be given either as a unit id\nfrom the OFF units taxonomy (e.g. ``xx:kg``), as a localized unit name\nresolvable through the units taxonomy (e.g. ``\"kg\"``, ``\"tasse\"``), or as\nthe ``{ITEM_UNIT}`` sentinel for countable ingredients (e.g. \"1 egg\").\n\nUnit names are resolved to their taxonomy id using ``lang`` (and the\nneutral ``xx`` language as a fallback).",
+        "description": "Request body for the ``POST /v1/recompute-quantity`` endpoint.\n\nEach unit (``old_unit`` / ``new_unit``) may be given either as a unit id\nfrom the OFF units taxonomy (e.g. ``xx:kg``), as a localized unit name\nresolvable through the units taxonomy (e.g. ``\"kg\"``, ``\"tasse\"``), or as\nthe ``{ITEM_UNIT}`` sentinel for countable ingredients (e.g. \"1 egg\").",
         "examples": [
           {
             "lang": "en",
