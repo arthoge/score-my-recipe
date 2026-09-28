@@ -277,6 +277,10 @@ async def test_compute_green_score_applies_labels_bonus(agribalyse_index):
 
     apple alone (ef 0.3) -> normalized ~76.38 (grade A). With an eu-organic
     label (bonus 15), numeric = 76.38 - 15 = 61.38 (grade B).
+
+    The ingredient has a label bonus, so the EPI modifier is not applied (EPI
+    and label bonuses are not cumulative): epi_modifier is None and does not
+    contribute to the numeric score.
     """
     labels_taxonomy = create_taxonomy({"en:eu-organic": create_taxonomy_node("en:eu-organic")})
     ingredients_taxonomy = create_taxonomy(
@@ -292,8 +296,10 @@ async def test_compute_green_score_applies_labels_bonus(agribalyse_index):
     expected_ef = 0.3
     assert result.global_ef_score == pytest.approx(expected_ef)
     assert result.labels_bonus == pytest.approx(15)
+    # EPI is suppressed by the label bonus: it does not contribute to the score
+    assert result.epi_modifier is None
     assert result.numeric_score == pytest.approx(
-        score.normalize_ef_score(expected_ef) + 15 + WORLD_EPI_MODIFIER + DEFAULT_DISTANCE_MODIFIER
+        score.normalize_ef_score(expected_ef) + 15 + DEFAULT_DISTANCE_MODIFIER
     )
     assert result.letter_grade == "A"
 
@@ -343,6 +349,9 @@ async def test_compute_green_score_diluted_bonus(agribalyse_index):
 
     apple 100g (label, bonus 15) + water 100g (missing, no contribution).
     Only apple is scorable (ratio 1.0) so the bonus stays 15.
+
+    The single scorable ingredient carries a label bonus, so the EPI modifier
+    is suppressed (not cumulative): epi_modifier is None and contributes 0.
     """
     labels_taxonomy = create_taxonomy({"en:eu-organic": create_taxonomy_node("en:eu-organic")})
     ingredients_taxonomy = create_taxonomy(
@@ -360,7 +369,8 @@ async def test_compute_green_score_diluted_bonus(agribalyse_index):
     with patch_ingredients_taxonomy(ingredients_taxonomy), patch_labels_taxonomy(labels_taxonomy):
         result = await score.compute_green_score(recipe, country="FR")
     assert result.labels_bonus == pytest.approx(15)
+    assert result.epi_modifier is None
     expected_normalized = score.normalize_ef_score(0.3)
     assert result.numeric_score == pytest.approx(
-        expected_normalized + 15 + WORLD_EPI_MODIFIER + DEFAULT_DISTANCE_MODIFIER
+        expected_normalized + 15 + DEFAULT_DISTANCE_MODIFIER
     )

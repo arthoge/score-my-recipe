@@ -106,5 +106,44 @@
 		"table_quantity": "Quantité (g)",
 		"yes": "Oui",
 		"no": "Non"
+	},
+	"onboarding": {
+		"title": "Comment noter votre recette",
+		"subtitle": "Calculez l'impact environnemental de vos créations culinaires en quelques secondes.",
+		"step1_title": "1. Saisissez vos ingrédients",
+		"step1_desc": "Collez ou écrivez vos ingrédients avec leurs quantités (ex. 200g de farine, 3 œufs).",
+		"step2_title": "2. Détection automatique",
+		"step2_desc": "Nous reconnaissons vos ingrédients et les associons à la base officielle Agribalyse / PEF.",
+		"step3_title": "3. Green-Score en direct",
+		"step3_desc": "Découvrez votre score de A à F, visualisez les correspondances et améliorez votre impact.",
+		"dismiss": "J'ai compris !",
+		"help_button": "Comment ça marche ?"
+	},
+	"helpers": {
+		"more_info": "Plus d'informations",
+		"recipe_text": "Entrez chaque ingrédient sur une nouvelle ligne avec sa quantité (ex. 200g de farine, 3 œufs, 100g de sucre).",
+		"codified_ingredient": "Ingrédient standardisé issu de la base de données Open Food Facts / Agribalyse.",
+		"weight": "Quantité nette de l'ingrédient en grammes.",
+		"labels": "Certifications officielles (ex. Bio, Label Rouge, Commerce Équitable) apportant des bonus au Green-Score.",
+		"seasonality": "Cochez si les fruits et légumes sont de saison pour obtenir un bonus environnemental.",
+		"origin": "Origine géographique de l'ingrédient, utilisée pour évaluer l'impact du transport.",
+		"country": "Pays où la recette est préparée ou consommée, utilisé pour calculer les distances de transport."
+	},
+	"examples": {
+		"title": "Ou essayez un exemple de recette :"
+	},
+	"recipes": {
+		"quiche": {
+			"name": "Quiche lorraine",
+			"content": "200g de pâte brisée\n200g de lardons\n3 œufs\n200ml de crème fraîche\n150ml de lait\n100g d'emmental râpé"
+		},
+		"apple_pie": {
+			"name": "Tarte aux pommes",
+			"content": "1 pâte feuilletée\n4 pommes\n50g de sucre\n30g de beurre"
+		},
+		"ratatouille": {
+			"name": "Ratatouille",
+			"content": "500g de tomates\n300g de courgettes\n300g d'aubergines\n200g de poivrons\n100g d'oignons\n30ml d'huile d'olive"
+		}
 	}
 }

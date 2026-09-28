@@ -15,6 +15,7 @@
 <script lang="ts">
 	import { _ } from '$lib/i18n';
 	import Tags from './Tags.svelte';
+	import HelperTooltip from './HelperTooltip.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
 	import IconMdiAlertCircle from '@iconify-svelte/mdi/alert-circle';
 	import IconMdiLeaf from '@iconify-svelte/mdi/leaf';
@@ -105,9 +106,17 @@
 	<!-- Codified Ingredient name -->
 	<div class="flex grow-3 flex-col">
 		<label class="label py-1" for="ingredient-codified-{ingredient.id}">
-			<span class="label-text text-xs"
-				>{$_('recipe.codified_ingredient', { default: 'Codified' })}</span
-			>
+			<span class="flex items-center gap-1.5">
+				<span class="label-text text-xs"
+					>{$_('recipe.codified_ingredient', { default: 'Codified' })}</span
+				>
+				<HelperTooltip
+					tip={$_('helpers.codified_ingredient', {
+						default: 'Standardized ingredient from the Open Food Facts / Agribalyse database.'
+					})}
+					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+				/>
+			</span>
 		</label>
 		<Tags
 			tagtype="ingredients"
@@ -139,7 +148,15 @@
 	<!-- Weight -->
 	<div class="flex w-24 flex-col">
 		<label class="label py-1" for="ingredient-weight-{ingredient.id}">
-			<span class="label-text text-xs">{$_('recipe.weight', { default: 'Weight (g)' })}</span>
+			<span class="flex items-center gap-1.5">
+				<span class="label-text text-xs">{$_('recipe.weight', { default: 'Weight (g)' })}</span>
+				<HelperTooltip
+					tip={$_('helpers.weight', {
+						default: 'Net quantity of the ingredient in grams.'
+					})}
+					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+				/>
+			</span>
 		</label>
 		<input
 			id="ingredient-weight-{ingredient.id}"
@@ -154,9 +171,18 @@
 	<!-- Labels -->
 	<div class="flex grow-3 flex-col">
 		<label class="label py-1" for="ingredient-labels-{ingredient.id}">
-			<span class="label-text text-xs" id="ingredient-labels-label-{ingredient.id}"
-				>{$_('recipe.labels', { default: 'Labels' })}</span
-			>
+			<span class="flex items-center gap-1.5">
+				<span class="label-text text-xs" id="ingredient-labels-label-{ingredient.id}"
+					>{$_('recipe.labels', { default: 'Labels' })}</span
+				>
+				<HelperTooltip
+					tip={$_('helpers.labels', {
+						default:
+							'Official certifications (e.g. Organic, Label Rouge, Fair Trade) that grant Green-Score bonuses.'
+					})}
+					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+				/>
+			</span>
 		</label>
 		<Tags tagtype="labels" bind:tags={ingredient.labels} />
 	</div>
@@ -164,9 +190,18 @@
 	<!-- Fresh fruit/vegetable + seasonality -->
 	<div class="flex w-48 flex-col">
 		<label class="label py-1" for="ingredient-fresh-{ingredient.id}">
-			<span class="label-text text-xs" id="ingredient-fresh-label-{ingredient.id}"
-				>{$_('recipe.fresh_plant', { default: 'Fresh fruit/veg' })}</span
-			>
+			<span class="flex items-center gap-1.5">
+				<span class="label-text text-xs" id="ingredient-fresh-label-{ingredient.id}"
+					>{$_('recipe.fresh_plant', { default: 'Fresh fruit/veg' })}</span
+				>
+				<HelperTooltip
+					tip={$_('helpers.seasonality', {
+						default:
+							'Check if seasonal fruits and vegetables are produced in season for a score bonus.'
+					})}
+					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+				/>
+			</span>
 		</label>
 		<div class="flex min-h-10 items-center gap-2">
 			<input
@@ -212,9 +247,18 @@
 	<!-- Origin -->
 	<div class="flex grow-3 flex-col">
 		<label class="label py-1" for="ingredient-origin-{ingredient.id}">
-			<span class="label-text text-xs" id="ingredient-origin-label-{ingredient.id}"
-				>{$_('recipe.origin', { default: 'Origin' })}</span
-			>
+			<span class="flex items-center gap-1.5">
+				<span class="label-text text-xs" id="ingredient-origin-label-{ingredient.id}"
+					>{$_('recipe.origin', { default: 'Origin' })}</span
+				>
+				<HelperTooltip
+					tip={$_('helpers.origin', {
+						default:
+							'Geographical origin of the ingredient, used to evaluate transportation impact.'
+					})}
+					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+				/>
+			</span>
 		</label>
 		<Tags
 			tagtype="countries"

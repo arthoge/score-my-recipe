@@ -17,6 +17,7 @@
 	import { _ } from '$lib/i18n';
 	import { getLocale } from '$lib/i18n';
 	import { getCountries } from '$lib/api/taxonomy';
+	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
 	import type { components } from '../../api-schema';
 
 	type Country = components['schemas']['Country'];
@@ -53,7 +54,16 @@
 
 <div class="flex flex-col">
 	<label class="label py-1" for="country-select">
-		<span class="label-text text-xs">{$_('recipe.country', { default: 'Country' })}</span>
+		<span class="flex items-center gap-1.5">
+			<span class="label-text text-xs">{$_('recipe.country', { default: 'Country' })}</span>
+			<HelperTooltip
+				tip={$_('helpers.country', {
+					default:
+						'Country where the recipe is prepared or consumed, used to calculate transport distances.'
+				})}
+				ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+			/>
+		</span>
 	</label>
 
 	{#if loadError}

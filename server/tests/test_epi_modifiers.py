@@ -357,3 +357,213 @@ async def test_compute_green_score_epi_weighted_by_ratio(agribalyse_index):
         + FRANCE_DISTANCE_MODIFIER * 0.25
         + ARGENTINA_DISTANCE_MODIFIER * 0.75
     )
+
+
+# --- EPI / label bonus non-cumulative rule ----------------------------------
+
+
+@pytest.mark.asyncio
+async def test_gather_epi_modifiers_suppressed_by_label_bonus(agribalyse_index):
+    """An ingredient with an applied label bonus gets no EPI modifier.
+
+    The ingredient has a France origin (which would normally yield +3), but it
+    also carries an eu-organic label (bonus 15): the EPI pass leaves
+    ``epi_modifier`` as None and records an explanatory note.
+    """
+    labels_taxonomy = create_taxonomy({"en:eu-organic": create_taxonomy_node("en:eu-organic")})
+    ingredients_taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            )
+        }
+    )
+    recipe = [
+        build_ingredient_obj(
+            "i1", "apple", "en:apple", labels=["en:eu-organic"], origin="en:france"
+        )
+    ]
+    with (
+        patch_ingredients_taxonomy(ingredients_taxonomy),
+        patch_labels_taxonomy(labels_taxonomy),
+        patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
+    ):
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        score.compute_ratios(recipe_metrics)
+        # gather_labels_bonus must run before the EPI pass: it sets labels_bonus,
+        # which the EPI pass reads to decide whether to suppress the modifier.
+        await score.gather_labels_bonus(recipe, recipe_metrics)
+        await score.gather_epi_modifiers(recipe, recipe_metrics)
+    metric = recipe_metrics.metrics[0]
+    assert metric.labels_bonus == 15
+    assert metric.epi_modifier is None
+    assert any("label bonus" in n for n in (metric.notes or []))
+
+
+@pytest.mark.asyncio
+async def test_gather_epi_modifiers_applied_when_label_grants_no_bonus(agribalyse_index):
+    """A label that grants no bonus does not suppress the EPI modifier.
+
+    Label Rouge is restricted to some meats; on an apple it is filtered out and
+    grants no bonus (labels_bonus stays None), so the EPI modifier still applies.
+    This pins the suppression trigger to an *applied* bonus, not a bare label tag.
+    """
+    labels_taxonomy = create_taxonomy({"fr:label-rouge": create_taxonomy_node("fr:label-rouge")})
+    ingredients_taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            )
+        }
+    )
+    recipe = [
+        build_ingredient_obj(
+            "i1", "apple", "en:apple", labels=["fr:label-rouge"], origin="en:france"
+        )
+    ]
+    with (
+        patch_ingredients_taxonomy(ingredients_taxonomy),
+        patch_labels_taxonomy(labels_taxonomy),
+        patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
+    ):
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        score.compute_ratios(recipe_metrics)
+        await score.gather_labels_bonus(recipe, recipe_metrics)
+        await score.gather_epi_modifiers(recipe, recipe_metrics)
+    metric = recipe_metrics.metrics[0]
+    # Label Rouge does not apply to apple: no bonus, so EPI is not suppressed.
+    assert metric.labels_bonus is None
+    assert metric.epi_modifier == FRANCE_EPI_MODIFIER
+
+
+@pytest.mark.asyncio
+async def test_compute_green_score_epi_suppressed_by_label_bonus(agribalyse_index):
+    """A label bonus suppresses the EPI modifier but not the label or distance.
+
+    apple (France, eu-organic bonus 15): the France EPI modifier (+3) is not
+    applied, so epi_modifier is None. The label bonus (+15) and the distance
+    modifier (France -> France, +3) still apply.
+    """
+    labels_taxonomy = create_taxonomy({"en:eu-organic": create_taxonomy_node("en:eu-organic")})
+    ingredients_taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            )
+        }
+    )
+    recipe = [
+        build_ingredient_obj(
+            "i1", "apple", "en:apple", labels=["en:eu-organic"], origin="en:france"
+        )
+    ]
+    with (
+        patch_ingredients_taxonomy(ingredients_taxonomy),
+        patch_labels_taxonomy(labels_taxonomy),
+        patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
+    ):
+        result = await score.compute_green_score(recipe, country="FR")
+    expected_ef = 0.3
+    assert result.labels_bonus == pytest.approx(15)
+    # EPI is suppressed by the label bonus.
+    assert result.epi_modifier is None
+    # The distance modifier is a separate axis and is unaffected.
+    assert result.distances_modifier == pytest.approx(FRANCE_DISTANCE_MODIFIER)
+    assert result.numeric_score == pytest.approx(
+        score.normalize_ef_score(expected_ef) + 15 + FRANCE_DISTANCE_MODIFIER
+    )
+
+
+@pytest.mark.asyncio
+async def test_compute_green_score_epi_suppressed_per_ingredient(agribalyse_index):
+    """EPI is suppressed only for labeled ingredients, without renormalization.
+
+    apple 100g (France, eu-organic) + pear 300g (Argentina, no label).
+    ratios: apple 0.25, pear 0.75.
+    - labels_bonus = 15 * 0.25 = 3.75  (only apple is labeled)
+    - epi = ARGENTINA * 0.75 = -1.5    (apple suppressed; ratios NOT renormalized)
+    - distance = France*0.25 + Argentina*0.75 = 0.75 - 5.25 = -4.5
+    """
+    labels_taxonomy = create_taxonomy({"en:eu-organic": create_taxonomy_node("en:eu-organic")})
+    ingredients_taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            ),
+            "en:pear": create_taxonomy_node(
+                "en:pear", properties={"agribalyse_food_code": {"en": "10002"}}
+            ),
+        }
+    )
+    recipe = [
+        build_ingredient_obj(
+            "i_apple", "apple", "en:apple", weight=100,
+            labels=["en:eu-organic"], origin="en:france",
+        ),
+        build_ingredient_obj(
+            "i_pear", "pear", "en:pear", weight=300, origin="en:argentina",
+        ),
+    ]
+    with (
+        patch_ingredients_taxonomy(ingredients_taxonomy),
+        patch_labels_taxonomy(labels_taxonomy),
+        patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
+    ):
+        result = await score.compute_green_score(recipe, country="FR")
+    expected_ef = 0.3 * 0.25 + 0.5 * 0.75
+    expected_labels = 15 * 0.25
+    expected_epi = ARGENTINA_EPI_MODIFIER * 0.75
+    expected_distance = FRANCE_DISTANCE_MODIFIER * 0.25 + ARGENTINA_DISTANCE_MODIFIER * 0.75
+    assert result.labels_bonus == pytest.approx(expected_labels)
+    assert result.epi_modifier == pytest.approx(expected_epi)
+    assert result.distances_modifier == pytest.approx(expected_distance)
+    assert result.numeric_score == pytest.approx(
+        score.normalize_ef_score(expected_ef)
+        + expected_labels
+        + expected_epi
+        + expected_distance
+    )
+
+
+@pytest.mark.asyncio
+async def test_compute_green_score_all_labeled_epi_none(agribalyse_index):
+    """When every scorable ingredient has a label bonus, epi_modifier is None.
+
+    apple (France, eu-organic) + pear (Argentina, eu-organic): both labeled, so
+    no ingredient contributes to EPI and the global epi_modifier is None
+    (treated as 0.0 in the final additive sum).
+    """
+    labels_taxonomy = create_taxonomy({"en:eu-organic": create_taxonomy_node("en:eu-organic")})
+    ingredients_taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            ),
+            "en:pear": create_taxonomy_node(
+                "en:pear", properties={"agribalyse_food_code": {"en": "10002"}}
+            ),
+        }
+    )
+    recipe = [
+        build_ingredient_obj(
+            "i_apple", "apple", "en:apple", weight=100,
+            labels=["en:eu-organic"], origin="en:france",
+        ),
+        build_ingredient_obj(
+            "i_pear", "pear", "en:pear", weight=300,
+            labels=["en:eu-organic"], origin="en:argentina",
+        ),
+    ]
+    with (
+        patch_ingredients_taxonomy(ingredients_taxonomy),
+        patch_labels_taxonomy(labels_taxonomy),
+        patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
+    ):
+        result = await score.compute_green_score(recipe, country="FR")
+    assert result.epi_modifier is None
+    assert result.labels_bonus == pytest.approx(15)
+    expected_ef = 0.3 * 0.25 + 0.5 * 0.75
+    expected_distance = FRANCE_DISTANCE_MODIFIER * 0.25 + ARGENTINA_DISTANCE_MODIFIER * 0.75
+    assert result.numeric_score == pytest.approx(
+        score.normalize_ef_score(expected_ef) + 15 + expected_distance
+    )

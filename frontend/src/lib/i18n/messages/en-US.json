@@ -106,5 +106,44 @@
 		"table_quantity": "Quantity (g)",
 		"yes": "Yes",
 		"no": "No"
+	},
+	"onboarding": {
+		"title": "How to score your recipe",
+		"subtitle": "Calculate the environmental impact of your culinary creations in seconds.",
+		"step1_title": "1. Enter ingredients",
+		"step1_desc": "Paste or type your ingredients with their quantities (e.g. 200g flour, 3 eggs).",
+		"step2_title": "2. Automatic matching",
+		"step2_desc": "We recognize your ingredients and match them to the official Agribalyse/PEF database.",
+		"step3_title": "3. Real-time Green-Score",
+		"step3_desc": "Get your score from A to F, see missing matches, and optimize your recipe's impact.",
+		"dismiss": "Got it!",
+		"help_button": "How does it work?"
+	},
+	"helpers": {
+		"more_info": "More information",
+		"recipe_text": "Enter each ingredient on a new line with its quantity (e.g. 200g flour, 3 eggs, 100g sugar).",
+		"codified_ingredient": "Standardized ingredient from the Open Food Facts / Agribalyse database.",
+		"weight": "Net quantity of the ingredient in grams.",
+		"labels": "Official certifications (e.g. Organic, Label Rouge, Fair Trade) that grant Green-Score bonuses.",
+		"seasonality": "Check if seasonal fruits and vegetables are produced in season for a score bonus.",
+		"origin": "Geographical origin of the ingredient, used to evaluate transportation impact.",
+		"country": "Country where the recipe is prepared or consumed, used to calculate transport distances."
+	},
+	"examples": {
+		"title": "Or try an example recipe:"
+	},
+	"recipes": {
+		"quiche": {
+			"name": "Quiche Lorraine",
+			"content": "200g shortcrust dough\n200g lardon\n3 eggs\n200ml fresh cream\n150ml milk\n100g grated emmental"
+		},
+		"apple_pie": {
+			"name": "Apple Pie",
+			"content": "1 puff pastry\n4 apples\n50g sugar\n30g butter"
+		},
+		"ratatouille": {
+			"name": "Ratatouille",
+			"content": "500g tomatoes\n300g zucchini\n300g eggplant\n200g bell peppers\n100g onions\n30ml olive oil"
+		}
 	}
 }
