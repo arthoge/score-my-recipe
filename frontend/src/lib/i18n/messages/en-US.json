@@ -129,9 +129,20 @@
 		"country": "Country where the recipe is prepared or consumed, used to calculate transport distances."
 	},
 	"examples": {
-		"title": "Or try an example recipe:",
-		"quiche": "Quiche Lorraine",
-		"apple_pie": "Apple Pie",
-		"ratatouille": "Ratatouille"
+		"title": "Or try an example recipe:"
+	},
+	"recipes": {
+		"quiche": {
+			"name": "Quiche Lorraine",
+			"content": "200g shortcrust dough\n200g lardon\n3 eggs\n200ml fresh cream\n150ml milk\n100g grated emmental"
+		},
+		"apple_pie": {
+			"name": "Apple Pie",
+			"content": "1 puff pastry\n4 apples\n50g sugar\n30g butter"
+		},
+		"ratatouille": {
+			"name": "Ratatouille",
+			"content": "500g tomatoes\n300g zucchini\n300g eggplant\n200g bell peppers\n100g onions\n30ml olive oil"
+		}
 	}
 }

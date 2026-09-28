@@ -129,9 +129,20 @@
 		"country": "Pays où la recette est préparée ou consommée, utilisé pour calculer les distances de transport."
 	},
 	"examples": {
-		"title": "Ou essayez un exemple de recette :",
-		"quiche": "Quiche lorraine",
-		"apple_pie": "Tarte aux pommes",
-		"ratatouille": "Ratatouille"
+		"title": "Ou essayez un exemple de recette :"
+	},
+	"recipes": {
+		"quiche": {
+			"name": "Quiche lorraine",
+			"content": "200g de pâte brisée\n200g de lardons\n3 œufs\n200ml de crème fraîche\n150ml de lait\n100g d'emmental râpé"
+		},
+		"apple_pie": {
+			"name": "Tarte aux pommes",
+			"content": "1 pâte feuilletée\n4 pommes\n50g de sucre\n30g de beurre"
+		},
+		"ratatouille": {
+			"name": "Ratatouille",
+			"content": "500g de tomates\n300g de courgettes\n300g d'aubergines\n200g de poivrons\n100g d'oignons\n30ml d'huile d'olive"
+		}
 	}
 }

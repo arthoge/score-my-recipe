@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { _, locale, getLocale } from '$lib/i18n';
-	import { recipeExamples, type RecipeExample } from './recipeExamples';
+	import { _, locale, getLocale, dictionary } from '$lib/i18n';
+	import { getRecipeExamples, type RecipeExample } from './recipeExamples';
 
 	type Props = {
 		/** Called with the example's full recipe text when the user picks one. */
@@ -9,8 +9,10 @@
 
 	let { onselect }: Props = $props();
 
-	// Resolve examples for the active UI language.
-	let currentExamples = $derived(recipeExamples[($locale ?? getLocale()).split('-')[0]] ?? []);
+	// Resolve examples for the active UI language. `$dictionary` is passed in so
+	// we re-resolve after a language switch, once the new locale's messages have
+	// finished loading asynchronously.
+	let currentExamples = $derived(getRecipeExamples($locale ?? getLocale(), $dictionary));
 
 	function loadExample(example: RecipeExample) {
 		onselect?.(example.text);
@@ -27,7 +29,7 @@
 			class="btn btn-outline btn-xs hover:btn-primary rounded-full font-normal"
 			onclick={() => loadExample(ex)}
 		>
-			{$_(ex.nameKey)}
+			{ex.name}
 		</button>
 	{/each}
 </div>
