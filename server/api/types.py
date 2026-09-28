@@ -122,9 +122,7 @@ class RecipeIngredient(BaseModel):
                     "codified_ingredient": "apple",
                     "quantity_g": 150.0,
                     "origins": {"id": "en:france", "label": "France", "isInTaxonomy": True},
-                    "labels": [
-                        {"id": "en:organic", "label": "Organic", "isInTaxonomy": True}
-                    ],
+                    "labels": [{"id": "en:organic", "label": "Organic", "isInTaxonomy": True}],
                     "quantity_value": 0.15,
                     "quantity_unit": "kg",
                 }
@@ -136,8 +134,12 @@ class RecipeIngredient(BaseModel):
     is_in_taxonomy: Annotated[bool, Field(description="Whether the ingredient is in the taxonomy")]
     codified_ingredient: Annotated[str, Field(description="Codified ingredient name")]
     quantity_g: Annotated[Optional[float], Field(description="Quantity in grams")] = None
-    origins: Annotated[Optional[TaxonomyItem], Field(description="Origins of the ingredient")] = None
-    labels: Annotated[Optional[list[TaxonomyItem]], Field(description="Labels of the ingredient")] = None
+    origins: Annotated[Optional[TaxonomyItem], Field(description="Origins of the ingredient")] = (
+        None
+    )
+    labels: Annotated[
+        Optional[list[TaxonomyItem]], Field(description="Labels of the ingredient")
+    ] = None
     quantity_value: Annotated[
         Optional[float], Field(description="Numeric value of the quantity")
     ] = None

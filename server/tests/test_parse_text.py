@@ -58,9 +58,9 @@ def test_parse_text_ingredient_structure(mock_off_parse_text):
     assert "codified_ingredient" in ingredient
     assert "is_in_taxonomy" in ingredient
     assert "quantity_g" in ingredient
-    assert "origins" in ingredient    
-    assert "labels" in ingredient 
-    assert "notes" in ingredient    
+    assert "origins" in ingredient
+    assert "labels" in ingredient
+    assert "notes" in ingredient
 
 
 def test_parse_text_converts_off_ingredient(mock_off_parse_text):
@@ -116,9 +116,6 @@ def test_parse_text_normalizes_language_code(mock_off_parse_text):
         mock_off_parse_text.assert_awaited_once_with("tomates 500g", "fr")
 
 
-
-
-
 @pytest.fixture
 def mock_off_parse_text_with_origins_and_labels():
     """Mock returning ingredients that have origins and labels detected"""
@@ -159,10 +156,16 @@ def test_parse_text_returns_origins_and_labels_when_detected(
 
     # First ingredient: butter — should have both origins and labels
     assert ingredients[0]["origins"] == {"id": "en:france", "label": "France", "isInTaxonomy": True}
-    assert ingredients[0]["labels"] == [{"id": "en:organic", "label": "Organic", "isInTaxonomy": True}]
+    assert ingredients[0]["labels"] == [
+        {"id": "en:organic", "label": "Organic", "isInTaxonomy": True}
+    ]
 
     # Second ingredient: cocoa — has origin but no label
-    assert ingredients[1]["origins"] == {"id": "en:ecuador", "label": "Ecuador", "isInTaxonomy": True}
+    assert ingredients[1]["origins"] == {
+        "id": "en:ecuador",
+        "label": "Ecuador",
+        "isInTaxonomy": True,
+    }
     assert ingredients[1]["labels"] == []
 
 
@@ -199,6 +202,7 @@ def mock_off_parse_text_with_multiple_values():
             )
         ]
         yield mock
+
 
 def test_parse_text_handles_multiple_origins_and_labels(mock_off_parse_text_with_multiple_values):
     """Test that multiple labels are split into a list, and multiple origins are dropped with a note"""

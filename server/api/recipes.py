@@ -34,8 +34,7 @@ async def off_ingredient_to_recipe_ingredient(
         labels_ids = [label.strip() for label in off_ingredient.labels.split(",")]
         labels_taxonomy = await off.get_labels_taxonomy()
         labels_entries = [
-            labels_taxonomy[label_id] for label_id in labels_ids
-            if label_id in labels_taxonomy
+            labels_taxonomy[label_id] for label_id in labels_ids if label_id in labels_taxonomy
         ]
         labels_data = off.taxonomy_lang_label_and_synonyms(lang, labels_entries)
         labels_obj = [
@@ -50,7 +49,9 @@ async def off_ingredient_to_recipe_ingredient(
     if origins_str:
         origins_taxonomy = await off.get_origins_taxonomy()
         origins_entry = origins_taxonomy[origins_str] if origins_str in origins_taxonomy else None
-        origins_data = off.taxonomy_lang_label_and_synonyms(lang, [origins_entry] if origins_entry else [])
+        origins_data = off.taxonomy_lang_label_and_synonyms(
+            lang, [origins_entry] if origins_entry else []
+        )
         origins_obj = [
             types.TaxonomyItem(id=origin_id, label=origin_label, is_in_taxonomy=True)
             for origin_id, origin_label, _, _ in origins_data
@@ -89,7 +90,8 @@ async def parse_text(text: str, lang: str) -> list[types.RecipeIngredient]:
     lang = two_letter_lang_code(lang)
     off_ingredients = await off.parse_text(text, lang)
     ingredients = [
-        await off_ingredient_to_recipe_ingredient(ingredient, lang) for ingredient in off_ingredients
+        await off_ingredient_to_recipe_ingredient(ingredient, lang)
+        for ingredient in off_ingredients
     ]
     return ingredients
 
