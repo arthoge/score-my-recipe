@@ -10,7 +10,6 @@ from typing import Annotated
 from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 
 import api.recipes as recipes
@@ -26,9 +25,9 @@ app = FastAPI(
 )
 
 
-@app.exception_handler(ValidationError)
+@app.exception_handler(types.AsyncRequestValidationError)
 async def async_validation_exception_handler(
-    request: Request, exc: ValidationError
+    request: Request, exc: types.AsyncRequestValidationError
 ) -> JSONResponse:
     """Convert async model validation errors into HTTP 422 responses.
 

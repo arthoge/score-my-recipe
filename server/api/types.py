@@ -1,8 +1,10 @@
 import functools
 from typing import Annotated, Any, Optional
 
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
+from pydantic_core import ValidationError
 from pydantic_async_validation import AsyncValidationModelMixin, async_field_validator
 
 import api.score_types as score_types
@@ -13,6 +15,14 @@ import api.score_types as score_types
 # It is deliberately distinct from any OFF taxonomy id (``en:...`` / ``xx:...``)
 # so it cannot be confused with a real unit.
 ITEM_UNIT = "item"
+
+
+class AsyncRequestValidationError(RequestValidationError):
+    """Custom exception to distinguish async validation errors from sync ones.
+
+    This is used to return a 422 response with a different error message
+    when the request body fails async validation (e.g. language code not supported).
+    """
 
 
 def async_validate_model(fn):
@@ -27,7 +37,11 @@ def async_validate_model(fn):
     async def wrapper(*args, **kwargs):
         for arg in list(args) + list(kwargs.values()):
             if isinstance(arg, AsyncValidationModelMixin):
-                await arg.model_async_validate()
+                try:
+                    await arg.model_async_validate()
+                except ValidationError as e:
+                    # encapsulate so that we can use a specific exception handler
+                    raise AsyncRequestValidationError(e.errors()) from e
         return await fn(*args, **kwargs)
 
     return wrapper
