@@ -18,6 +18,7 @@ import api.score as score
 import api.types as types
 import api.units as units
 
+
 app = FastAPI(
     title="Score My Recipe",
     description="A tool to compute Green-Score of recipes.",
@@ -25,9 +26,9 @@ app = FastAPI(
 )
 
 
-@app.exception_handler(types.AsyncRequestValidationError)
+@app.exception_handler(exceptions.AsyncRequestValidationError)
 async def async_validation_exception_handler(
-    request: Request, exc: types.AsyncRequestValidationError
+    request: Request, exc: exceptions.AsyncRequestValidationError
 ) -> JSONResponse:
     """Convert async model validation errors into HTTP 422 responses.
 

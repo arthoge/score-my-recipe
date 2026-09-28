@@ -1,6 +1,6 @@
 """Domain-specific exceptions for the recipes business logic."""
 
-import api.types as types
+from fastapi.exceptions import RequestValidationError
 
 
 class UnknownUnitError(Exception):
@@ -13,4 +13,12 @@ class UnitConversionNotSupportedError(Exception):
     Covers unit changes that would require calling the Open Food Facts parse
     API (e.g. volume <-> mass, switching to a countable unit, or
     cross-multiplying from a zero old value).
+    """
+
+
+class AsyncRequestValidationError(RequestValidationError):
+    """Custom exception to distinguish async validation errors from sync ones.
+
+    This is used to return a 422 response with a different error message
+    when the request body fails async validation (e.g. language code not supported).
     """
