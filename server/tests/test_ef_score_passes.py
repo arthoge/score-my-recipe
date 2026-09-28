@@ -4,7 +4,7 @@ import pytest
 
 from api.score_data import DEFAULT_DISTANCE_MODIFIER
 from api import score
-from api.score_types import IngredientMetrics, AccountedWeights
+from api.score_types import IngredientMetrics, AccountedWeights, RecipeMetrics
 from tests.helpers import (
     WORLD_EPI_MODIFIER,
     create_taxonomy,
@@ -29,15 +29,15 @@ async def test_gather_marks_missing_ingredient(agribalyse_index):
         }
     )
     with patch_ingredients_taxonomy(taxonomy):
-        metrics = await score.gather_ef_metrics(
+        recipe_metrics = await score.gather_ef_metrics(
             [
                 build_ingredient_obj("i_apple", "apple", "en:apple", weight=100),
                 build_ingredient_obj("i_water", "water", "en:water", weight=50),
             ]
         )
-    assert len(metrics) == 2
-    apple = next(m for m in metrics if m.id == "i_apple")
-    water = next(m for m in metrics if m.id == "i_water")
+    assert len(recipe_metrics.metrics) == 2
+    apple = next(m for m in recipe_metrics.metrics if m.id == "i_apple")
+    water = next(m for m in recipe_metrics.metrics if m.id == "i_water")
     assert apple.ef_score == pytest.approx(0.3)
     assert apple.missing is False
     assert water.ef_score is None
@@ -66,34 +66,40 @@ def test_compute_ratios_scorable_denominator():
 
     apple: 100g * 0.3 = 30, pear: 300g * 0.5 = 150  -> ef 180 / 400 = 0.45
     """
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, ef_score=0.3),
-        IngredientMetrics(id="i2", weight=300, ef_score=0.5),
-    ]
-    score.compute_ratios(metrics)
-    assert metrics[0].ratio == pytest.approx(100 / 400)
-    assert metrics[1].ratio == pytest.approx(300 / 400)
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, ef_score=0.3),
+            IngredientMetrics(id="i2", weight=300, ef_score=0.5),
+        ]
+    )
+    score.compute_ratios(recipe_metrics)
+    assert recipe_metrics.metrics[0].ratio == pytest.approx(100 / 400)
+    assert recipe_metrics.metrics[1].ratio == pytest.approx(300 / 400)
 
 
 def test_compute_ratios_missing_keeps_none_ratio():
     """A missing ingredient keeps a None ratio"""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, ef_score=0.3),
-        IngredientMetrics(id="i2", weight=50, ef_score=None, missing=True),
-    ]
-    score.compute_ratios(metrics)
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, ef_score=0.3),
+            IngredientMetrics(id="i2", weight=50, ef_score=None, missing=True),
+        ]
+    )
+    score.compute_ratios(recipe_metrics)
     # scorable denominator = 100 (water excluded)
-    assert metrics[0].ratio == pytest.approx(1.0)
-    assert metrics[1].ratio is None
+    assert recipe_metrics.metrics[0].ratio == pytest.approx(1.0)
+    assert recipe_metrics.metrics[1].ratio is None
 
 
 def test_compute_ratios_zero_denominator_leaves_none():
     """When no ingredient is scorable, ratios stay None."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, ef_score=None, missing=True),
-    ]
-    score.compute_ratios(metrics)
-    assert metrics[0].ratio is None
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, ef_score=None, missing=True),
+        ]
+    )
+    score.compute_ratios(recipe_metrics)
+    assert recipe_metrics.metrics[0].ratio is None
 
 
 # --- compute_ratios (total denominator) -------------------------------------
@@ -105,13 +111,15 @@ def test_compute_ratios_total_denominator_dilutes():
     apple 100g (ef 0.3), water 100g (missing) -> denominator 200.
     apple ratio = 0.5, contribution = 0.15 -> recipe ef = 0.15 (diluted from 0.3).
     """
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, ef_score=0.3),
-        IngredientMetrics(id="i2", weight=100, ef_score=None, missing=True),
-    ]
-    score.compute_ratios(metrics, ratio_mode=AccountedWeights.ALL_WEIGHTS)
-    assert metrics[0].ratio == pytest.approx(100 / 200)
-    assert metrics[1].ratio is None
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, ef_score=0.3),
+            IngredientMetrics(id="i2", weight=100, ef_score=None, missing=True),
+        ]
+    )
+    score.compute_ratios(recipe_metrics, ratio_mode=AccountedWeights.ALL_WEIGHTS)
+    assert recipe_metrics.metrics[0].ratio == pytest.approx(100 / 200)
+    assert recipe_metrics.metrics[1].ratio is None
 
 
 # --- ponderated_ef_sum ------------------------------------------------------
@@ -119,19 +127,23 @@ def test_compute_ratios_total_denominator_dilutes():
 
 def test_ponderated_sum_sums_contributions():
     """The ponderated sum is the sum of per-ingredient contributions."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, ef_score=0.3, ratio=0.25),
-        IngredientMetrics(id="i2", weight=300, ef_score=0.5, ratio=0.75),
-    ]
-    assert score.ponderated_ef_sum(metrics) == pytest.approx(0.45)
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, ef_score=0.3, ratio=0.25),
+            IngredientMetrics(id="i2", weight=300, ef_score=0.5, ratio=0.75),
+        ]
+    )
+    assert score.ponderated_ef_sum(recipe_metrics) == pytest.approx(0.45)
 
 
 def test_ponderated_sum_returns_none_when_all_missing():
     """No contribution yields None."""
-    metrics = [
-        IngredientMetrics(id="i1", weight=100, ef_score=None, missing=True),
-    ]
-    assert score.ponderated_ef_sum(metrics) is None
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(id="i1", weight=100, ef_score=None, missing=True),
+        ]
+    )
+    assert score.ponderated_ef_sum(recipe_metrics) is None
 
 
 # --- compute_green_score with accounted_weights ------------------------------

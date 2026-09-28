@@ -17,11 +17,14 @@ import api.types as types
 logger = logging.getLogger(__name__)
 
 
-def safe_zip_recipe_metrics(recipe: types.RecipeInput, metrics: score_types.RecipeMetrics):
+def safe_zip_recipe_metrics(
+    recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics
+):
     """Zip a recipe and its metrics, checking that they have the same ingredient ids at each line.
 
     Raises a ValueError if the lengths differ or some ingredients does not match.
     """
+    metrics = recipe_metrics.metrics
     if len(recipe) != len(metrics):
         raise ValueError(
             f"Recipe and metrics have different lengths: {len(recipe)} vs {len(metrics)}"
@@ -69,7 +72,7 @@ async def gather_ef_metrics(
     tolerated (it does not perturb the computation).
     """
     ingredients_agribalyse = await match_ingredients_to_agribalyse(recipe)
-    metrics: score_types.RecipeMetrics = []
+    metrics: list[score_types.IngredientMetrics] = []
     for ingredient in recipe:
         if ingredient.weight < 0:
             raise ValueError(
@@ -89,11 +92,11 @@ async def gather_ef_metrics(
                 missing=missing,
             )
         )
-    return metrics
+    return score_types.RecipeMetrics(metrics=metrics)
 
 
 def compute_ratios(
-    metrics: score_types.RecipeMetrics,
+    recipe_metrics: score_types.RecipeMetrics,
     ratio_mode: score_types.AccountedWeights = score_types.AccountedWeights.ONLY_SCORABLE,
 ) -> None:
     """Compute each ingredient's weight ratio and EF contribution.
@@ -104,6 +107,7 @@ def compute_ratios(
     denominator is zero (no scorable ingredient / empty recipe), all ratios
     stay ``None``.
     """
+    metrics = recipe_metrics.metrics
     if ratio_mode == score_types.AccountedWeights.ALL_WEIGHTS:
         total_weight = sum(m.weight for m in metrics)
     else:
@@ -119,7 +123,7 @@ def compute_ratios(
 
 
 def ponderated_ef_sum(
-    metrics: score_types.RecipeMetrics,
+    recipe_metrics: score_types.RecipeMetrics,
 ) -> Optional[float]:
     """Third pass: sum the per-ingredient EF contributions into the recipe EF score.
 
@@ -128,7 +132,7 @@ def ponderated_ef_sum(
     """
     total = 0.0
     has_contribution = False
-    for m in metrics:
+    for m in recipe_metrics.metrics:
         if m.ratio is not None and m.ef_score is not None:
             total += m.ef_score * m.ratio
             has_contribution = True
@@ -192,7 +196,7 @@ async def labels_bonus_ingredients_restrictions_full() -> dict[str, list[str]]:
 
 
 async def gather_labels_bonus(
-    recipe: types.RecipeInput, metrics: score_types.RecipeMetrics
+    recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics
 ) -> None:
     """Gather the bonus points from labels for the recipe.
 
@@ -200,7 +204,7 @@ async def gather_labels_bonus(
     """
     labels_bonus = await labels_bonus_full()
     labels_restrictions = await labels_bonus_ingredients_restrictions_full()
-    for ingredient, metric in safe_zip_recipe_metrics(recipe, metrics):
+    for ingredient, metric in safe_zip_recipe_metrics(recipe, recipe_metrics):
         if metric.missing or not ingredient.labels:
             continue
         # filter some labels based on the ingredient type, if needed
@@ -223,13 +227,13 @@ async def gather_labels_bonus(
             metric.labels_bonus = max_bonus
 
 
-async def gather_epi_modifiers(recipe: types.RecipeInput, metrics: score_types.RecipeMetrics):
+async def gather_epi_modifiers(recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics):
     """Gather the EPI bonus/malus points from origins for the recipe.
 
     No origins is equivalent to world, that is the worst case.
     """
     epi_modifiers = await score_data.get_epi_modifiers()
-    for ingredient, metric in safe_zip_recipe_metrics(recipe, metrics):
+    for ingredient, metric in safe_zip_recipe_metrics(recipe, recipe_metrics):
         if metric.missing:
             continue
         if not ingredient.origin:
@@ -244,7 +248,7 @@ async def gather_epi_modifiers(recipe: types.RecipeInput, metrics: score_types.R
 
 
 async def gather_distances_modifiers(
-    recipe: types.RecipeInput, metrics: score_types.RecipeMetrics, country: Optional[str] = None
+    recipe: types.RecipeInput, recipe_metrics: score_types.RecipeMetrics, country: Optional[str] = None
 ):
     """Gather the distance bonus/malus points from origins for the recipe.
 
@@ -255,7 +259,7 @@ async def gather_distances_modifiers(
     origin_to_country_origin = await off.origin_to_country_origin()
     country_id = origins_by_country.get(country.upper()) if country else None
     distances_modifiers = await score_data.get_distances_modifiers()
-    for ingredient, metric in safe_zip_recipe_metrics(recipe, metrics):
+    for ingredient, metric in safe_zip_recipe_metrics(recipe, recipe_metrics):
         if metric.missing:
             continue
         elif not country_id:
@@ -281,40 +285,40 @@ async def gather_distances_modifiers(
         metric.distance_modifier = modifier
 
 
-def global_labels_bonus(metrics: score_types.RecipeMetrics) -> float:
+def global_labels_bonus(recipe_metrics: score_types.RecipeMetrics) -> float:
     """Compute the global labels bonus for the recipe.
 
     The global bonus is the weighted average of the per-ingredient bonuses.
     """
     bonuses = [
         m.labels_bonus * m.ratio
-        for m in metrics
+        for m in recipe_metrics.metrics
         if m.labels_bonus is not None and m.ratio is not None
     ]
     return sum(bonuses) if bonuses else 0.0
 
 
-def global_epi_modifier(metrics: score_types.RecipeMetrics) -> Optional[float]:
+def global_epi_modifier(recipe_metrics: score_types.RecipeMetrics) -> Optional[float]:
     """Compute the global EPI modifier for the recipe.
 
     The global modifier is the weighted average of the per-ingredient modifiers.
     """
     modifiers = [
         m.epi_modifier * m.ratio
-        for m in metrics
+        for m in recipe_metrics.metrics
         if m.epi_modifier is not None and m.ratio is not None
     ]
     return sum(modifiers) if modifiers else None
 
 
-def global_distance_modifier(metrics: score_types.RecipeMetrics) -> Optional[float]:
+def global_distance_modifier(recipe_metrics: score_types.RecipeMetrics) -> Optional[float]:
     """Compute the global distance modifier for the recipe.
 
     The global modifier is the weighted average of the per-ingredient modifiers.
     """
     modifiers = [
         m.distance_modifier * m.ratio
-        for m in metrics
+        for m in recipe_metrics.metrics
         if m.distance_modifier is not None and m.ratio is not None
     ]
     return sum(modifiers) if modifiers else None
@@ -375,19 +379,19 @@ async def compute_green_score(
     """
     # TODO handle exceptions
     # compute the EF score for the recipe
-    metrics = await gather_ef_metrics(recipe)
-    compute_ratios(metrics, accounted_weights)
-    await gather_labels_bonus(recipe, metrics)
-    await gather_epi_modifiers(recipe, metrics)
-    await gather_distances_modifiers(recipe, metrics, country)
-    ef_score = ponderated_ef_sum(metrics)
-    missing_ingredient_ids = [m.id for m in metrics if m.missing]
+    recipe_metrics = await gather_ef_metrics(recipe)
+    compute_ratios(recipe_metrics, accounted_weights)
+    await gather_labels_bonus(recipe, recipe_metrics)
+    await gather_epi_modifiers(recipe, recipe_metrics)
+    await gather_distances_modifiers(recipe, recipe_metrics, country)
+    ef_score = ponderated_ef_sum(recipe_metrics)
+    missing_ingredient_ids = [m.id for m in recipe_metrics.metrics if m.missing]
     if ef_score is not None:
         normalized_ef_score = normalize_ef_score(ef_score)
         # account for bonus / malus
-        labels_bonus = global_labels_bonus(metrics)
-        epi_modifier = global_epi_modifier(metrics)
-        distances_modifier = global_distance_modifier(metrics)
+        labels_bonus = global_labels_bonus(recipe_metrics)
+        epi_modifier = global_epi_modifier(recipe_metrics)
+        distances_modifier = global_distance_modifier(recipe_metrics)
         seasonality_modifier = global_seasonality_modifier(recipe)
         # TODO account for packaging, origins and seasonality in the green-score computation
         numeric_score = (
