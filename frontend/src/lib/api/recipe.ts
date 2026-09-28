@@ -74,8 +74,7 @@ export function apiIngredientToIngredient(apiIngredient: RecipeIngredient): Ingr
 		? { id: apiIngredient.origins, label: apiIngredient.origins, isInTaxonomy: true }
 		: null;
 
-	
-	const labels: TaxonomyItem[] = (apiIngredient.labels ?? []).map(label => ({
+	const labels: TaxonomyItem[] = (apiIngredient.labels ?? []).map((label) => ({
 		id: label,
 		label: label,
 		isInTaxonomy: true
@@ -87,8 +86,9 @@ export function apiIngredientToIngredient(apiIngredient: RecipeIngredient): Ingr
 		weight: apiIngredient.quantity_g ?? null,
 		codifiedIngredient: taxonomyItem,
 		labels,
-		seasonality: false,
-		origin
+		origin,
+		isFreshPlant: false,
+		isInSeason: false
 	};
 }
 
@@ -126,7 +126,8 @@ export function ingredientToGreenScoreInput(
 		weight: ingredient.weight ?? 0,
 		codifiedIngredient,
 		labels: ingredient.labels,
-		seasonality: ingredient.seasonality,
+		isFreshPlant: ingredient.isFreshPlant,
+		isInSeason: ingredient.isInSeason,
 		origin: ingredient.origin
 	};
 }

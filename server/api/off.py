@@ -42,7 +42,7 @@ async def parse_text(text: str, lang: str) -> list[OFFIngredient]:
     #         "cc": "fr",
     #         "fields": "ingredients",
     #         "product": {
-    #         "ingredients_text_fr": "patates bio et vegan de france (2kg), tomates (argentine et pérou) (1kg), persil"
+    #         "ingredients_text_fr": "2 œuf, 2kg de patates bio et vegan de france, 300ml de lait, 20g de tomate concentrée, persil"
     #         }
     #     }'
     # ```
@@ -95,6 +95,35 @@ async def get_ingredients_taxonomy() -> taxonomy.Taxonomy:
         cache_dir=get_settings().cache_dir,
     )
     return ingredients_taxonomy
+
+
+@async_cache(maxsize=1)
+async def get_units_taxonomy() -> taxonomy.Taxonomy:
+    """Get the units taxonomy from Open Food Facts API.
+
+    The units taxonomy is not (yet) exposed as a ``TaxonomyType`` by the
+    openfoodfacts SDK, so we download and cache it manually, reusing the same
+    download/cache helpers as :func:`taxonomy.get_taxonomy`.
+    """
+    from openfoodfacts import Flavor
+    from openfoodfacts.utils import URLBuilder, download_file, should_download_file
+
+    environment = off_env_setting(get_settings().openfoodfacts_env)
+    url = f"{URLBuilder.static(Flavor.off, environment)}/data/taxonomies/units.full.json"
+    cache_dir = get_settings().cache_dir
+    taxonomy_path = cache_dir / "off-unit.json"
+
+    def _load_or_download() -> taxonomy.Taxonomy:
+        # Reuse the SDK caching logic: only (re)download when the cached file
+        # is missing (we keep download_newer=False for parity with the other
+        # taxonomy fetchers and to avoid a HEAD request on every call).
+        if not should_download_file(url, taxonomy_path, force_download=False, download_newer=False):
+            return taxonomy.Taxonomy.from_path(taxonomy_path)
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        download_file(url, taxonomy_path)
+        return taxonomy.Taxonomy.from_path(taxonomy_path)
+
+    return await asyncio.to_thread(_load_or_download)
 
 
 async def get_labels_taxonomy() -> taxonomy.Taxonomy:

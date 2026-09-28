@@ -1,11 +1,13 @@
 """Shared helpers and mocks for the green-score test suite."""
 
 from contextlib import contextmanager
+from typing import Iterable
 from unittest.mock import AsyncMock, patch
 
 from openfoodfacts.taxonomy import Taxonomy, TaxonomyNode
 
 from api import types
+from api.lang import two_letter_lang_code
 
 
 # useful constant when computing scores without origins
@@ -13,6 +15,29 @@ WORLD_EPI_MODIFIER = -3.0
 
 # useful constant when computing scores for France distance
 FRANCE_DISTANCE_MODIFIER = 3
+
+
+@contextmanager
+def patch_language_check(valid_codes: Iterable[str] = ("en", "fr", "es", "it", "de")):
+    """Patch ``api.checks.check_language_code`` to accept the given 2-letter codes.
+
+    Mirrors the production check (which normalizes the code to its 2-letter form
+    before looking it up in the OFF languages taxonomy) without hitting the
+    network: a code is valid iff its normalized 2-letter form is in
+    ``valid_codes``. This lets tests control which languages are accepted (and
+    reject ``"zz"``) deterministically.
+    """
+    valid = set(valid_codes)
+
+    async def check_language_code(lang: str) -> bool:
+        return two_letter_lang_code(lang) in valid
+
+    with patch(
+        "api.checks.check_language_code",
+        new_callable=AsyncMock,
+        side_effect=check_language_code,
+    ) as mock:
+        yield mock
 
 
 @contextmanager
@@ -146,7 +171,8 @@ def build_ingredient_dict(
             {"id": taxonomy_id, "label": name, "isInTaxonomy": True} if taxonomy_id else None
         ),
         "labels": [{"id": lid, "label": lid, "isInTaxonomy": True} for lid in (labels or [])],
-        "seasonality": False,
+        "isInSeason": False,
+        "isFreshPlant": False,
         "origin": None,
     }
 
@@ -163,10 +189,15 @@ def build_ingredient_obj(
     weight: float = 100.0,
     labels: list[str] | None = None,
     origin: str | None = None,
+    is_fresh_plant: bool = False,
+    is_in_season: bool = False,
 ) -> types.RecipeIngredientInput:
     """Build a ``RecipeIngredientInput`` with a codified ingredient.
 
     :param origin: optional origin taxonomy id (e.g. ``"en:france"``)
+    :param is_fresh_plant: whether the ingredient is a fresh fruit/vegetable
+    :param is_in_season: whether the ingredient is in season (only meaningful
+        when ``is_fresh_plant`` is true)
     """
     return types.RecipeIngredientInput(
         id=id_,
@@ -174,5 +205,7 @@ def build_ingredient_obj(
         weight=weight,
         codified_ingredient=types.TaxonomyItem(id=taxonomy_id, label=name, is_in_taxonomy=True),
         labels=[build_label_obj(lid) for lid in (labels or [])],
+        is_fresh_plant=is_fresh_plant,
+        is_in_season=is_in_season,
         origin=build_origin_obj(origin) if origin else None,
     )

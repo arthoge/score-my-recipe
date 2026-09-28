@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 import openfoodfacts.taxonomy as taxonomy
 
 from api.api import app
-from tests.helpers import patch_ingredients_taxonomy
+from tests.helpers import patch_ingredients_taxonomy, patch_language_check
 
 client = TestClient(app)
 
@@ -27,7 +27,7 @@ def test_api_returns_alternatives(agribalyse_index):
         },
     }
     tax = build_taxonomy(data)
-    with patch_ingredients_taxonomy(tax):
+    with patch_ingredients_taxonomy(tax), patch_language_check():
         response = client.get(
             "/v1/suggest-scored-ingredient",
             params={"lang": "en", "taxonomy_id": "en:fruit"},
@@ -50,7 +50,7 @@ def test_api_include_synonyms(agribalyse_index):
         },
     }
     tax = build_taxonomy(data)
-    with patch_ingredients_taxonomy(tax):
+    with patch_ingredients_taxonomy(tax), patch_language_check():
         response = client.get(
             "/v1/suggest-scored-ingredient",
             params={"lang": "en", "taxonomy_id": "en:fruit", "include_synonyms": "true"},
@@ -62,7 +62,7 @@ def test_api_include_synonyms(agribalyse_index):
 
 def test_api_unknown_taxonomy_id_returns_empty(agribalyse_index):
     """An unknown taxonomy id yields an empty list, not an error."""
-    with patch_ingredients_taxonomy(build_taxonomy({})):
+    with patch_ingredients_taxonomy(build_taxonomy({})), patch_language_check():
         response = client.get(
             "/v1/suggest-scored-ingredient",
             params={"lang": "en", "taxonomy_id": "en:missing"},
@@ -74,10 +74,20 @@ def test_api_unknown_taxonomy_id_returns_empty(agribalyse_index):
 def test_api_no_match_returns_empty(agribalyse_index):
     """A taxonomy id with no Agribalyse match in its subtree yields an empty list."""
     data = {"en:water": {"name": {"en": "Water"}}}
-    with patch_ingredients_taxonomy(build_taxonomy(data)):
+    with patch_ingredients_taxonomy(build_taxonomy(data)), patch_language_check():
         response = client.get(
             "/v1/suggest-scored-ingredient",
             params={"lang": "en", "taxonomy_id": "en:water"},
         )
     assert response.status_code == 200
     assert response.json()["ingredients"] == []
+
+
+def test_api_invalid_language_returns_422(agribalyse_index):
+    """An unsupported language code (lang=zz) is rejected with HTTP 422."""
+    with patch_ingredients_taxonomy(build_taxonomy({})), patch_language_check():
+        response = client.get(
+            "/v1/suggest-scored-ingredient",
+            params={"lang": "zz", "taxonomy_id": "en:fruit"},
+        )
+    assert response.status_code == 422

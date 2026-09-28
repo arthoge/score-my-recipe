@@ -2,7 +2,7 @@
   IngredientLine.svelte
   
   A single row component representing one ingredient in the recipe editor.
-  Contains fields for: name, weight, codified ingredient, labels, seasonality, origin, and delete action.
+  Contains fields for: name, weight, codified ingredient, labels, fresh plant + seasonality, origin, and delete action.
   
   Props:
   - ingredient: The ingredient data object (bindable - changes propagate to parent)
@@ -17,6 +17,8 @@
 	import Tags from './Tags.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
 	import IconMdiAlertCircle from '@iconify-svelte/mdi/alert-circle';
+	import IconMaterialSymbolsSunnyOutline from '@iconify-svelte/material-symbols/sunny-outline';
+	import IconMaterialSymbolsCloudOutline from '@iconify-svelte/material-symbols/cloud-outline';
 	import type { Ingredient } from '$lib/types/ingredient';
 	import { isIngredientEmpty, isIngredientNotEmpty } from '$lib/types/ingredient';
 
@@ -60,6 +62,19 @@
 	 */
 	function handleDelete() {
 		onDelete?.(ingredient.id);
+	}
+
+	/**
+	 * Toggle the "fresh fruit or vegetable" flag.
+	 *
+	 * When the ingredient is no longer a fresh plant, seasonality is reset to
+	 * off-season (`false`): the seasonal state is meaningless without it.
+	 */
+	function toggleFreshPlant() {
+		ingredient.isFreshPlant = !ingredient.isFreshPlant;
+		if (!ingredient.isFreshPlant) {
+			ingredient.isInSeason = false;
+		}
 	}
 </script>
 
@@ -128,21 +143,51 @@
 		<Tags tagtype="labels" bind:tags={ingredient.labels} />
 	</div>
 
-	<!-- Seasonality -->
-	<div class="flex w-20 flex-col">
-		<label class="label py-1" for="ingredient-seasonality-{ingredient.id}">
-			<span class="label-text text-xs" id="ingredient-seasonality-label-{ingredient.id}"
-				>{$_('recipe.seasonality', { default: 'Seasonal' })}</span
+	<!-- Fresh fruit/vegetable + seasonality -->
+	<div class="flex w-48 flex-col">
+		<label class="label py-1" for="ingredient-fresh-{ingredient.id}">
+			<span class="label-text text-xs" id="ingredient-fresh-label-{ingredient.id}"
+				>{$_('recipe.fresh_plant', { default: 'Fresh fruit/veg' })}</span
 			>
 		</label>
-		<div class="flex h-10 items-center">
+		<div class="flex min-h-10 items-center gap-2">
 			<input
-				id="ingredient-seasonality-{ingredient.id}"
+				id="ingredient-fresh-{ingredient.id}"
 				type="checkbox"
 				class="checkbox checkbox-primary"
-				bind:checked={ingredient.seasonality}
-				aria-labelledby="ingredient-seasonality-label-{ingredient.id}"
+				checked={ingredient.isFreshPlant}
+				onchange={toggleFreshPlant}
+				aria-labelledby="ingredient-fresh-label-{ingredient.id}"
 			/>
+			{#if ingredient.isFreshPlant}
+				<!-- Vertical selector: off-season (default, top) / in-season (bottom) -->
+				<div
+					class="join join-vertical"
+					role="group"
+					aria-label={$_('recipe.seasonality', { default: 'Seasonality' })}
+				>
+					<button
+						type="button"
+						class="btn btn-xs join-item"
+						class:btn-active={!ingredient.isInSeason}
+						aria-pressed={!ingredient.isInSeason}
+						onclick={() => (ingredient.isInSeason = false)}
+					>
+						<IconMaterialSymbolsCloudOutline class="h-4 w-4" aria-hidden="true" />
+						{$_('recipe.off_season', { default: 'Off season' })}
+					</button>
+					<button
+						type="button"
+						class="btn btn-xs join-item"
+						class:btn-active={ingredient.isInSeason}
+						aria-pressed={ingredient.isInSeason}
+						onclick={() => (ingredient.isInSeason = true)}
+					>
+						<IconMaterialSymbolsSunnyOutline class="h-4 w-4" aria-hidden="true" />
+						{$_('recipe.in_season', { default: 'In season' })}
+					</button>
+				</div>
+			{/if}
 		</div>
 	</div>
 

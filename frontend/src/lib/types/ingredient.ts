@@ -48,8 +48,10 @@ export interface Ingredient {
 	codifiedIngredient: IngredientType | null;
 	/** List of labels (e.g., organic, fair-trade) */
 	labels: Label[];
-	/** Whether the ingredient is seasonal */
-	seasonality: boolean;
+	/** Whether the ingredient is a fresh fruit or vegetable (gates `isInSeason`) */
+	isFreshPlant: boolean;
+	/** Whether the ingredient is in season (only meaningful when `isFreshPlant` is true) */
+	isInSeason: boolean;
 	/** Origin countries/regions */
 	origin: Origin | null;
 }
@@ -73,7 +75,8 @@ export function createEmptyIngredient(): Ingredient {
 		weight: null,
 		codifiedIngredient: null,
 		labels: [],
-		seasonality: false,
+		isFreshPlant: false,
+		isInSeason: false,
 		origin: null
 	};
 }
@@ -84,7 +87,8 @@ export function createEmptyIngredient(): Ingredient {
  * @returns True if the ingredient has no name
  */
 export function isIngredientEmpty(ingredient: Ingredient): boolean {
-	// only seasonality cannot be checked
+	// isFreshPlant and isInSeason are default-false flags that don't make a
+	// line "non-empty", so they are excluded from the emptiness check.
 	return (
 		ingredient.name.trim() === '' &&
 		ingredient.weight === null &&
@@ -113,5 +117,5 @@ export function isIngredientNotEmpty(ingredient: Ingredient): boolean {
  * @returns A string uniquely identifying the ingredient's relevant content.
  */
 export function ingredientSignature(ingredient: Ingredient): string {
-	return `${ingredient.id}:${ingredient.name}:${ingredient.weight ?? ''}:${ingredient.codifiedIngredient?.id ?? ''}:${ingredient.seasonality}:${ingredient.origin?.id ?? ''}:${ingredient.labels.map((l) => l.id).join(',')}`;
+	return `${ingredient.id}:${ingredient.name}:${ingredient.weight ?? ''}:${ingredient.codifiedIngredient?.id ?? ''}:${ingredient.isFreshPlant}:${ingredient.isInSeason}:${ingredient.origin?.id ?? ''}:${ingredient.labels.map((l) => l.id).join(',')}`;
 }

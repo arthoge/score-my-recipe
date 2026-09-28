@@ -301,6 +301,60 @@
         }
       }
     },
+    "/v1/units": {
+      "get": {
+        "summary": "Get Units",
+        "description": "Get the list of units available in the Open Food Facts units taxonomy\n\nNote: as the list is not too big, we let clients handle suggestions to users",
+        "operationId": "get_units_v1_units_get",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Language for the request (2 or 5 letter code)",
+              "title": "Lang"
+            },
+            "description": "Language for the request (2 or 5 letter code)"
+          },
+          {
+            "name": "include_synonyms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, include the synonyms of each item in the response.",
+              "default": false,
+              "title": "Include Synonyms"
+            },
+            "description": "If true, include the synonyms of each item in the response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/suggest-scored-ingredient": {
       "get": {
         "summary": "Suggest Scored Ingredient",
@@ -388,6 +442,45 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GreenScoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recompute-quantity": {
+      "post": {
+        "summary": "Recompute Quantity",
+        "description": "Recompute the quantity in grams after the user edited an ingredient's value/unit.\n\nThis is useful to let user change the value of a recipe item in a natural fashion\n(eg. change 1 egg to 3 eggs)\nwhile keeping the equivalent \"g\" conversion for green-score computation.\n\nA best effort is done to also allow changing the unit,\nbut currently, only new units that can be converted to grams are supported.\n\nUnits may be given as a taxonomy id, a localized unit name (resolved using\n``lang``) or the ``item`` sentinel for countable ingredients.",
+        "operationId": "recompute_quantity_v1_recompute_quantity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecomputeQuantityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecomputeQuantityResponse"
                 }
               }
             }
@@ -551,9 +644,9 @@
                   "label": "Apple"
                 },
                 "id": "i1",
+                "isInSeason": false,
                 "labels": [],
                 "name": "apple",
-                "seasonality": false,
                 "weight": 150
               },
               {
@@ -563,9 +656,9 @@
                   "label": "Wheat flour"
                 },
                 "id": "i2",
+                "isInSeason": false,
                 "labels": [],
                 "name": "wheat flour",
-                "seasonality": false,
                 "weight": 200
               }
             ]
@@ -622,6 +715,18 @@
             "title": "Distancesmodifier",
             "description": "The modifier from ingredient origin distance, null if no ingredients have a score"
           },
+          "seasonalityModifier": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seasonalitymodifier",
+            "description": "The modifier from ingredient seasonality, null if no ingredients have a score"
+          },
           "numericScore": {
             "anyOf": [
               {
@@ -654,6 +759,39 @@
             "title": "Missingingredientids",
             "description": "List of ingredient ids that were missing from the Agribalyse computation",
             "default": []
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Notes about the recipe-level score computation (e.g. seasonality), null when no ingredients have a score"
+          },
+          "ingredientsNotes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredientsnotes",
+            "description": "Per-ingredient notes keyed by ingredient id, only entries with at least one note are included, null if no ingredients have a score"
           }
         },
         "type": "object",
@@ -925,15 +1063,18 @@
                 "type": "null"
               }
             ],
-            "title": "Taxonomy Id"
+            "title": "Taxonomy Id",
+            "description": "Taxonomy id of the ingredient"
           },
           "is_in_taxonomy": {
             "type": "boolean",
-            "title": "Is In Taxonomy"
+            "title": "Is In Taxonomy",
+            "description": "Whether the ingredient is in the taxonomy"
           },
           "codified_ingredient": {
             "type": "string",
-            "title": "Codified Ingredient"
+            "title": "Codified Ingredient",
+            "description": "Codified ingredient name"
           },
           "quantity_g": {
             "anyOf": [
@@ -944,7 +1085,74 @@
                 "type": "null"
               }
             ],
-            "title": "Quantity G"
+            "title": "Quantity G",
+            "description": "Quantity in grams"
+          },
+          "origins": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origins",
+            "description": "Origins of the ingredient"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels",
+            "description": "Labels of the ingredient"
+          },
+          "quantity_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Value",
+            "description": "Numeric value of the quantity"
+          },
+          "quantity_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Unit",
+            "description": "Unit of the quantity"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Notes about the ingredient"
           }
         },
         "type": "object",
@@ -958,7 +1166,13 @@
           {
             "codified_ingredient": "apple",
             "is_in_taxonomy": true,
+            "labels": [
+              "en:organic"
+            ],
+            "origins": "en:france",
             "quantity_g": 150.0,
+            "quantity_unit": "kg",
+            "quantity_value": 0.15,
             "taxonomy_id": "en:apple"
           }
         ]
@@ -993,10 +1207,16 @@
             "description": "Labels / certifications (organic, fair-trade...)",
             "default": []
           },
-          "seasonality": {
+          "isFreshPlant": {
             "type": "boolean",
-            "title": "Seasonality",
-            "description": "Whether the ingredient is seasonal",
+            "title": "Isfreshplant",
+            "description": "Whether the ingredient is a fresh plant",
+            "default": false
+          },
+          "isInSeason": {
+            "type": "boolean",
+            "title": "Isinseason",
+            "description": "Whether the ingredient is in season",
             "default": false
           },
           "origin": {
@@ -1028,6 +1248,7 @@
               "label": "Apple"
             },
             "id": "i1",
+            "isInSeason": false,
             "labels": [
               {
                 "id": "en:eu-organic",
@@ -1041,7 +1262,6 @@
               "isInTaxonomy": true,
               "label": "France"
             },
-            "seasonality": false,
             "weight": 150
           }
         ]
@@ -1104,6 +1324,98 @@
                 "taxonomy_id": "en:wheat-flour"
               }
             ]
+          }
+        ]
+      },
+      "RecomputeQuantityRequest": {
+        "properties": {
+          "lang": {
+            "type": "string",
+            "title": "Lang",
+            "description": "Language for the request (2 or 5 letter code)"
+          },
+          "quantityG": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Quantityg",
+            "description": "Previous quantity in grams"
+          },
+          "oldValue": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Oldvalue",
+            "description": "Previous numeric value of the quantity"
+          },
+          "oldUnit": {
+            "type": "string",
+            "title": "Oldunit",
+            "description": "Previous unit (unit name, taxonomy id or 'item')"
+          },
+          "newValue": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Newvalue",
+            "description": "New numeric value of the quantity"
+          },
+          "newUnit": {
+            "type": "string",
+            "title": "Newunit",
+            "description": "New unit (unit name, taxonomy id or 'item')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lang",
+          "quantityG",
+          "oldValue",
+          "oldUnit",
+          "newValue",
+          "newUnit"
+        ],
+        "title": "RecomputeQuantityRequest",
+        "description": "Request body for the ``POST /v1/recompute-quantity`` endpoint.\n\nEach unit (``old_unit`` / ``new_unit``) may be given either as a unit id\nfrom the OFF units taxonomy (e.g. ``xx:kg``), as a localized unit name\nresolvable through the units taxonomy (e.g. ``\"kg\"``, ``\"tasse\"``), or as\nthe ``item`` sentinel for countable ingredients (e.g. \"1 egg\").",
+        "examples": [
+          {
+            "lang": "en",
+            "new_unit": "kg",
+            "new_value": 2,
+            "old_unit": "g",
+            "old_value": 2000,
+            "quantity_g": 2000
+          }
+        ]
+      },
+      "RecomputeQuantityResponse": {
+        "properties": {
+          "quantityG": {
+            "type": "number",
+            "title": "Quantityg",
+            "description": "New quantity in grams"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "description": "New numeric value of the quantity"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "description": "New unit, echoed from the request (unit name, taxonomy id or 'item')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantityG",
+          "value",
+          "unit"
+        ],
+        "title": "RecomputeQuantityResponse",
+        "description": "Response model for the ``POST /v1/recompute-quantity`` endpoint.\n\nThe ``unit`` field echoes the ``new_unit`` sent in the request (it may be a\nunit name, a taxonomy id or ``{ITEM_UNIT}``).",
+        "examples": [
+          {
+            "quantityG": 2000,
+            "unit": "kg",
+            "value": 2
           }
         ]
       },
@@ -1209,6 +1521,98 @@
             "id": "en:apple",
             "isInTaxonomy": true,
             "label": "Apple"
+          }
+        ]
+      },
+      "Unit": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Taxonomy id of the item"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Name of the item"
+          },
+          "synonyms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synonyms",
+            "description": "Synonyms in the requested language. Only present in the response when include_synonyms is true."
+          },
+          "standard_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Standard Unit",
+            "description": "Standard unit the unit converts to (e.g. 'g', 'ml', 'kJ'). Omitted when the taxonomy does not define one for this unit."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "Unit",
+        "description": "Unit model for Score My Recipe API",
+        "examples": [
+          {
+            "id": "en:gram",
+            "label": "gram",
+            "standard_unit": "g",
+            "synonyms": [
+              "g",
+              "grams"
+            ]
+          }
+        ]
+      },
+      "UnitsResponse": {
+        "properties": {
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/Unit"
+            },
+            "type": "array",
+            "title": "Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "units"
+        ],
+        "title": "UnitsResponse",
+        "description": "Response model for get_units endpoint",
+        "examples": [
+          {
+            "units": [
+              {
+                "id": "en:gram",
+                "label": "gram",
+                "standard_unit": "g"
+              },
+              {
+                "id": "en:cup",
+                "label": "cup",
+                "standard_unit": "ml"
+              }
+            ]
           }
         ]
       },

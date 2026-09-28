@@ -4,1019 +4,1331 @@
  */
 
 export interface paths {
-    "/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Root */
-        get: operations["root__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Health */
-        get: operations["health_v1_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/parse_text": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Parse Text
-         * @description Parse a text and return a list of ingredients with quantities and eventual modifiers
-         */
-        post: operations["parse_text_v1_parse_text_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/origins": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Origins
-         * @description Get the list of origins available in the database
-         *
-         *     Note: as the list is not too big, we let clients handle suggestions to users
-         */
-        get: operations["get_origins_v1_origins_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/labels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Labels
-         * @description Get the list of labels relevant for green-score computation
-         */
-        get: operations["get_labels_v1_labels_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/countries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Countries
-         * @description Get the list of countries relevant for green-score computation
-         */
-        get: operations["get_countries_v1_countries_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/ingredients": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Ingredients
-         * @description Get the list of ingredients relevant for green-score computation
-         */
-        get: operations["get_ingredients_v1_ingredients_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/suggest-scored-ingredient": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Suggest Scored Ingredient
-         * @description Suggest scored ingredient alternatives for an ingredient with no Agribalyse match.
-         *
-         *     Given a taxonomy id (typically one returned in ``missing_ingredient_ids``),
-         *     walk down the ingredients taxonomy and return the descendants that resolve
-         *     to an Agribalyse row, so the user can pick a more specific alternative.
-         */
-        get: operations["suggest_scored_ingredient_v1_suggest_scored_ingredient_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/green-score": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Green Score
-         * @description Compute the green-score of a recipe given as a list of ingredients.
-         */
-        post: operations["green_score_v1_green_score_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+	'/': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Root */
+		get: operations['root__get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/health': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Health */
+		get: operations['health_v1_health_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/parse_text': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Parse Text
+		 * @description Parse a text and return a list of ingredients with quantities and eventual modifiers
+		 */
+		post: operations['parse_text_v1_parse_text_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/origins': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get Origins
+		 * @description Get the list of origins available in the database
+		 *
+		 *     Note: as the list is not too big, we let clients handle suggestions to users
+		 */
+		get: operations['get_origins_v1_origins_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/labels': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get Labels
+		 * @description Get the list of labels relevant for green-score computation
+		 */
+		get: operations['get_labels_v1_labels_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/countries': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get Countries
+		 * @description Get the list of countries relevant for green-score computation
+		 */
+		get: operations['get_countries_v1_countries_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/ingredients': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get Ingredients
+		 * @description Get the list of ingredients relevant for green-score computation
+		 */
+		get: operations['get_ingredients_v1_ingredients_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/units': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Get Units
+		 * @description Get the list of units available in the Open Food Facts units taxonomy
+		 *
+		 *     Note: as the list is not too big, we let clients handle suggestions to users
+		 */
+		get: operations['get_units_v1_units_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/suggest-scored-ingredient': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Suggest Scored Ingredient
+		 * @description Suggest scored ingredient alternatives for an ingredient with no Agribalyse match.
+		 *
+		 *     Given a taxonomy id (typically one returned in ``missing_ingredient_ids``),
+		 *     walk down the ingredients taxonomy and return the descendants that resolve
+		 *     to an Agribalyse row, so the user can pick a more specific alternative.
+		 */
+		get: operations['suggest_scored_ingredient_v1_suggest_scored_ingredient_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/green-score': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Green Score
+		 * @description Compute the green-score of a recipe given as a list of ingredients.
+		 */
+		post: operations['green_score_v1_green_score_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/recompute-quantity': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Recompute Quantity
+		 * @description Recompute the quantity in grams after the user edited an ingredient's value/unit.
+		 *
+		 *     This is useful to let user change the value of a recipe item in a natural fashion
+		 *     (eg. change 1 egg to 3 eggs)
+		 *     while keeping the equivalent "g" conversion for green-score computation.
+		 *
+		 *     A best effort is done to also allow changing the unit,
+		 *     but currently, only new units that can be converted to grams are supported.
+		 *
+		 *     Units may be given as a taxonomy id, a localized unit name (resolved using
+		 *     ``lang``) or the ``item`` sentinel for countable ingredients.
+		 */
+		post: operations['recompute_quantity_v1_recompute_quantity_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /**
-         * AccountedWeights
-         * @description Accounted weights for the ponderated sum.
-         *
-         *     * scorable takes the ratio of each ingredient compared to the total weight of ingredients that have an EF score
-         *     * total takes the ratio of each ingredient compared to the total weight of all ingredients, including unmatched ones
-         * @enum {string}
-         */
-        AccountedWeights: "scorable" | "total";
-        /**
-         * CountriesResponse
-         * @description Response model for get_countries endpoint
-         * @example {
-         *       "countries": [
-         *         {
-         *           "id": "en:france",
-         *           "label": "France"
-         *         },
-         *         {
-         *           "id": "en:spain",
-         *           "label": "Spain"
-         *         }
-         *       ]
-         *     }
-         */
-        CountriesResponse: {
-            /** Countries */
-            countries: components["schemas"]["Country"][];
-        };
-        /**
-         * Country
-         * @description Country model for Score My Recipe API
-         * @example {
-         *       "id": "en:france",
-         *       "label": "France",
-         *       "synonyms": [
-         *         "french"
-         *       ]
-         *     }
-         */
-        Country: {
-            /**
-             * Id
-             * @description Taxonomy id of the item
-             */
-            id: string;
-            /**
-             * Label
-             * @description Name of the item
-             */
-            label: string;
-            /**
-             * Synonyms
-             * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
-             */
-            synonyms?: string[] | null;
-            /**
-             * Country Code
-             * @description ISO 3166-1 alpha-2 country code
-             */
-            country_code?: string | null;
-        };
-        /**
-         * GreenScoreRequest
-         * @description Request body for the green-score computation endpoint.
-         *
-         *     It is a thin wrapper around a list of ingredients
-         * @example {
-         *       "accountedWeights": "scorable",
-         *       "country": "FR",
-         *       "ingredients": [
-         *         {
-         *           "codifiedIngredient": {
-         *             "id": "en:apple",
-         *             "isInTaxonomy": true,
-         *             "label": "Apple"
-         *           },
-         *           "id": "i1",
-         *           "labels": [],
-         *           "name": "apple",
-         *           "seasonality": false,
-         *           "weight": 150
-         *         },
-         *         {
-         *           "codifiedIngredient": {
-         *             "id": "en:wheat-flour",
-         *             "isInTaxonomy": true,
-         *             "label": "Wheat flour"
-         *           },
-         *           "id": "i2",
-         *           "labels": [],
-         *           "name": "wheat flour",
-         *           "seasonality": false,
-         *           "weight": 200
-         *         }
-         *       ]
-         *     }
-         */
-        GreenScoreRequest: {
-            /**
-             * Ingredients
-             * @description The ingredients of the recipe
-             */
-            ingredients: components["schemas"]["RecipeIngredientInput"][];
-            /**
-             * Country
-             * @description Country code (ISO 3166-1 alpha-2) to compute the distance modifier for the recipe.If not provided, the distance will always be world
-             */
-            country?: string | null;
-            /**
-             * @description Accounted weights for the ponderated sum.
-             *
-             *         * scorable takes the ratio of each ingredient compared to the total weight of ingredients that have an EF score
-             *         * total takes the ratio of each ingredient compared to the total weight of all ingredients, including unmatched ones
-             * @default scorable
-             */
-            accountedWeights: components["schemas"]["AccountedWeights"];
-        };
-        /**
-         * GreenScoreResponse
-         * @description Response model for the green-score computation endpoint.
-         * @example {
-         *       "letterGrade": "A",
-         *       "missingIngredientIds": [],
-         *       "numericScore": 76.38
-         *     }
-         */
-        GreenScoreResponse: {
-            /**
-             * Globalefscore
-             * @description The computed global EF score of the recipe, null if no ingredients have a score
-             */
-            globalEfScore?: number | null;
-            /**
-             * Labelsbonus
-             * @description The bonus from ingredient labels, null if no ingredients have a score, 0 if no labels
-             */
-            labelsBonus?: number | null;
-            /**
-             * Epimodifier
-             * @description The modifier from ingredient origin agricultural system (EPI), null if no ingredients have a score
-             */
-            epiModifier?: number | null;
-            /**
-             * Distancesmodifier
-             * @description The modifier from ingredient origin distance, null if no ingredients have a score
-             */
-            distancesModifier?: number | null;
-            /**
-             * Numericscore
-             * @description The computed green-score of the recipe, null if no ingredients have a score
-             */
-            numericScore?: number | null;
-            /**
-             * Lettergrade
-             * @description The letter grade corresponding to the numeric score, null if no ingredients have a score
-             */
-            letterGrade?: string | null;
-            /**
-             * Missingingredientids
-             * @description List of ingredient ids that were missing from the Agribalyse computation
-             * @default []
-             */
-            missingIngredientIds: string[];
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /**
-         * Ingredient
-         * @description Ingredient model for Score My Recipe API
-         * @example {
-         *       "id": "en:apple",
-         *       "label": "Apple",
-         *       "synonyms": [
-         *         "apples"
-         *       ]
-         *     }
-         */
-        Ingredient: {
-            /**
-             * Id
-             * @description Taxonomy id of the item
-             */
-            id: string;
-            /**
-             * Label
-             * @description Name of the item
-             */
-            label: string;
-            /**
-             * Synonyms
-             * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
-             */
-            synonyms?: string[] | null;
-        };
-        /**
-         * IngredientsResponse
-         * @description Response model for get_ingredients endpoint
-         * @example {
-         *       "ingredients": [
-         *         {
-         *           "id": "en:apple",
-         *           "label": "Apple"
-         *         },
-         *         {
-         *           "id": "en:wheat-flour",
-         *           "label": "Wheat flour"
-         *         }
-         *       ]
-         *     }
-         */
-        IngredientsResponse: {
-            /** Ingredients */
-            ingredients: components["schemas"]["Ingredient"][];
-        };
-        /**
-         * Label
-         * @description Label model for Score My Recipe API
-         * @example {
-         *       "id": "en:eu-organic",
-         *       "label": "EU Organic",
-         *       "synonyms": [
-         *         "bio"
-         *       ]
-         *     }
-         */
-        Label: {
-            /**
-             * Id
-             * @description Taxonomy id of the item
-             */
-            id: string;
-            /**
-             * Label
-             * @description Name of the item
-             */
-            label: string;
-            /**
-             * Synonyms
-             * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
-             */
-            synonyms?: string[] | null;
-        };
-        /**
-         * LabelsResponse
-         * @description Response model for get_labels endpoint
-         * @example {
-         *       "labels": [
-         *         {
-         *           "id": "en:eu-organic",
-         *           "label": "EU Organic"
-         *         },
-         *         {
-         *           "id": "en:fair-trade",
-         *           "label": "Fair Trade"
-         *         }
-         *       ]
-         *     }
-         */
-        LabelsResponse: {
-            /** Labels */
-            labels: components["schemas"]["Label"][];
-        };
-        /**
-         * Origin
-         * @description Origin model for Score My Recipe API
-         * @example {
-         *       "id": "en:france",
-         *       "label": "France",
-         *       "synonyms": [
-         *         "french"
-         *       ]
-         *     }
-         */
-        Origin: {
-            /**
-             * Id
-             * @description Taxonomy id of the item
-             */
-            id: string;
-            /**
-             * Label
-             * @description Name of the item
-             */
-            label: string;
-            /**
-             * Synonyms
-             * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
-             */
-            synonyms?: string[] | null;
-        };
-        /**
-         * OriginsResponse
-         * @description Response model for get_origins endpoint
-         * @example {
-         *       "origins": [
-         *         {
-         *           "id": "en:france",
-         *           "label": "France",
-         *           "synonyms": [
-         *             "french"
-         *           ]
-         *         },
-         *         {
-         *           "id": "en:spain",
-         *           "label": "Spain",
-         *           "synonyms": [
-         *             "spanish"
-         *           ]
-         *         }
-         *       ]
-         *     }
-         */
-        OriginsResponse: {
-            /** Origins */
-            origins: components["schemas"]["Origin"][];
-        };
-        /**
-         * RecipeIngredient
-         * @description Ingredient model for Score My Recipe API
-         * @example {
-         *       "codified_ingredient": "apple",
-         *       "is_in_taxonomy": true,
-         *       "labels": "en:organic",
-         *       "origins": "en:france",
-         *       "quantity_g": 150,
-         *       "taxonomy_id": "en:apple"
-         *     }
-         */
-        RecipeIngredient: {
-            /** Taxonomy Id */
-            taxonomy_id?: string | null;
-            /** Is In Taxonomy */
-            is_in_taxonomy: boolean;
-            /** Codified Ingredient */
-            codified_ingredient: string;
-            /** Quantity G */
-            quantity_g?: number | null;
-            /** Origins */
-            origins?: string | null;
-            /** Labels */
-            labels?: string[];
-            /** Notes */
-            notes?: string[];
-        };
-        /**
-         * RecipeIngredientInput
-         * @description A single ingredient of a recipe
-         * @example {
-         *       "codifiedIngredient": {
-         *         "id": "en:apple",
-         *         "isInTaxonomy": true,
-         *         "label": "Apple"
-         *       },
-         *       "id": "i1",
-         *       "labels": [
-         *         {
-         *           "id": "en:eu-organic",
-         *           "isInTaxonomy": true,
-         *           "label": "EU Organic"
-         *         }
-         *       ],
-         *       "name": "apple",
-         *       "origin": {
-         *         "id": "en:france",
-         *         "isInTaxonomy": true,
-         *         "label": "France"
-         *       },
-         *       "seasonality": false,
-         *       "weight": 150
-         *     }
-         */
-        RecipeIngredientInput: {
-            /**
-             * Id
-             * @description Unique identifier for the ingredient
-             */
-            id: string;
-            /**
-             * Name
-             * @description Display name of the ingredient
-             */
-            name: string;
-            /**
-             * Weight
-             * @description Weight in grams
-             */
-            weight: number;
-            /** @description Codified ingredient */
-            codifiedIngredient: components["schemas"]["TaxonomyItem"];
-            /**
-             * Labels
-             * @description Labels / certifications (organic, fair-trade...)
-             * @default []
-             */
-            labels: components["schemas"]["TaxonomyItem"][];
-            /**
-             * Seasonality
-             * @description Whether the ingredient is seasonal
-             * @default false
-             */
-            seasonality: boolean;
-            /** @description Origin country/region, null if unspecified */
-            origin?: components["schemas"]["TaxonomyItem"] | null;
-        };
-        /**
-         * RecipeParseRequest
-         * @description Request model for parse_text endpoint
-         * @example {
-         *       "lang": "en",
-         *       "text": "200g of apple, 1 cup of wheat flour"
-         *     }
-         */
-        RecipeParseRequest: {
-            /**
-             * Lang
-             * @description Language for the request (2 or 5 letter code)
-             */
-            lang: string;
-            /** Text */
-            text: string;
-        };
-        /**
-         * RecipeParseResponse
-         * @description Response model for parse_text endpoint
-         * @example {
-         *       "ingredients": [
-         *         {
-         *           "codified_ingredient": "apple",
-         *           "is_in_taxonomy": true,
-         *           "quantity_g": 150,
-         *           "taxonomy_id": "en:apple"
-         *         },
-         *         {
-         *           "codified_ingredient": "wheat flour",
-         *           "is_in_taxonomy": true,
-         *           "quantity_g": 200,
-         *           "taxonomy_id": "en:wheat-flour"
-         *         }
-         *       ]
-         *     }
-         */
-        RecipeParseResponse: {
-            /** Ingredients */
-            ingredients: components["schemas"]["RecipeIngredient"][];
-        };
-        /**
-         * ScoredIngredient
-         * @description An ingredient alternative with its matching Agribalyse row code.
-         *
-         *     Mirrors the ``Ingredient`` structure (so it can be presented to the user just
-         *     like the ``get_ingredients`` results) and adds the Agribalyse row code that
-         *     the suggestion resolves to. Exposes camelCase aliases (matching the frontend
-         *     convention) for multi-word fields.
-         * @example {
-         *       "agribalyse_code": "10001",
-         *       "id": "en:apple",
-         *       "label": "Apple"
-         *     }
-         * @example {
-         *       "agribalyseCode": "10602",
-         *       "id": "en:wheat-flour",
-         *       "label": "Wheat flour"
-         *     }
-         */
-        ScoredIngredient: {
-            /**
-             * Id
-             * @description Taxonomy id of the item
-             */
-            id: string;
-            /**
-             * Label
-             * @description Name of the item
-             */
-            label: string;
-            /**
-             * Synonyms
-             * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
-             */
-            synonyms?: string[] | null;
-            /**
-             * Agribalysecode
-             * @description The Agribalyse row code (row identity) matching this ingredient
-             */
-            agribalyseCode: string;
-        };
-        /**
-         * SuggestScoredIngredientResponse
-         * @description Response model for the suggest-scored-ingredient endpoint.
-         */
-        SuggestScoredIngredientResponse: {
-            /** Ingredients */
-            ingredients: components["schemas"]["ScoredIngredient"][];
-        };
-        /**
-         * TaxonomyItem
-         * @description A taxonomy reference with an id and a localized label.
-         *
-         *     Mirrors the frontend `TaxonomyItem` (used for codified ingredients, labels
-         *     and origins).
-         * @example {
-         *       "id": "en:apple",
-         *       "isInTaxonomy": true,
-         *       "label": "Apple"
-         *     }
-         */
-        TaxonomyItem: {
-            /**
-             * Id
-             * @description Taxonomy identifier
-             */
-            id: string;
-            /**
-             * Label
-             * @description Display label in the current language
-             */
-            label: string;
-            /**
-             * Isintaxonomy
-             * @description Whether the item comes from the taxonomy (true) or is custom
-             */
-            isInTaxonomy: boolean;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
-        };
-    };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+	schemas: {
+		/**
+		 * AccountedWeights
+		 * @description Accounted weights for the ponderated sum.
+		 *
+		 *     * scorable takes the ratio of each ingredient compared to the total weight of ingredients that have an EF score
+		 *     * total takes the ratio of each ingredient compared to the total weight of all ingredients, including unmatched ones
+		 * @enum {string}
+		 */
+		AccountedWeights: 'scorable' | 'total';
+		/**
+		 * CountriesResponse
+		 * @description Response model for get_countries endpoint
+		 * @example {
+		 *       "countries": [
+		 *         {
+		 *           "id": "en:france",
+		 *           "label": "France"
+		 *         },
+		 *         {
+		 *           "id": "en:spain",
+		 *           "label": "Spain"
+		 *         }
+		 *       ]
+		 *     }
+		 */
+		CountriesResponse: {
+			/** Countries */
+			countries: components['schemas']['Country'][];
+		};
+		/**
+		 * Country
+		 * @description Country model for Score My Recipe API
+		 * @example {
+		 *       "id": "en:france",
+		 *       "label": "France",
+		 *       "synonyms": [
+		 *         "french"
+		 *       ]
+		 *     }
+		 */
+		Country: {
+			/**
+			 * Id
+			 * @description Taxonomy id of the item
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Name of the item
+			 */
+			label: string;
+			/**
+			 * Synonyms
+			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
+			 */
+			synonyms?: string[] | null;
+			/**
+			 * Country Code
+			 * @description ISO 3166-1 alpha-2 country code
+			 */
+			country_code?: string | null;
+		};
+		/**
+		 * GreenScoreRequest
+		 * @description Request body for the green-score computation endpoint.
+		 *
+		 *     It is a thin wrapper around a list of ingredients
+		 * @example {
+		 *       "accountedWeights": "scorable",
+		 *       "country": "FR",
+		 *       "ingredients": [
+		 *         {
+		 *           "codifiedIngredient": {
+		 *             "id": "en:apple",
+		 *             "isInTaxonomy": true,
+		 *             "label": "Apple"
+		 *           },
+		 *           "id": "i1",
+		 *           "isInSeason": false,
+		 *           "labels": [],
+		 *           "name": "apple",
+		 *           "weight": 150
+		 *         },
+		 *         {
+		 *           "codifiedIngredient": {
+		 *             "id": "en:wheat-flour",
+		 *             "isInTaxonomy": true,
+		 *             "label": "Wheat flour"
+		 *           },
+		 *           "id": "i2",
+		 *           "isInSeason": false,
+		 *           "labels": [],
+		 *           "name": "wheat flour",
+		 *           "weight": 200
+		 *         }
+		 *       ]
+		 *     }
+		 */
+		GreenScoreRequest: {
+			/**
+			 * Ingredients
+			 * @description The ingredients of the recipe
+			 */
+			ingredients: components['schemas']['RecipeIngredientInput'][];
+			/**
+			 * Country
+			 * @description Country code (ISO 3166-1 alpha-2) to compute the distance modifier for the recipe.If not provided, the distance will always be world
+			 */
+			country?: string | null;
+			/**
+			 * @description Accounted weights for the ponderated sum.
+			 *
+			 *         * scorable takes the ratio of each ingredient compared to the total weight of ingredients that have an EF score
+			 *         * total takes the ratio of each ingredient compared to the total weight of all ingredients, including unmatched ones
+			 * @default scorable
+			 */
+			accountedWeights: components['schemas']['AccountedWeights'];
+		};
+		/**
+		 * GreenScoreResponse
+		 * @description Response model for the green-score computation endpoint.
+		 * @example {
+		 *       "letterGrade": "A",
+		 *       "missingIngredientIds": [],
+		 *       "numericScore": 76.38
+		 *     }
+		 */
+		GreenScoreResponse: {
+			/**
+			 * Globalefscore
+			 * @description The computed global EF score of the recipe, null if no ingredients have a score
+			 */
+			globalEfScore?: number | null;
+			/**
+			 * Labelsbonus
+			 * @description The bonus from ingredient labels, null if no ingredients have a score, 0 if no labels
+			 */
+			labelsBonus?: number | null;
+			/**
+			 * Epimodifier
+			 * @description The modifier from ingredient origin agricultural system (EPI), null if no ingredients have a score
+			 */
+			epiModifier?: number | null;
+			/**
+			 * Distancesmodifier
+			 * @description The modifier from ingredient origin distance, null if no ingredients have a score
+			 */
+			distancesModifier?: number | null;
+			/**
+			 * Seasonalitymodifier
+			 * @description The modifier from ingredient seasonality, null if no ingredients have a score
+			 */
+			seasonalityModifier?: number | null;
+			/**
+			 * Numericscore
+			 * @description The computed green-score of the recipe, null if no ingredients have a score
+			 */
+			numericScore?: number | null;
+			/**
+			 * Lettergrade
+			 * @description The letter grade corresponding to the numeric score, null if no ingredients have a score
+			 */
+			letterGrade?: string | null;
+			/**
+			 * Missingingredientids
+			 * @description List of ingredient ids that were missing from the Agribalyse computation
+			 * @default []
+			 */
+			missingIngredientIds: string[];
+			/**
+			 * Notes
+			 * @description Notes about the recipe-level score computation (e.g. seasonality), null when no ingredients have a score
+			 */
+			notes?: string[] | null;
+			/**
+			 * Ingredientsnotes
+			 * @description Per-ingredient notes keyed by ingredient id, only entries with at least one note are included, null if no ingredients have a score
+			 */
+			ingredientsNotes?: {
+				[key: string]: string[];
+			} | null;
+		};
+		/** HTTPValidationError */
+		HTTPValidationError: {
+			/** Detail */
+			detail?: components['schemas']['ValidationError'][];
+		};
+		/**
+		 * Ingredient
+		 * @description Ingredient model for Score My Recipe API
+		 * @example {
+		 *       "id": "en:apple",
+		 *       "label": "Apple",
+		 *       "synonyms": [
+		 *         "apples"
+		 *       ]
+		 *     }
+		 */
+		Ingredient: {
+			/**
+			 * Id
+			 * @description Taxonomy id of the item
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Name of the item
+			 */
+			label: string;
+			/**
+			 * Synonyms
+			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
+			 */
+			synonyms?: string[] | null;
+		};
+		/**
+		 * IngredientsResponse
+		 * @description Response model for get_ingredients endpoint
+		 * @example {
+		 *       "ingredients": [
+		 *         {
+		 *           "id": "en:apple",
+		 *           "label": "Apple"
+		 *         },
+		 *         {
+		 *           "id": "en:wheat-flour",
+		 *           "label": "Wheat flour"
+		 *         }
+		 *       ]
+		 *     }
+		 */
+		IngredientsResponse: {
+			/** Ingredients */
+			ingredients: components['schemas']['Ingredient'][];
+		};
+		/**
+		 * Label
+		 * @description Label model for Score My Recipe API
+		 * @example {
+		 *       "id": "en:eu-organic",
+		 *       "label": "EU Organic",
+		 *       "synonyms": [
+		 *         "bio"
+		 *       ]
+		 *     }
+		 */
+		Label: {
+			/**
+			 * Id
+			 * @description Taxonomy id of the item
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Name of the item
+			 */
+			label: string;
+			/**
+			 * Synonyms
+			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
+			 */
+			synonyms?: string[] | null;
+		};
+		/**
+		 * LabelsResponse
+		 * @description Response model for get_labels endpoint
+		 * @example {
+		 *       "labels": [
+		 *         {
+		 *           "id": "en:eu-organic",
+		 *           "label": "EU Organic"
+		 *         },
+		 *         {
+		 *           "id": "en:fair-trade",
+		 *           "label": "Fair Trade"
+		 *         }
+		 *       ]
+		 *     }
+		 */
+		LabelsResponse: {
+			/** Labels */
+			labels: components['schemas']['Label'][];
+		};
+		/**
+		 * Origin
+		 * @description Origin model for Score My Recipe API
+		 * @example {
+		 *       "id": "en:france",
+		 *       "label": "France",
+		 *       "synonyms": [
+		 *         "french"
+		 *       ]
+		 *     }
+		 */
+		Origin: {
+			/**
+			 * Id
+			 * @description Taxonomy id of the item
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Name of the item
+			 */
+			label: string;
+			/**
+			 * Synonyms
+			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
+			 */
+			synonyms?: string[] | null;
+		};
+		/**
+		 * OriginsResponse
+		 * @description Response model for get_origins endpoint
+		 * @example {
+		 *       "origins": [
+		 *         {
+		 *           "id": "en:france",
+		 *           "label": "France",
+		 *           "synonyms": [
+		 *             "french"
+		 *           ]
+		 *         },
+		 *         {
+		 *           "id": "en:spain",
+		 *           "label": "Spain",
+		 *           "synonyms": [
+		 *             "spanish"
+		 *           ]
+		 *         }
+		 *       ]
+		 *     }
+		 */
+		OriginsResponse: {
+			/** Origins */
+			origins: components['schemas']['Origin'][];
+		};
+		/**
+		 * RecipeIngredient
+		 * @description Ingredient model for Score My Recipe API
+		 * @example {
+		 *       "codified_ingredient": "apple",
+		 *       "is_in_taxonomy": true,
+		 *       "labels": [
+		 *         "en:organic"
+		 *       ],
+		 *       "origins": "en:france",
+		 *       "quantity_g": 150,
+		 *       "quantity_unit": "kg",
+		 *       "quantity_value": 0.15,
+		 *       "taxonomy_id": "en:apple"
+		 *     }
+		 */
+		RecipeIngredient: {
+			/**
+			 * Taxonomy Id
+			 * @description Taxonomy id of the ingredient
+			 */
+			taxonomy_id?: string | null;
+			/**
+			 * Is In Taxonomy
+			 * @description Whether the ingredient is in the taxonomy
+			 */
+			is_in_taxonomy: boolean;
+			/**
+			 * Codified Ingredient
+			 * @description Codified ingredient name
+			 */
+			codified_ingredient: string;
+			/**
+			 * Quantity G
+			 * @description Quantity in grams
+			 */
+			quantity_g?: number | null;
+			/**
+			 * Origins
+			 * @description Origins of the ingredient
+			 */
+			origins?: string | null;
+			/**
+			 * Labels
+			 * @description Labels of the ingredient
+			 */
+			labels?: string[] | null;
+			/**
+			 * Quantity Value
+			 * @description Numeric value of the quantity
+			 */
+			quantity_value?: number | null;
+			/**
+			 * Quantity Unit
+			 * @description Unit of the quantity
+			 */
+			quantity_unit?: string | null;
+			/**
+			 * Notes
+			 * @description Notes about the ingredient
+			 */
+			notes?: string[] | null;
+		};
+		/**
+		 * RecipeIngredientInput
+		 * @description A single ingredient of a recipe
+		 * @example {
+		 *       "codifiedIngredient": {
+		 *         "id": "en:apple",
+		 *         "isInTaxonomy": true,
+		 *         "label": "Apple"
+		 *       },
+		 *       "id": "i1",
+		 *       "isInSeason": false,
+		 *       "labels": [
+		 *         {
+		 *           "id": "en:eu-organic",
+		 *           "isInTaxonomy": true,
+		 *           "label": "EU Organic"
+		 *         }
+		 *       ],
+		 *       "name": "apple",
+		 *       "origin": {
+		 *         "id": "en:france",
+		 *         "isInTaxonomy": true,
+		 *         "label": "France"
+		 *       },
+		 *       "weight": 150
+		 *     }
+		 */
+		RecipeIngredientInput: {
+			/**
+			 * Id
+			 * @description Unique identifier for the ingredient
+			 */
+			id: string;
+			/**
+			 * Name
+			 * @description Display name of the ingredient
+			 */
+			name: string;
+			/**
+			 * Weight
+			 * @description Weight in grams
+			 */
+			weight: number;
+			/** @description Codified ingredient */
+			codifiedIngredient: components['schemas']['TaxonomyItem'];
+			/**
+			 * Labels
+			 * @description Labels / certifications (organic, fair-trade...)
+			 * @default []
+			 */
+			labels: components['schemas']['TaxonomyItem'][];
+			/**
+			 * Isfreshplant
+			 * @description Whether the ingredient is a fresh plant
+			 * @default false
+			 */
+			isFreshPlant: boolean;
+			/**
+			 * Isinseason
+			 * @description Whether the ingredient is in season
+			 * @default false
+			 */
+			isInSeason: boolean;
+			/** @description Origin country/region, null if unspecified */
+			origin?: components['schemas']['TaxonomyItem'] | null;
+		};
+		/**
+		 * RecipeParseRequest
+		 * @description Request model for parse_text endpoint
+		 * @example {
+		 *       "lang": "en",
+		 *       "text": "200g of apple, 1 cup of wheat flour"
+		 *     }
+		 */
+		RecipeParseRequest: {
+			/**
+			 * Lang
+			 * @description Language for the request (2 or 5 letter code)
+			 */
+			lang: string;
+			/** Text */
+			text: string;
+		};
+		/**
+		 * RecipeParseResponse
+		 * @description Response model for parse_text endpoint
+		 * @example {
+		 *       "ingredients": [
+		 *         {
+		 *           "codified_ingredient": "apple",
+		 *           "is_in_taxonomy": true,
+		 *           "quantity_g": 150,
+		 *           "taxonomy_id": "en:apple"
+		 *         },
+		 *         {
+		 *           "codified_ingredient": "wheat flour",
+		 *           "is_in_taxonomy": true,
+		 *           "quantity_g": 200,
+		 *           "taxonomy_id": "en:wheat-flour"
+		 *         }
+		 *       ]
+		 *     }
+		 */
+		RecipeParseResponse: {
+			/** Ingredients */
+			ingredients: components['schemas']['RecipeIngredient'][];
+		};
+		/**
+		 * RecomputeQuantityRequest
+		 * @description Request body for the ``POST /v1/recompute-quantity`` endpoint.
+		 *
+		 *     Each unit (``old_unit`` / ``new_unit``) may be given either as a unit id
+		 *     from the OFF units taxonomy (e.g. ``xx:kg``), as a localized unit name
+		 *     resolvable through the units taxonomy (e.g. ``"kg"``, ``"tasse"``), or as
+		 *     the ``item`` sentinel for countable ingredients (e.g. "1 egg").
+		 * @example {
+		 *       "lang": "en",
+		 *       "new_unit": "kg",
+		 *       "new_value": 2,
+		 *       "old_unit": "g",
+		 *       "old_value": 2000,
+		 *       "quantity_g": 2000
+		 *     }
+		 */
+		RecomputeQuantityRequest: {
+			/**
+			 * Lang
+			 * @description Language for the request (2 or 5 letter code)
+			 */
+			lang: string;
+			/**
+			 * Quantityg
+			 * @description Previous quantity in grams
+			 */
+			quantityG: number;
+			/**
+			 * Oldvalue
+			 * @description Previous numeric value of the quantity
+			 */
+			oldValue: number;
+			/**
+			 * Oldunit
+			 * @description Previous unit (unit name, taxonomy id or 'item')
+			 */
+			oldUnit: string;
+			/**
+			 * Newvalue
+			 * @description New numeric value of the quantity
+			 */
+			newValue: number;
+			/**
+			 * Newunit
+			 * @description New unit (unit name, taxonomy id or 'item')
+			 */
+			newUnit: string;
+		};
+		/**
+		 * RecomputeQuantityResponse
+		 * @description Response model for the ``POST /v1/recompute-quantity`` endpoint.
+		 *
+		 *     The ``unit`` field echoes the ``new_unit`` sent in the request (it may be a
+		 *     unit name, a taxonomy id or ``{ITEM_UNIT}``).
+		 * @example {
+		 *       "quantityG": 2000,
+		 *       "unit": "kg",
+		 *       "value": 2
+		 *     }
+		 */
+		RecomputeQuantityResponse: {
+			/**
+			 * Quantityg
+			 * @description New quantity in grams
+			 */
+			quantityG: number;
+			/**
+			 * Value
+			 * @description New numeric value of the quantity
+			 */
+			value: number;
+			/**
+			 * Unit
+			 * @description New unit, echoed from the request (unit name, taxonomy id or 'item')
+			 */
+			unit: string;
+		};
+		/**
+		 * ScoredIngredient
+		 * @description An ingredient alternative with its matching Agribalyse row code.
+		 *
+		 *     Mirrors the ``Ingredient`` structure (so it can be presented to the user just
+		 *     like the ``get_ingredients`` results) and adds the Agribalyse row code that
+		 *     the suggestion resolves to. Exposes camelCase aliases (matching the frontend
+		 *     convention) for multi-word fields.
+		 * @example {
+		 *       "agribalyse_code": "10001",
+		 *       "id": "en:apple",
+		 *       "label": "Apple"
+		 *     }
+		 * @example {
+		 *       "agribalyseCode": "10602",
+		 *       "id": "en:wheat-flour",
+		 *       "label": "Wheat flour"
+		 *     }
+		 */
+		ScoredIngredient: {
+			/**
+			 * Id
+			 * @description Taxonomy id of the item
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Name of the item
+			 */
+			label: string;
+			/**
+			 * Synonyms
+			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
+			 */
+			synonyms?: string[] | null;
+			/**
+			 * Agribalysecode
+			 * @description The Agribalyse row code (row identity) matching this ingredient
+			 */
+			agribalyseCode: string;
+		};
+		/**
+		 * SuggestScoredIngredientResponse
+		 * @description Response model for the suggest-scored-ingredient endpoint.
+		 */
+		SuggestScoredIngredientResponse: {
+			/** Ingredients */
+			ingredients: components['schemas']['ScoredIngredient'][];
+		};
+		/**
+		 * TaxonomyItem
+		 * @description A taxonomy reference with an id and a localized label.
+		 *
+		 *     Mirrors the frontend `TaxonomyItem` (used for codified ingredients, labels
+		 *     and origins).
+		 * @example {
+		 *       "id": "en:apple",
+		 *       "isInTaxonomy": true,
+		 *       "label": "Apple"
+		 *     }
+		 */
+		TaxonomyItem: {
+			/**
+			 * Id
+			 * @description Taxonomy identifier
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Display label in the current language
+			 */
+			label: string;
+			/**
+			 * Isintaxonomy
+			 * @description Whether the item comes from the taxonomy (true) or is custom
+			 */
+			isInTaxonomy: boolean;
+		};
+		/**
+		 * Unit
+		 * @description Unit model for Score My Recipe API
+		 * @example {
+		 *       "id": "en:gram",
+		 *       "label": "gram",
+		 *       "standard_unit": "g",
+		 *       "synonyms": [
+		 *         "g",
+		 *         "grams"
+		 *       ]
+		 *     }
+		 */
+		Unit: {
+			/**
+			 * Id
+			 * @description Taxonomy id of the item
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Name of the item
+			 */
+			label: string;
+			/**
+			 * Synonyms
+			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
+			 */
+			synonyms?: string[] | null;
+			/**
+			 * Standard Unit
+			 * @description Standard unit the unit converts to (e.g. 'g', 'ml', 'kJ'). Omitted when the taxonomy does not define one for this unit.
+			 */
+			standard_unit?: string | null;
+		};
+		/**
+		 * UnitsResponse
+		 * @description Response model for get_units endpoint
+		 * @example {
+		 *       "units": [
+		 *         {
+		 *           "id": "en:gram",
+		 *           "label": "gram",
+		 *           "standard_unit": "g"
+		 *         },
+		 *         {
+		 *           "id": "en:cup",
+		 *           "label": "cup",
+		 *           "standard_unit": "ml"
+		 *         }
+		 *       ]
+		 *     }
+		 */
+		UnitsResponse: {
+			/** Units */
+			units: components['schemas']['Unit'][];
+		};
+		/** ValidationError */
+		ValidationError: {
+			/** Location */
+			loc: (string | number)[];
+			/** Message */
+			msg: string;
+			/** Error Type */
+			type: string;
+			/** Input */
+			input?: unknown;
+			/** Context */
+			ctx?: Record<string, never>;
+		};
+	};
+	responses: never;
+	parameters: never;
+	requestBodies: never;
+	headers: never;
+	pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    root__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    health_v1_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    parse_text_v1_parse_text_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RecipeParseRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecipeParseResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_origins_v1_origins_get: {
-        parameters: {
-            query: {
-                /** @description Language for the request (2 or 5 letter code) */
-                lang: string;
-                /** @description If true, include the synonyms of each item in the response. */
-                include_synonyms?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OriginsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_labels_v1_labels_get: {
-        parameters: {
-            query: {
-                /** @description Language for the request (2 or 5 letter code) */
-                lang: string;
-                /** @description If true, include the synonyms of each item in the response. */
-                include_synonyms?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LabelsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_countries_v1_countries_get: {
-        parameters: {
-            query: {
-                /** @description Language for the request (2 or 5 letter code) */
-                lang: string;
-                /** @description If true, include the synonyms of each item in the response. */
-                include_synonyms?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CountriesResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_ingredients_v1_ingredients_get: {
-        parameters: {
-            query: {
-                /** @description Language for the request (2 or 5 letter code) */
-                lang: string;
-                /** @description If true, include the synonyms of each item in the response. */
-                include_synonyms?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IngredientsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    suggest_scored_ingredient_v1_suggest_scored_ingredient_get: {
-        parameters: {
-            query: {
-                /** @description Language for the request (2 or 5 letter code) */
-                lang: string;
-                /** @description If true, include the synonyms of each item in the response. */
-                include_synonyms?: boolean;
-                /** @description Taxonomy id of the ingredient to find alternatives for */
-                taxonomy_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SuggestScoredIngredientResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    green_score_v1_green_score_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GreenScoreRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GreenScoreResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
+	root__get: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': {
+						[key: string]: unknown;
+					};
+				};
+			};
+		};
+	};
+	health_v1_health_get: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': {
+						[key: string]: unknown;
+					};
+				};
+			};
+		};
+	};
+	parse_text_v1_parse_text_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['RecipeParseRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['RecipeParseResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	get_origins_v1_origins_get: {
+		parameters: {
+			query: {
+				/** @description Language for the request (2 or 5 letter code) */
+				lang: string;
+				/** @description If true, include the synonyms of each item in the response. */
+				include_synonyms?: boolean;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['OriginsResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	get_labels_v1_labels_get: {
+		parameters: {
+			query: {
+				/** @description Language for the request (2 or 5 letter code) */
+				lang: string;
+				/** @description If true, include the synonyms of each item in the response. */
+				include_synonyms?: boolean;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['LabelsResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	get_countries_v1_countries_get: {
+		parameters: {
+			query: {
+				/** @description Language for the request (2 or 5 letter code) */
+				lang: string;
+				/** @description If true, include the synonyms of each item in the response. */
+				include_synonyms?: boolean;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['CountriesResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	get_ingredients_v1_ingredients_get: {
+		parameters: {
+			query: {
+				/** @description Language for the request (2 or 5 letter code) */
+				lang: string;
+				/** @description If true, include the synonyms of each item in the response. */
+				include_synonyms?: boolean;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['IngredientsResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	get_units_v1_units_get: {
+		parameters: {
+			query: {
+				/** @description Language for the request (2 or 5 letter code) */
+				lang: string;
+				/** @description If true, include the synonyms of each item in the response. */
+				include_synonyms?: boolean;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['UnitsResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	suggest_scored_ingredient_v1_suggest_scored_ingredient_get: {
+		parameters: {
+			query: {
+				/** @description Language for the request (2 or 5 letter code) */
+				lang: string;
+				/** @description If true, include the synonyms of each item in the response. */
+				include_synonyms?: boolean;
+				/** @description Taxonomy id of the ingredient to find alternatives for */
+				taxonomy_id: string;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['SuggestScoredIngredientResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	green_score_v1_green_score_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['GreenScoreRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['GreenScoreResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	recompute_quantity_v1_recompute_quantity_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['RecomputeQuantityRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['RecomputeQuantityResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
 }

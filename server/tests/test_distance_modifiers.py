@@ -12,7 +12,7 @@ import pytest
 
 from api.score_data import DEFAULT_DISTANCE_MODIFIER
 from api import score, score_data
-from api.score_types import IngredientMetrics
+from api.score_types import IngredientMetrics, RecipeMetrics
 from tests.helpers import (
     FRANCE_DISTANCE_MODIFIER,
     WORLD_EPI_MODIFIER,
@@ -108,10 +108,10 @@ async def test_gather_distances_modifiers_no_country_defaults_to_world(agribalys
         patch_ingredients_taxonomy(_apple_taxonomy()),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_distances_modifiers(recipe, metrics, country=None)
-    assert metrics[0].distance_modifier == DEFAULT_DISTANCE_MODIFIER
-    assert any("no country provided" in n for n in (metrics[0].notes or []))
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_distances_modifiers(recipe, recipe_metrics, country=None)
+    assert recipe_metrics.metrics[0].distance_modifier == DEFAULT_DISTANCE_MODIFIER
+    assert any("no country provided" in n for n in (recipe_metrics.metrics[0].notes or []))
 
 
 @pytest.mark.asyncio
@@ -122,10 +122,10 @@ async def test_gather_distances_modifiers_known_origin_france(agribalyse_index):
         patch_ingredients_taxonomy(_apple_taxonomy()),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_distances_modifiers(recipe, metrics, country=FRANCE_COUNTRY)
-    assert metrics[0].distance_modifier == pytest.approx(FRANCE_DISTANCE_MODIFIER)
-    assert metrics[0].notes is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_distances_modifiers(recipe, recipe_metrics, country=FRANCE_COUNTRY)
+    assert recipe_metrics.metrics[0].distance_modifier == pytest.approx(FRANCE_DISTANCE_MODIFIER)
+    assert recipe_metrics.metrics[0].notes is None
 
 
 @pytest.mark.asyncio
@@ -136,10 +136,10 @@ async def test_gather_distances_modifiers_germany_from_france(agribalyse_index):
         patch_ingredients_taxonomy(_apple_taxonomy()),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_distances_modifiers(recipe, metrics, country=FRANCE_COUNTRY)
-    assert metrics[0].distance_modifier == pytest.approx(GERMANY_DISTANCE_MODIFIER)
-    assert metrics[0].notes is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_distances_modifiers(recipe, recipe_metrics, country=FRANCE_COUNTRY)
+    assert recipe_metrics.metrics[0].distance_modifier == pytest.approx(GERMANY_DISTANCE_MODIFIER)
+    assert recipe_metrics.metrics[0].notes is None
 
 
 @pytest.mark.asyncio
@@ -150,10 +150,10 @@ async def test_gather_distances_modifiers_argentina_from_france(agribalyse_index
         patch_ingredients_taxonomy(_apple_taxonomy()),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_distances_modifiers(recipe, metrics, country=FRANCE_COUNTRY)
-    assert metrics[0].distance_modifier == pytest.approx(ARGENTINA_DISTANCE_MODIFIER)
-    assert metrics[0].notes is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_distances_modifiers(recipe, recipe_metrics, country=FRANCE_COUNTRY)
+    assert recipe_metrics.metrics[0].distance_modifier == pytest.approx(ARGENTINA_DISTANCE_MODIFIER)
+    assert recipe_metrics.metrics[0].notes is None
 
 
 @pytest.mark.asyncio
@@ -164,10 +164,10 @@ async def test_gather_distances_modifiers_no_origin_defaults_to_world(agribalyse
         patch_ingredients_taxonomy(_apple_taxonomy()),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_distances_modifiers(recipe, metrics, country=FRANCE_COUNTRY)
-    assert metrics[0].distance_modifier == DEFAULT_DISTANCE_MODIFIER
-    assert any("no origin provided" in n for n in (metrics[0].notes or []))
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_distances_modifiers(recipe, recipe_metrics, country=FRANCE_COUNTRY)
+    assert recipe_metrics.metrics[0].distance_modifier == DEFAULT_DISTANCE_MODIFIER
+    assert any("no origin provided" in n for n in (recipe_metrics.metrics[0].notes or []))
 
 
 @pytest.mark.asyncio
@@ -178,10 +178,10 @@ async def test_gather_distances_modifiers_unknown_origin_defaults_to_world(agrib
         patch_ingredients_taxonomy(_apple_taxonomy()),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_distances_modifiers(recipe, metrics, country=FRANCE_COUNTRY)
-    assert metrics[0].distance_modifier == DEFAULT_DISTANCE_MODIFIER
-    assert any("not found" in n for n in (metrics[0].notes or []))
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_distances_modifiers(recipe, recipe_metrics, country=FRANCE_COUNTRY)
+    assert recipe_metrics.metrics[0].distance_modifier == DEFAULT_DISTANCE_MODIFIER
+    assert any("not found" in n for n in (recipe_metrics.metrics[0].notes or []))
 
 
 @pytest.mark.asyncio
@@ -193,11 +193,11 @@ async def test_gather_distances_modifiers_skips_missing_ingredient(agribalyse_in
         patch_ingredients_taxonomy(ingredients_taxonomy),
         patch_epi_modifiers(SAMPLE_EPI_MODIFIERS),
     ):
-        metrics = await score.gather_ef_metrics(recipe)
-        await score.gather_distances_modifiers(recipe, metrics, country=FRANCE_COUNTRY)
-    assert metrics[0].distance_modifier is None
-    assert metrics[0].missing is True
-    assert metrics[0].notes is None
+        recipe_metrics = await score.gather_ef_metrics(recipe)
+        await score.gather_distances_modifiers(recipe, recipe_metrics, country=FRANCE_COUNTRY)
+    assert recipe_metrics.metrics[0].distance_modifier is None
+    assert recipe_metrics.metrics[0].missing is True
+    assert recipe_metrics.metrics[0].notes is None
 
 
 # --- global_distance_modifier ----------------------------------------------
@@ -205,36 +205,44 @@ async def test_gather_distances_modifiers_skips_missing_ingredient(agribalyse_in
 
 def test_global_distance_modifier_weighted_average():
     """The global modifier is the ratio-weighted average of per-ingredient modifiers."""
-    metrics = [
-        IngredientMetrics(
-            id="i1", weight=100, distance_modifier=FRANCE_DISTANCE_MODIFIER, ratio=0.25
-        ),
-        IngredientMetrics(
-            id="i2", weight=300, distance_modifier=ARGENTINA_DISTANCE_MODIFIER, ratio=0.75
-        ),
-    ]
-    assert score.global_distance_modifier(metrics) == pytest.approx(
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(
+                id="i1", weight=100, distance_modifier=FRANCE_DISTANCE_MODIFIER, ratio=0.25
+            ),
+            IngredientMetrics(
+                id="i2", weight=300, distance_modifier=ARGENTINA_DISTANCE_MODIFIER, ratio=0.75
+            ),
+        ]
+    )
+    assert score.global_distance_modifier(recipe_metrics) == pytest.approx(
         FRANCE_DISTANCE_MODIFIER * 0.25 + ARGENTINA_DISTANCE_MODIFIER * 0.75
     )
 
 
 def test_global_distance_modifier_none_when_no_modifiers():
     """With no modifier at all, the global modifier is None (not 0)."""
-    metrics = [IngredientMetrics(id="i1", weight=100, distance_modifier=None, ratio=1.0)]
-    assert score.global_distance_modifier(metrics) is None
+    recipe_metrics = RecipeMetrics(
+        metrics=[IngredientMetrics(id="i1", weight=100, distance_modifier=None, ratio=1.0)]
+    )
+    assert score.global_distance_modifier(recipe_metrics) is None
 
 
 def test_global_distance_modifier_ignores_missing_ratio():
     """Ingredients without a ratio (missing) don't contribute."""
-    metrics = [
-        IngredientMetrics(
-            id="i1", weight=100, distance_modifier=FRANCE_DISTANCE_MODIFIER, ratio=0.5
-        ),
-        IngredientMetrics(
-            id="i2", weight=100, distance_modifier=ARGENTINA_DISTANCE_MODIFIER, ratio=None
-        ),
-    ]
-    assert score.global_distance_modifier(metrics) == pytest.approx(FRANCE_DISTANCE_MODIFIER * 0.5)
+    recipe_metrics = RecipeMetrics(
+        metrics=[
+            IngredientMetrics(
+                id="i1", weight=100, distance_modifier=FRANCE_DISTANCE_MODIFIER, ratio=0.5
+            ),
+            IngredientMetrics(
+                id="i2", weight=100, distance_modifier=ARGENTINA_DISTANCE_MODIFIER, ratio=None
+            ),
+        ]
+    )
+    assert score.global_distance_modifier(recipe_metrics) == pytest.approx(
+        FRANCE_DISTANCE_MODIFIER * 0.5
+    )
 
 
 # --- compute_green_score integration --------------------------------------

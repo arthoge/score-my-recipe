@@ -17,7 +17,23 @@ class AccountedWeights(enum.StrEnum):
     ALL_WEIGHTS = "total"
 
 
-class IngredientMetrics(BaseModel):
+class NotesMixin(BaseModel):
+    """Mixin for models that can have notes."""
+
+    notes: Optional[list[str]] = Field(
+        default=None,
+        description="Optional notes about computation specifics",
+    )
+
+    def add_note(self, note: str) -> None:
+        """Add a note to the ingredient metrics."""
+        if self.notes is None:
+            self.notes = [note]
+        else:
+            self.notes.append(note)
+
+
+class IngredientMetrics(NotesMixin):
     """Metrics gathered for a single ingredient during score computation
 
     Fields are filled incrementally by the score passes
@@ -50,18 +66,26 @@ class IngredientMetrics(BaseModel):
         default=False,
         description="True when the ingredient has no usable Agribalyse EF score",
     )
-    notes: Optional[list[str]] = Field(
-        default=None,
-        description="Optional notes about computation specifics to this ingredient",
+
+
+class RecipeMetrics(NotesMixin):
+    """Metrics gathered for a recipe during green-score computation.
+
+    Wraps the per-ingredient :class:`IngredientMetrics` computed by the score
+    passes. The ``metrics`` list is filled by :func:`api.score.gather_ef_metrics`
+    then mutated in place by the subsequent passes (ratios, labels, EPI and
+    distance modifiers), so each :class:`IngredientMetrics` stays the single
+    source of truth for its ingredient.
+    """
+
+    metrics: list[IngredientMetrics] = Field(
+        default_factory=list,
+        description="Per-ingredient metrics, one entry per recipe ingredient",
     )
 
-    def add_note(self, note: str) -> None:
-        """Add a note to the ingredient metrics."""
-        if self.notes is None:
-            self.notes = [note]
-        else:
-            self.notes.append(note)
-
-
-#: Type alias for a list of per-ingredient metrics
-RecipeMetrics = list[IngredientMetrics]
+    @property
+    def ingredients_notes(self):
+        """Return a dictionary of all notes from the ingredients metrics
+        keyed by ingredient id.
+        """
+        return {metric.id: metric.notes for metric in self.metrics if metric.notes}

@@ -9,6 +9,8 @@ from api.api import app
 from api import recipes
 from api import types
 
+from tests.helpers import patch_language_check
+
 
 client = TestClient(app)
 
@@ -20,7 +22,10 @@ INGREDIENTS_JSON_PATH = Path(__file__).parent / "inputs" / "ingredients.full.jso
 def mock_ingredients_taxonomy():
     """Load the ingredients taxonomy from the test input file via get_taxonomy"""
     ingredients_taxonomy = off_taxonomy.Taxonomy.from_path(INGREDIENTS_JSON_PATH)
-    with patch("openfoodfacts.taxonomy.get_taxonomy", return_value=ingredients_taxonomy):
+    with (
+        patch("openfoodfacts.taxonomy.get_taxonomy", return_value=ingredients_taxonomy),
+        patch_language_check(),
+    ):
         yield
 
 
@@ -144,3 +149,9 @@ def test_get_ingredients_api_returns_synonyms_when_requested(mock_ingredients_ta
         ingredient["id"]: ingredient["synonyms"] for ingredient in response.json()["ingredients"]
     }
     assert synonyms_by_id["en:alcohol"] == ["alcohol", "Pure alcohol"]
+
+
+def test_get_ingredients_api_invalid_language_returns_422(mock_ingredients_taxonomy):
+    """An unsupported language code (lang=zz) is rejected with HTTP 422."""
+    response = client.get("/v1/ingredients", params={"lang": "zz"})
+    assert response.status_code == 422
