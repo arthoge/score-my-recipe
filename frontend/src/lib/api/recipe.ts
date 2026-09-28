@@ -70,15 +70,9 @@ export function apiIngredientToIngredient(apiIngredient: RecipeIngredient): Ingr
 	};
 
 	// Pre-fill origin from the parsed text (e.g. "en:france").
-	const origin: TaxonomyItem | null = apiIngredient.origins
-		? { id: apiIngredient.origins, label: apiIngredient.origins, isInTaxonomy: true }
-		: null;
+	const origin: TaxonomyItem | null = apiIngredient.origins ?? null;
 
-	const labels: TaxonomyItem[] = (apiIngredient.labels ?? []).map((label) => ({
-		id: label,
-		label: label,
-		isInTaxonomy: true
-	}));
+	const labels: TaxonomyItem[] = apiIngredient.labels ?? [];
 
 	return {
 		id: generateIngredientId(),

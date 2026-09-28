@@ -158,11 +158,11 @@ def test_parse_text_returns_origins_and_labels_when_detected(
     ingredients = response.json()["ingredients"]
 
     # First ingredient: butter — should have both origins and labels
-    assert ingredients[0]["origins"] == "en:france"
-    assert ingredients[0]["labels"] == ["en:organic"]
+    assert ingredients[0]["origins"] == {"id": "en:france", "label": "France", "isInTaxonomy": True}
+    assert ingredients[0]["labels"] == [{"id": "en:organic", "label": "Organic", "isInTaxonomy": True}]
 
     # Second ingredient: cocoa — has origin but no label
-    assert ingredients[1]["origins"] == "en:ecuador"
+    assert ingredients[1]["origins"] == {"id": "en:ecuador", "label": "Ecuador", "isInTaxonomy": True}
     assert ingredients[1]["labels"] == []
 
 
@@ -208,13 +208,16 @@ def test_parse_text_handles_multiple_origins_and_labels(mock_off_parse_text_with
     )
     assert response.status_code == 200
     ingredients = response.json()["ingredients"]
-    
+
     # Labels should be split into a list of two items
-    assert ingredients[0]["labels"] == ["en:organic", "en:vegan"]
-    
+    assert ingredients[0]["labels"] == [
+        {"id": "en:organic", "label": "Organic", "isInTaxonomy": True},
+        {"id": "en:vegan", "label": "Vegan", "isInTaxonomy": True},
+    ]
+
     # Origins should be dropped (None) because there are multiple
     assert ingredients[0]["origins"] is None
-    
+
     # A note should be added explaining the dropped origin
     assert len(ingredients[0]["notes"]) == 1
     assert "Dropped origins" in ingredients[0]["notes"][0]

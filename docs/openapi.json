@@ -1091,20 +1091,19 @@
           "origins": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/TaxonomyItem"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Origins",
             "description": "Origins of the ingredient"
           },
           "labels": {
             "anyOf": [
               {
                 "items": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/TaxonomyItem"
                 },
                 "type": "array"
               },
@@ -1167,9 +1166,17 @@
             "codified_ingredient": "apple",
             "is_in_taxonomy": true,
             "labels": [
-              "en:organic"
+              {
+                "id": "en:organic",
+                "isInTaxonomy": true,
+                "label": "Organic"
+              }
             ],
-            "origins": "en:france",
+            "origins": {
+              "id": "en:france",
+              "isInTaxonomy": true,
+              "label": "France"
+            },
             "quantity_g": 150.0,
             "quantity_unit": "kg",
             "quantity_value": 0.15,

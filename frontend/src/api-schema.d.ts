@@ -584,9 +584,17 @@ export interface components {
 		 *       "codified_ingredient": "apple",
 		 *       "is_in_taxonomy": true,
 		 *       "labels": [
-		 *         "en:organic"
+		 *         {
+		 *           "id": "en:organic",
+		 *           "isInTaxonomy": true,
+		 *           "label": "Organic"
+		 *         }
 		 *       ],
-		 *       "origins": "en:france",
+		 *       "origins": {
+		 *         "id": "en:france",
+		 *         "isInTaxonomy": true,
+		 *         "label": "France"
+		 *       },
 		 *       "quantity_g": 150,
 		 *       "quantity_unit": "kg",
 		 *       "quantity_value": 0.15,
@@ -614,16 +622,13 @@ export interface components {
 			 * @description Quantity in grams
 			 */
 			quantity_g?: number | null;
-			/**
-			 * Origins
-			 * @description Origins of the ingredient
-			 */
-			origins?: string | null;
+			/** @description Origins of the ingredient */
+			origins?: components['schemas']['TaxonomyItem'] | null;
 			/**
 			 * Labels
 			 * @description Labels of the ingredient
 			 */
-			labels?: string[] | null;
+			labels?: components['schemas']['TaxonomyItem'][] | null;
 			/**
 			 * Quantity Value
 			 * @description Numeric value of the quantity
