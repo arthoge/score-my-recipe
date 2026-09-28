@@ -25,7 +25,7 @@ countries.forEach((country) => {
 });
 
 const FALLBACK_LOCALE = 'en-US';
-var currentLocale = FALLBACK_LOCALE;
+let currentLocale = FALLBACK_LOCALE;
 
 locale.subscribe((value) => {
 	if (value) {
