@@ -133,12 +133,17 @@
 				     for ingredients it is an IngredientSuggestion carrying hasEfScore. -->
 				{@const suggestion = item as IngredientSuggestion}
 				{#if suggestion.hasEfScore}
-					<span
+<span
 						title={$_('recipe.ingredient_scorable', {
 							default: 'This ingredient can be counted in the green score'
 						})}
 					>
 						<IconMdiLeaf class="h-4 w-4 shrink-0" aria-hidden="true" />
+						<span class="sr-only">
+							{$_('recipe.ingredient_scorable', {
+								default: 'This ingredient can be counted in the green score'
+							})}
+						</span>
 					</span>
 				{/if}
 			{/snippet}
