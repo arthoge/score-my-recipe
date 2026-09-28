@@ -133,7 +133,7 @@
 				     for ingredients it is an IngredientSuggestion carrying hasEfScore. -->
 				{@const suggestion = item as IngredientSuggestion}
 				{#if suggestion.hasEfScore}
-<span
+					<span
 						title={$_('recipe.ingredient_scorable', {
 							default: 'This ingredient can be counted in the green score'
 						})}
