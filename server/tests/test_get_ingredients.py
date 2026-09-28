@@ -72,7 +72,7 @@ def mock_ingredients_taxonomy():
         recipes._get_ingredients_entries.cache_clear()
 
 
-def ingredient_list_to_dict(ingredients: list[types.Ingredient]) -> dict[str, str]:
+def ingredient_list_to_dict(ingredients: list[types.SuggestedIngredient]) -> dict[str, str]:
     """Convert a list of Ingredient objects to a dictionary for easier comparison"""
     return {ingredient.id: ingredient.label for ingredient in ingredients}
 
