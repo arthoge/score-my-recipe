@@ -17,6 +17,8 @@
 	import Tags from './Tags.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
 	import IconMdiAlertCircle from '@iconify-svelte/mdi/alert-circle';
+	import IconMaterialSymbolsSunnyOutline from '@iconify-svelte/material-symbols/sunny-outline';
+	import IconMaterialSymbolsCloudOutline from '@iconify-svelte/material-symbols/cloud-outline';
 	import type { Ingredient } from '$lib/types/ingredient';
 	import { isIngredientEmpty, isIngredientNotEmpty } from '$lib/types/ingredient';
 
@@ -171,6 +173,7 @@
 						aria-pressed={!ingredient.isInSeason}
 						onclick={() => (ingredient.isInSeason = false)}
 					>
+						<IconMaterialSymbolsCloudOutline class="h-4 w-4" aria-hidden="true" />
 						{$_('recipe.off_season', { default: 'Off season' })}
 					</button>
 					<button
@@ -180,6 +183,7 @@
 						aria-pressed={ingredient.isInSeason}
 						onclick={() => (ingredient.isInSeason = true)}
 					>
+						<IconMaterialSymbolsSunnyOutline class="h-4 w-4" aria-hidden="true" />
 						{$_('recipe.in_season', { default: 'In season' })}
 					</button>
 				</div>
