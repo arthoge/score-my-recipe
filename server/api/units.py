@@ -55,9 +55,12 @@ def _normalize_unit_name(name: str) -> str:
     (e.g. ``"pièce"`` -> ``"piece"``) and replaces spaces with ``-``
     (so ``"fl oz"`` matches the ``"fl-oz"`` form used in taxonomy slugs).
     """
-    # decompose accents and drop the combining marks (NFKD + ASCII round-trip)
-    no_accents = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
-    return no_accents.strip().lower().replace(" ", "-")
+    no_accents = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", name)
+        if not unicodedata.combining(char)
+    )
+    return no_accents.strip().casefold().replace(" ", "-")
 
 
 @async_lru_cache(maxsize=200)
