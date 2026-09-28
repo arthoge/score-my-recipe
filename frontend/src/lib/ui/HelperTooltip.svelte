@@ -1,3 +1,16 @@
+<script module lang="ts">
+	// Monotonic counter guaranteeing a unique id per HelperTooltip instance,
+	// so each button can point aria-describedby at its own instruction text.
+	let tooltipCounter = 0;
+
+	/** Returns a fresh, unique id for a tooltip's screen-reader description. */
+	function nextTipId(): string {
+		const id = `helper-tooltip-${tooltipCounter}`;
+		tooltipCounter += 1;
+		return id;
+	}
+</script>
+
 <script lang="ts">
 	type Props = {
 		tip: string;
@@ -8,6 +21,10 @@
 	let { tip, ariaLabel = 'More information', position = 'top' }: Props = $props();
 
 	let positionClass = $derived(`tooltip-${position}`);
+
+	// Deterministic per render pass, so server-rendered and hydrated markup
+	// produce matching ids (no hydration mismatch).
+	const tipId = nextTipId();
 </script>
 
 <div
@@ -18,6 +35,7 @@
 		type="button"
 		class="btn btn-ghost btn-xs hover:bg-primary/10 h-5 min-h-0 w-5 rounded-full p-0 transition-colors duration-200"
 		aria-label={ariaLabel}
+		aria-describedby={tipId}
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -30,4 +48,8 @@
 			/>
 		</svg>
 	</button>
+	<!-- Screen-reader text: daisyUI renders the visible tooltip from data-tip
+	     via a CSS pseudo-element, which assistive technology does not reliably
+	     announce, so the same guidance is exposed here as real DOM content. -->
+	<span id={tipId} class="sr-only">{tip}</span>
 </div>
