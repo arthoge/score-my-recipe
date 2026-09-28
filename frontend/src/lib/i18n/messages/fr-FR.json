@@ -100,6 +100,45 @@
 		"table_taxonomy": "Dans la taxonomie",
 		"table_quantity": "Quantité (g)",
 		"yes": "Oui",
-		"no": "Non"
+		"no": "Non",
+		"recipe_lang_label": "Langue de la recette"
+	},
+	"onboarding": {
+		"title": "Comment noter votre recette",
+		"subtitle": "Calculez l'impact environnemental de vos créations culinaires en quelques secondes.",
+		"step1_title": "1. Saisissez vos ingrédients",
+		"step1_desc": "Collez ou écrivez vos ingrédients avec leurs quantités (ex. 200g de farine, 3 œufs).",
+		"step2_title": "2. Détection automatique",
+		"step2_desc": "Nous reconnaissons vos ingrédients et les associons à la base officielle Agribalyse / PEF.",
+		"step3_title": "3. Green-Score en direct",
+		"step3_desc": "Découvrez votre score de A à F, visualisez les correspondances et améliorez votre impact.",
+		"dismiss": "J'ai compris !",
+		"help_button": "Comment ça marche ?"
+	},
+	"helpers": {
+		"more_info": "Plus d'informations",
+		"recipe_text": "Entrez chaque ingrédient sur une nouvelle ligne avec sa quantité (ex. 200g de farine, 3 œufs, 100g de sucre).",
+		"recipe_language": "Langue utilisée pour reconnaître et associer les noms d'ingrédients du texte.",
+		"codified_ingredient": "Ingrédient standardisé issu de la base de données Open Food Facts / Agribalyse.",
+		"weight": "Quantité nette de l'ingrédient en grammes.",
+		"labels": "Certifications officielles (ex. Bio, Label Rouge, Commerce Équitable) apportant des bonus au Green-Score.",
+		"seasonality": "Cochez si les fruits et légumes sont de saison pour obtenir un bonus environnemental.",
+		"origin": "Origine géographique de l'ingrédient, utilisée pour évaluer l'impact du transport.",
+		"country": "Pays où la recette est préparée ou consommée, utilisé pour calculer les distances de transport."
+	},
+	"examples": {
+		"title": "Ou essayez un exemple de recette :",
+		"quiche": "Quiche lorraine",
+		"apple_pie": "Tarte aux pommes",
+		"ratatouille": "Ratatouille"
+	},
+	"languages": {
+		"ui_language": "Langue de l'interface",
+		"recipe_language": "Langue de la recette",
+		"en": "English",
+		"fr": "Français",
+		"es": "Español",
+		"de": "Deutsch",
+		"it": "Italiano"
 	}
 }

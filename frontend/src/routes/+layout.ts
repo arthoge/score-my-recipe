@@ -1,4 +1,4 @@
-import { locale, waitLocale } from '$lib/i18n';
+import { locale, waitLocale, getLocale } from '$lib/i18n';
 import { browser } from '$app/environment';
 import type { LayoutLoad } from './$types';
 
@@ -7,7 +7,7 @@ import type { LayoutLoad } from './$types';
  */
 export const load: LayoutLoad = async () => {
 	if (browser) {
-		locale.set(window.navigator.language);
+		locale.set(getLocale());
 	}
 	await waitLocale();
 
