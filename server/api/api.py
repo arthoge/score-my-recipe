@@ -17,6 +17,7 @@ import api.recipes as recipes
 import api.exceptions as exceptions
 import api.score as score
 import api.types as types
+import api.units as units
 
 app = FastAPI(
     title="Score My Recipe",
@@ -131,9 +132,9 @@ async def get_units(
 
     Note: as the list is not too big, we let clients handle suggestions to users
     """
-    units = await recipes.get_units(filter_query.lang, filter_query.include_synonyms)
+    unit_list = await units.get_units(filter_query.lang, filter_query.include_synonyms)
     response.headers["Cache-Control"] = "max-age=86400"
-    return types.UnitsResponse(units=units)
+    return types.UnitsResponse(units=unit_list)
 
 
 @app.get("/v1/suggest-scored-ingredient", response_model_exclude_none=True)
@@ -183,7 +184,7 @@ async def recompute_quantity(
     ``lang``) or the ``item`` sentinel for countable ingredients.
     """
     try:
-        quantity_g, value, unit = await recipes.recompute_quantity(
+        quantity_g, value, unit = await units.recompute_quantity(
             request.quantity_g,
             request.old_value,
             request.old_unit,

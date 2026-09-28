@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 from openfoodfacts.taxonomy import Taxonomy, TaxonomyNode
 
 from api import types
-from api.recipes import two_letter_lang_code
+from api.lang import two_letter_lang_code
 
 
 # useful constant when computing scores without origins

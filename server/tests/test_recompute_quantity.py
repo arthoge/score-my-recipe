@@ -1,4 +1,4 @@
-"""Tests for ``recipes.recompute_quantity`` and the ``POST /v1/recompute-quantity`` endpoint.
+"""Tests for ``units.recompute_quantity`` and the ``POST /v1/recompute-quantity`` endpoint.
 
 The units taxonomy is mocked with a handful of nodes exercising the
 ``standard_unit`` and ``conversion_factor`` properties (mirroring the real OFF
@@ -12,7 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api.api import app
-from api import recipes
+from api import units
 from api import exceptions
 
 from tests.helpers import create_taxonomy, create_taxonomy_node, patch_language_check
@@ -67,8 +67,8 @@ def mock_units_taxonomy():
     # so we don't hit the network and can control accepted codes ("en"/"fr")
     # reset the per-language caches so a previous run (with another taxonomy)
     # does not leak into this one
-    recipes._get_units_entries.cache_clear()
-    recipes._unit_name_to_id.cache_clear()
+    units._get_units_entries.cache_clear()
+    units._unit_name_to_id.cache_clear()
     try:
         with (
             patch("api.off.get_units_taxonomy", new_callable=AsyncMock) as mock_tax,
@@ -77,8 +77,8 @@ def mock_units_taxonomy():
             mock_tax.return_value = mocked_taxonomy
             yield mock_tax
     finally:
-        recipes._get_units_entries.cache_clear()
-        recipes._unit_name_to_id.cache_clear()
+        units._get_units_entries.cache_clear()
+        units._unit_name_to_id.cache_clear()
 
 
 # --- business logic --------------------------------------------------------
@@ -87,7 +87,7 @@ def mock_units_taxonomy():
 @pytest.mark.asyncio
 async def test_same_unit_cross_multiplies(mock_units_taxonomy):
     """Case 1: unchanged unit -> quantity_g scales with the value ratio."""
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=2000, old_value=2, old_unit="xx:kg", new_value=3, new_unit="xx:kg", lang="en"
     )
     assert quantity_g == pytest.approx(3000)
@@ -102,7 +102,7 @@ async def test_same_unit_name_cross_multiplies(mock_units_taxonomy):
     No resolution is needed (and none performed) for a plain cross-multiplication;
     the input name is echoed back unchanged.
     """
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=2000, old_value=2, old_unit="kg", new_value=3, new_unit="kg", lang="en"
     )
     assert quantity_g == pytest.approx(3000)
@@ -113,7 +113,7 @@ async def test_same_unit_name_cross_multiplies(mock_units_taxonomy):
 @pytest.mark.asyncio
 async def test_same_item_unit_cross_multiplies(mock_units_taxonomy):
     """Case 1 with the item sentinel (e.g. 2 eggs -> 3 eggs)."""
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=120, old_value=2, old_unit="item", new_value=3, new_unit="item", lang="en"
     )
     assert quantity_g == pytest.approx(180)
@@ -127,7 +127,7 @@ async def test_same_unit_zero_old_value_mass_unit_uses_factor(mock_units_taxonom
 
     E.g. editing "0 kg" -> "2 kg" yields 2000 g (factor 1000).
     """
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=0, old_value=0, old_unit="xx:kg", new_value=2, new_unit="xx:kg", lang="en"
     )
     assert quantity_g == pytest.approx(2000)
@@ -138,7 +138,7 @@ async def test_same_unit_zero_old_value_mass_unit_uses_factor(mock_units_taxonom
 @pytest.mark.asyncio
 async def test_same_unit_zero_old_value_mass_unit_name_uses_factor(mock_units_taxonomy):
     """Case 1 zero-old-value fallback also resolves a unit *name* to its factor."""
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=0, old_value=0, old_unit="kg", new_value=2, new_unit="kg", lang="en"
     )
     assert quantity_g == pytest.approx(2000)
@@ -150,7 +150,7 @@ async def test_same_unit_zero_old_value_mass_unit_name_uses_factor(mock_units_ta
 async def test_same_unit_zero_old_value_non_mass_unit_raises(mock_units_taxonomy):
     """Case 1 with a zero old value and a non-mass unit cannot be computed (-> 404)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=0,
             old_value=0,
             old_unit="en:cup",
@@ -164,7 +164,7 @@ async def test_same_unit_zero_old_value_non_mass_unit_raises(mock_units_taxonomy
 async def test_same_item_unit_zero_old_value_raises(mock_units_taxonomy):
     """Case 1 with a zero old value and the item sentinel cannot be computed (-> 404)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=0, old_value=0, old_unit="item", new_value=3, new_unit="item", lang="en"
         )
 
@@ -172,7 +172,7 @@ async def test_same_item_unit_zero_old_value_raises(mock_units_taxonomy):
 @pytest.mark.asyncio
 async def test_change_to_mass_unit_uses_conversion_factor(mock_units_taxonomy):
     """Case 2: switch to a mass unit -> grams = new_value * conversion_factor."""
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=2000, old_value=2000, old_unit="xx:g", new_value=2, new_unit="xx:kg", lang="en"
     )
     assert quantity_g == pytest.approx(2000)
@@ -187,7 +187,7 @@ async def test_change_to_mass_unit_name_uses_conversion_factor(mock_units_taxono
     Mirrors the real discrepancy: parse returns quantity_unit "kg" (a name), and
     recompute must accept it.
     """
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=2000, old_value=2000, old_unit="g", new_value=2, new_unit="kg", lang="en"
     )
     assert quantity_g == pytest.approx(2000)
@@ -198,7 +198,7 @@ async def test_change_to_mass_unit_name_uses_conversion_factor(mock_units_taxono
 @pytest.mark.asyncio
 async def test_change_to_mass_unit_resolves_full_name(mock_units_taxonomy):
     """The full english label "kilogram" also resolves to xx:kg."""
-    quantity_g, _, _ = await recipes.recompute_quantity(
+    quantity_g, _, _ = await units.recompute_quantity(
         quantity_g=2000, old_value=2000, old_unit="g", new_value=2, new_unit="kilogram", lang="en"
     )
     assert quantity_g == pytest.approx(2000)
@@ -210,7 +210,7 @@ async def test_change_to_mass_unit_resolves_xx_abbreviation_for_other_lang(mock_
 
     "kg" is the neutral (xx) name of xx:kg, not present in the en translation set.
     """
-    quantity_g, _, _ = await recipes.recompute_quantity(
+    quantity_g, _, _ = await units.recompute_quantity(
         quantity_g=2000, old_value=2000, old_unit="g", new_value=2, new_unit="kg", lang="fr"
     )
     assert quantity_g == pytest.approx(2000)
@@ -220,7 +220,7 @@ async def test_change_to_mass_unit_resolves_xx_abbreviation_for_other_lang(mock_
 async def test_unit_name_is_case_and_accent_insensitive(mock_units_taxonomy):
     """Unit name lookup normalizes case, accents and spaces."""
     # "Kg" (uppercase) resolves to xx:kg
-    quantity_g, _, _ = await recipes.recompute_quantity(
+    quantity_g, _, _ = await units.recompute_quantity(
         quantity_g=2000, old_value=2000, old_unit="g", new_value=2, new_unit="Kg", lang="en"
     )
     assert quantity_g == pytest.approx(2000)
@@ -230,7 +230,7 @@ async def test_unit_name_is_case_and_accent_insensitive(mock_units_taxonomy):
 async def test_change_from_item_to_mass_unit(mock_units_taxonomy):
     """Case 2: the old unit being 'item' is irrelevant, new_value drives the grams."""
     # was 2 eggs (quantity_g derived), now 5 kg -> 5000 g
-    quantity_g, _, _ = await recipes.recompute_quantity(
+    quantity_g, _, _ = await units.recompute_quantity(
         quantity_g=120, old_value=2, old_unit="item", new_value=5, new_unit="xx:kg", lang="en"
     )
     assert quantity_g == pytest.approx(5000)
@@ -250,7 +250,7 @@ async def test_change_volume_to_volume_cross_multiplies(mock_units_taxonomy):
     1 cup = 240 ml (factor 240), 480 ml = 480 ml (factor 1). The grams are
     proportional: 240 g (for 1 cup) -> 480 g (for 480 ml), i.e. x2.
     """
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=240,
         old_value=1,
         old_unit="en:cup",
@@ -271,7 +271,7 @@ async def test_change_volume_to_volume_name_cross_multiplies(mock_units_taxonomy
     recompute must resolve both the old and the new name to cross-multiply.
     """
     # 2 cups (480 ml) -> 480 ml: grams stay the same (480).
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=480, old_value=2, old_unit="cup", new_value=480, new_unit="ml", lang="en"
     )
     assert quantity_g == pytest.approx(480)
@@ -283,7 +283,7 @@ async def test_change_volume_to_volume_name_cross_multiplies(mock_units_taxonomy
 async def test_change_volume_to_volume_inverse_direction(mock_units_taxonomy):
     """Case 2 (volume) the other way around: "ml" -> "cup" also scales correctly."""
     # 480 ml (480 ml) -> 1 cup (240 ml): grams halve.
-    quantity_g, _, unit = await recipes.recompute_quantity(
+    quantity_g, _, unit = await units.recompute_quantity(
         quantity_g=480,
         old_value=480,
         old_unit="xx:millilitre",
@@ -302,7 +302,7 @@ async def test_change_mass_to_mass_uses_same_standard_unit(mock_units_taxonomy):
     Confirms the same-standard-unit path is taken for mass too, and agrees with
     the absolute fallback: 2 kg = 2000 g, 500 g = 500 g (x0.25).
     """
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=2000, old_value=2, old_unit="xx:kg", new_value=500, new_unit="xx:g", lang="en"
     )
     assert quantity_g == pytest.approx(500)
@@ -318,7 +318,7 @@ async def test_change_same_standard_unit_respects_known_quantity_g(mock_units_ta
     2000 g): the proportional formula keeps that 3000 g as the anchor.
     """
     # 2 kg -> 4 kg: grams double, anchored on the known 3000 g.
-    quantity_g, _, _ = await recipes.recompute_quantity(
+    quantity_g, _, _ = await units.recompute_quantity(
         quantity_g=3000, old_value=2, old_unit="xx:kg", new_value=4, new_unit="xx:kg", lang="en"
     )
     assert quantity_g == pytest.approx(6000)
@@ -328,7 +328,7 @@ async def test_change_same_standard_unit_respects_known_quantity_g(mock_units_ta
 async def test_change_same_standard_unit_zero_old_value_falls_back(mock_units_taxonomy):
     """Case 2 with a zero old value: cannot cross-multiply -> mass fallback (200)."""
     # 0 kg -> 2 g: old_value is 0 so Case 2 is skipped, Case 3 gives 2 * 1 = 2 g.
-    quantity_g, _, _ = await recipes.recompute_quantity(
+    quantity_g, _, _ = await units.recompute_quantity(
         quantity_g=0, old_value=0, old_unit="xx:kg", new_value=2, new_unit="xx:g", lang="en"
     )
     assert quantity_g == pytest.approx(2)
@@ -342,7 +342,7 @@ async def test_change_same_standard_unit_zero_old_value_volume_not_supported(moc
     units have no absolute grams fallback like mass does.
     """
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=0,
             old_value=0,
             old_unit="en:cup",
@@ -358,7 +358,7 @@ async def test_change_same_standard_unit_unknown_old_unit_falls_back(mock_units_
 
     old_unit "dozen" is unknown, new_unit "kg" is mass -> absolute 2 * 1000.
     """
-    quantity_g, _, _ = await recipes.recompute_quantity(
+    quantity_g, _, _ = await units.recompute_quantity(
         quantity_g=999, old_value=3, old_unit="dozen", new_value=2, new_unit="xx:kg", lang="en"
     )
     assert quantity_g == pytest.approx(2000)
@@ -368,7 +368,7 @@ async def test_change_same_standard_unit_unknown_old_unit_falls_back(mock_units_
 async def test_change_from_mass_to_volume_not_supported(mock_units_taxonomy):
     """Case 3: mass -> volume is not supported yet (-> 404)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=2000,
             old_value=2000,
             old_unit="xx:g",
@@ -382,7 +382,7 @@ async def test_change_from_mass_to_volume_not_supported(mock_units_taxonomy):
 async def test_change_from_mass_to_volume_name_not_supported(mock_units_taxonomy):
     """Case 3 with a unit *name*: "cup" resolves to en:cup (volume) -> not supported."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=2000, old_value=2000, old_unit="xx:g", new_value=2, new_unit="cup", lang="en"
         )
 
@@ -391,7 +391,7 @@ async def test_change_from_mass_to_volume_name_not_supported(mock_units_taxonomy
 async def test_change_from_mass_to_item_not_supported(mock_units_taxonomy):
     """Case 3: switching to a countable unit is not supported yet (-> 404)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=2000,
             old_value=2000,
             old_unit="xx:g",
@@ -405,7 +405,7 @@ async def test_change_from_mass_to_item_not_supported(mock_units_taxonomy):
 async def test_change_from_item_to_volume_not_supported(mock_units_taxonomy):
     """Case 3: item -> volume is not supported yet (-> 404)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=120, old_value=2, old_unit="item", new_value=1, new_unit="en:cup", lang="en"
         )
 
@@ -414,7 +414,7 @@ async def test_change_from_item_to_volume_not_supported(mock_units_taxonomy):
 async def test_unknown_new_unit_id_raises(mock_units_taxonomy):
     """An unknown new unit id is rejected (-> 422)."""
     with pytest.raises(exceptions.UnknownUnitError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=2000,
             old_value=2000,
             old_unit="xx:g",
@@ -428,7 +428,7 @@ async def test_unknown_new_unit_id_raises(mock_units_taxonomy):
 async def test_unknown_new_unit_name_raises(mock_units_taxonomy):
     """An unresolvable unit *name* is rejected as unknown (-> 422)."""
     with pytest.raises(exceptions.UnknownUnitError):
-        await recipes.recompute_quantity(
+        await units.recompute_quantity(
             quantity_g=2000, old_value=2000, old_unit="g", new_value=2, new_unit="dozen", lang="en"
         )
 
@@ -439,7 +439,7 @@ async def test_old_unit_name_not_resolved_in_cross_multiply(mock_units_taxonomy)
 
     The unit cancels out in Case 1, so old_unit is never resolved/validated.
     """
-    quantity_g, value, unit = await recipes.recompute_quantity(
+    quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=2000, old_value=2, old_unit="dozen", new_value=3, new_unit="dozen", lang="en"
     )
     assert quantity_g == pytest.approx(3000)

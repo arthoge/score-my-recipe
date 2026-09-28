@@ -1,7 +1,7 @@
 """Some high level checks (that are not self contained)"""
 
 import api.off as off
-from api.recipes import two_letter_lang_code
+from api.lang import two_letter_lang_code
 
 
 async def check_language_code(lang: str) -> bool:
