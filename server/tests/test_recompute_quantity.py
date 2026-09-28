@@ -148,7 +148,7 @@ async def test_same_unit_zero_old_value_mass_unit_name_uses_factor(mock_units_ta
 
 @pytest.mark.asyncio
 async def test_same_unit_zero_old_value_non_mass_unit_raises(mock_units_taxonomy):
-    """Case 1 with a zero old value and a non-mass unit cannot be computed (-> 404)."""
+    """Case 1 with a zero old value and a non-mass unit cannot be computed (-> 422)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
         await units.recompute_quantity(
             quantity_g=0,
@@ -162,7 +162,7 @@ async def test_same_unit_zero_old_value_non_mass_unit_raises(mock_units_taxonomy
 
 @pytest.mark.asyncio
 async def test_same_item_unit_zero_old_value_raises(mock_units_taxonomy):
-    """Case 1 with a zero old value and the item sentinel cannot be computed (-> 404)."""
+    """Case 1 with a zero old value and the item sentinel cannot be computed (-> 422)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
         await units.recompute_quantity(
             quantity_g=0, old_value=0, old_unit="item", new_value=3, new_unit="item", lang="en"
@@ -336,7 +336,7 @@ async def test_change_same_standard_unit_zero_old_value_falls_back(mock_units_ta
 
 @pytest.mark.asyncio
 async def test_change_same_standard_unit_zero_old_value_volume_not_supported(mock_units_taxonomy):
-    """Case 2 with a zero old value and a volume target has no fallback (-> 404).
+    """Case 2 with a zero old value and a volume target has no fallback (-> 422).
 
     Without a previous value we cannot recover the (unknown) density, and volume
     units have no absolute grams fallback like mass does.
@@ -366,7 +366,7 @@ async def test_change_same_standard_unit_unknown_old_unit_falls_back(mock_units_
 
 @pytest.mark.asyncio
 async def test_change_from_mass_to_volume_not_supported(mock_units_taxonomy):
-    """Case 3: mass -> volume is not supported yet (-> 404)."""
+    """Case 3: mass -> volume is not supported yet (-> 422)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
         await units.recompute_quantity(
             quantity_g=2000,
@@ -389,7 +389,7 @@ async def test_change_from_mass_to_volume_name_not_supported(mock_units_taxonomy
 
 @pytest.mark.asyncio
 async def test_change_from_mass_to_item_not_supported(mock_units_taxonomy):
-    """Case 3: switching to a countable unit is not supported yet (-> 404)."""
+    """Case 3: switching to a countable unit is not supported yet (-> 422)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
         await units.recompute_quantity(
             quantity_g=2000,
@@ -403,7 +403,7 @@ async def test_change_from_mass_to_item_not_supported(mock_units_taxonomy):
 
 @pytest.mark.asyncio
 async def test_change_from_item_to_volume_not_supported(mock_units_taxonomy):
-    """Case 3: item -> volume is not supported yet (-> 404)."""
+    """Case 3: item -> volume is not supported yet (-> 422)."""
     with pytest.raises(exceptions.UnitConversionNotSupportedError):
         await units.recompute_quantity(
             quantity_g=120, old_value=2, old_unit="item", new_value=1, new_unit="en:cup", lang="en"
@@ -531,8 +531,8 @@ def test_api_change_volume_to_volume(mock_units_taxonomy):
     assert body["unit"] == "xx:millilitre"
 
 
-def test_api_change_to_volume_returns_404(mock_units_taxonomy):
-    """Case 3 returns HTTP 404."""
+def test_api_change_to_volume_returns_422(mock_units_taxonomy):
+    """Case 3 returns HTTP 422."""
     response = client.post(
         "/v1/recompute-quantity",
         json={
@@ -544,7 +544,7 @@ def test_api_change_to_volume_returns_404(mock_units_taxonomy):
             "new_unit": "en:cup",
         },
     )
-    assert response.status_code == 404
+    assert response.status_code == 422
 
 
 def test_api_same_unit_zero_old_value_mass_unit(mock_units_taxonomy):
@@ -564,8 +564,8 @@ def test_api_same_unit_zero_old_value_mass_unit(mock_units_taxonomy):
     assert response.json()["quantityG"] == pytest.approx(2000)
 
 
-def test_api_same_unit_zero_old_value_non_mass_returns_404(mock_units_taxonomy):
-    """Case 1 with a zero old value and a volume unit returns HTTP 404."""
+def test_api_same_unit_zero_old_value_non_mass_returns_422(mock_units_taxonomy):
+    """Case 1 with a zero old value and a volume unit returns HTTP 422."""
     response = client.post(
         "/v1/recompute-quantity",
         json={
@@ -577,7 +577,7 @@ def test_api_same_unit_zero_old_value_non_mass_returns_404(mock_units_taxonomy):
             "new_unit": "en:cup",
         },
     )
-    assert response.status_code == 404
+    assert response.status_code == 422
 
 
 def test_api_unknown_unit_returns_422(mock_units_taxonomy):

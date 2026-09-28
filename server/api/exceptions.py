@@ -4,7 +4,7 @@ import api.types as types
 
 
 class UnknownUnitError(Exception):
-    f"""Raised when a unit is neither the ``{types.ITEM_UNIT}`` sentinel nor a known taxonomy unit."""
+    """Raised when a unit is neither the ``item`` sentinel nor a known taxonomy unit."""
 
 
 class UnitConversionNotSupportedError(Exception):

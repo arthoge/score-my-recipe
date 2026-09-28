@@ -195,5 +195,5 @@ async def recompute_quantity(
     except exceptions.UnknownUnitError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except exceptions.UnitConversionNotSupportedError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc))
     return types.RecomputeQuantityResponse(quantity_g=quantity_g, value=value, unit=unit)

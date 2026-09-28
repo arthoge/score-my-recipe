@@ -725,7 +725,7 @@ class RecomputeQuantityRequest(LangRequest, CamelModel):
     Each unit (``old_unit`` / ``new_unit``) may be given either as a unit id
     from the OFF units taxonomy (e.g. ``xx:kg``), as a localized unit name
     resolvable through the units taxonomy (e.g. ``"kg"``, ``"tasse"``), or as
-    the ``{ITEM_UNIT}`` sentinel for countable ingredients (e.g. "1 egg").
+    the ``item`` sentinel for countable ingredients (e.g. "1 egg").
     """
 
     model_config = ConfigDict(

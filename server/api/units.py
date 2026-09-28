@@ -56,9 +56,7 @@ def _normalize_unit_name(name: str) -> str:
     (so ``"fl oz"`` matches the ``"fl-oz"`` form used in taxonomy slugs).
     """
     no_accents = "".join(
-        char
-        for char in unicodedata.normalize("NFKD", name)
-        if not unicodedata.combining(char)
+        char for char in unicodedata.normalize("NFKD", name) if not unicodedata.combining(char)
     )
     return no_accents.strip().casefold().replace(" ", "-")
 
@@ -201,11 +199,11 @@ async def recompute_quantity(
 
 
 async def _quantity_from_mass_unit(value: float, unit_id: str, lang: str) -> float | None:
-    f"""Compute the quantity in grams for a mass unit, or ``None`` if not a mass unit.
+    """Compute the quantity in grams for a mass unit, or ``None`` if not a mass unit.
 
     Returns ``value * conversion_factor`` when ``unit_id`` is a taxonomy unit
     whose ``standard_unit`` is ``"g"`` and that defines a ``conversion_factor``.
-    Returns ``None`` for the ``{types.ITEM_UNIT}`` sentinel
+    Returns ``None`` for the ``item`` sentinel
     or any non-mass (e.g. volume) unit.
 
     ``unit_id`` may be a taxonomy id or a localized unit name;
@@ -213,7 +211,7 @@ async def _quantity_from_mass_unit(value: float, unit_id: str, lang: str) -> flo
 
     :raises exceptions.UnknownUnitError: if ``unit_id`` is not in the units taxonomy
         (neither a known id nor a resolvable name)
-        and is not the ``{types.ITEM_UNIT}`` sentinel.
+        and is not the ``item`` sentinel.
     """
     if unit_id == types.ITEM_UNIT:
         return None
@@ -248,10 +246,10 @@ async def _unit_conversion(unit_id: str, lang: str) -> tuple[str | None, float |
 
 
 async def _safe_unit_conversion(unit_id: str, lang: str) -> tuple[str | None, float | None]:
-    f"""Like :func:`_unit_conversion` but returns ``(None, None)`` instead of raising.
+    """Like :func:`_unit_conversion` but returns ``(None, None)`` instead of raising.
 
     Used for the *old* unit in :func:`recompute_quantity`: it may be the
-    ``{types.ITEM_UNIT}`` sentinel or an unknown / unresolvable name,
+    ``item`` sentinel or an unknown / unresolvable name,
     in which case the same-standard-unit optimization simply does not apply
     and we fall back to the other cases.
     """
