@@ -4,14 +4,21 @@
 
 /**
  * Get the value of a cookie by name.
- * Returns null if not found or if running on the server.
+ * Returns null if not found, if running on the server, or if the stored value
+ * cannot be decoded (malformed percent-encoding).
  */
 export function getCookie(name: string): string | null {
 	if (typeof document === 'undefined') return null;
 	const escapedName = name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1');
 	const regex = new RegExp(`(?:^|; )${escapedName}=([^;]*)`);
 	const match = document.cookie.match(regex);
-	return match ? decodeURIComponent(match[1]) : null;
+	if (!match) return null;
+	try {
+		return decodeURIComponent(match[1]);
+	} catch {
+		// Malformed percent-encoded value; treat the cookie as absent.
+		return null;
+	}
 }
 
 export type CookieOptions = {

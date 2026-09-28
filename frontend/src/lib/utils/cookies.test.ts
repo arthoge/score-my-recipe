@@ -64,4 +64,10 @@ describe('cookies utility', () => {
 		deleteCookie('to_delete');
 		expect(getCookie('to_delete')).toBeNull();
 	});
+
+	it('returns null when the stored value is malformed percent-encoding', () => {
+		// Simulate a corrupt cookie value that decodeURIComponent cannot parse.
+		mockCookieStore['broken'] = '%E0%A4%A';
+		expect(getCookie('broken')).toBeNull();
+	});
 });
