@@ -1,0 +1,14 @@
+[
+	{
+		"id": "en:united-states",
+		"label": "English",
+		"languageCode": "en",
+		"countryCode": "us"
+	},
+	{
+		"id": "en:france",
+		"label": "Français",
+		"languageCode": "fr",
+		"countryCode": "fr"
+	}
+]

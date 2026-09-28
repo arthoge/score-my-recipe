@@ -39,59 +39,9 @@ def async_validate_model(fn):
     return wrapper
 
 
-class OFFIngredient(BaseModel):
-    """Ingredient model for Open Food Facts API"""
-
-    # TODO convert str to bool and is_in_taxonomy to bool
-    id: str
-    text: str
-    quantity: Optional[str] = None
-    quantity_ml: Optional[float] = None
-    quantity_g: Optional[float] = None
-    ecobalyse_code: Optional[str] = None
-    ciqual_food_code: Optional[str] = None
-    is_in_taxonomy: Optional[int] = None
-
-    @field_validator("quantity", mode="before")
-    def transform_id_to_str(cls, value) -> str:
-        """ensure that the quantity is always a string,
-        even if it is a number in the input"""
-        return str(value)
-
-
-class RecipeIngredient(BaseModel):
-    """Ingredient model for Score My Recipe API"""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "taxonomy_id": "en:apple",
-                    "is_in_taxonomy": True,
-                    "codified_ingredient": "apple",
-                    "quantity_g": 150.0,
-                    "quantity_value": 0.15,
-                    "quantity_unit": "kg",
-                }
-            ]
-        }
-    )
-
-    taxonomy_id: Annotated[Optional[str], Field(description="Taxonomy id of the ingredient")] = None
-    is_in_taxonomy: Annotated[bool, Field(description="Whether the ingredient is in the taxonomy")]
-    codified_ingredient: Annotated[str, Field(description="Codified ingredient name")]
-    quantity_g: Annotated[Optional[float], Field(description="Quantity in grams")] = None
-    quantity_value: Annotated[
-        Optional[float], Field(description="Numeric value of the quantity")
-    ] = None
-    quantity_unit: Annotated[Optional[str], Field(description="Unit of the quantity")] = None
-
-
-class TaxonomyItem(BaseModel):
-    """A taxonomy reference with an id and a localized label.
-
-    Mirrors the frontend `TaxonomyItem` (used for codified ingredients, labels
-    and origins).
+class SuggestedTaxonomyItem(BaseModel):
+    """A taxonomy reference with an id and a localized label,
+    returned by a suggestion API (eg list of origins, etc.)
     """
 
     model_config = ConfigDict(
@@ -112,7 +62,92 @@ class TaxonomyItem(BaseModel):
     ]
 
 
-class Origin(TaxonomyItem):
+class CamelModel(BaseModel):
+    """Base model exposing camelCase aliases (matching the frontend) in the OpenAPI schema."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+
+class TaxonomyItem(CamelModel):
+    """A taxonomy reference with an id and a localized label.
+
+    Mirrors the frontend `TaxonomyItem` (used for codified ingredients, labels
+    and origins).
+    """
+
+    # json_schema_extra is merged with the inherited CamelModel config
+    # (alias_generator + populate_by_name are preserved).
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"id": "en:apple", "label": "Apple", "isInTaxonomy": True}]}
+    )
+
+    id: Annotated[str, Field(description="Taxonomy identifier")]
+    label: Annotated[str, Field(description="Display label in the current language")]
+    is_in_taxonomy: Annotated[
+        bool, Field(description="Whether the item comes from the taxonomy (true) or is custom")
+    ]
+
+
+class OFFIngredient(BaseModel):
+    """Ingredient model for Open Food Facts API"""
+
+    # TODO convert str to bool and is_in_taxonomy to bool
+    id: str
+    text: str
+    quantity: Optional[str] = None
+    quantity_ml: Optional[float] = None
+    quantity_g: Optional[float] = None
+    ecobalyse_code: Optional[str] = None
+    ciqual_food_code: Optional[str] = None
+    is_in_taxonomy: Optional[int] = None
+    origins: Optional[str] = None
+    labels: Optional[str] = None
+
+    @field_validator("quantity", mode="before")
+    def transform_id_to_str(cls, value) -> str:
+        """ensure that the quantity is always a string,
+        even if it is a number in the input"""
+        return str(value)
+
+
+class RecipeIngredient(BaseModel):
+    """Ingredient model for Score My Recipe API"""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "taxonomy_id": "en:apple",
+                    "is_in_taxonomy": True,
+                    "codified_ingredient": "apple",
+                    "quantity_g": 150.0,
+                    "origins": {"id": "en:france", "label": "France", "isInTaxonomy": True},
+                    "labels": [{"id": "en:organic", "label": "Organic", "isInTaxonomy": True}],
+                    "quantity_value": 0.15,
+                    "quantity_unit": "kg",
+                }
+            ]
+        }
+    )
+
+    taxonomy_id: Annotated[Optional[str], Field(description="Taxonomy id of the ingredient")] = None
+    is_in_taxonomy: Annotated[bool, Field(description="Whether the ingredient is in the taxonomy")]
+    codified_ingredient: Annotated[str, Field(description="Codified ingredient name")]
+    quantity_g: Annotated[Optional[float], Field(description="Quantity in grams")] = None
+    origins: Annotated[Optional[TaxonomyItem], Field(description="Origins of the ingredient")] = (
+        None
+    )
+    labels: Annotated[
+        Optional[list[TaxonomyItem]], Field(description="Labels of the ingredient")
+    ] = None
+    quantity_value: Annotated[
+        Optional[float], Field(description="Numeric value of the quantity")
+    ] = None
+    quantity_unit: Annotated[Optional[str], Field(description="Unit of the quantity")] = None
+    notes: Annotated[Optional[list[str]], Field(description="Notes about the ingredient")] = None
+
+
+class Origin(SuggestedTaxonomyItem):
     """Origin model for Score My Recipe API"""
 
     model_config = ConfigDict(
@@ -225,7 +260,7 @@ class OriginsResponse(BaseModel):
     origins: list[Origin]
 
 
-class Label(TaxonomyItem):
+class Label(SuggestedTaxonomyItem):
     """Label model for Score My Recipe API"""
 
     model_config = ConfigDict(
@@ -261,7 +296,7 @@ class LabelsResponse(BaseModel):
     labels: list[Label]
 
 
-class Country(TaxonomyItem):
+class Country(SuggestedTaxonomyItem):
     """Country model for Score My Recipe API"""
 
     model_config = ConfigDict(
@@ -305,7 +340,7 @@ class CountriesResponse(BaseModel):
     countries: list[Country]
 
 
-class Ingredient(TaxonomyItem):
+class Ingredient(SuggestedTaxonomyItem):
     """Ingredient model for Score My Recipe API"""
 
     model_config = ConfigDict(
@@ -341,7 +376,7 @@ class IngredientsResponse(BaseModel):
     ingredients: list[Ingredient]
 
 
-class Unit(TaxonomyItem):
+class Unit(SuggestedTaxonomyItem):
     """Unit model for Score My Recipe API"""
 
     model_config = ConfigDict(
@@ -442,32 +477,6 @@ class SuggestScoredIngredientResponse(BaseModel):
 # The following models mirror the frontend ingredient structures
 # (see `frontend/src/lib/types/ingredient.ts`). They use camelCase aliases
 # so the JSON accepted by the API matches what the SvelteKit frontend sends.
-
-
-class CamelModel(BaseModel):
-    """Base model exposing camelCase aliases (matching the frontend) in the OpenAPI schema."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-
-class TaxonomyItem(CamelModel):
-    """A taxonomy reference with an id and a localized label.
-
-    Mirrors the frontend `TaxonomyItem` (used for codified ingredients, labels
-    and origins).
-    """
-
-    # json_schema_extra is merged with the inherited CamelModel config
-    # (alias_generator + populate_by_name are preserved).
-    model_config = ConfigDict(
-        json_schema_extra={"examples": [{"id": "en:apple", "label": "Apple", "isInTaxonomy": True}]}
-    )
-
-    id: Annotated[str, Field(description="Taxonomy identifier")]
-    label: Annotated[str, Field(description="Display label in the current language")]
-    is_in_taxonomy: Annotated[
-        bool, Field(description="Whether the item comes from the taxonomy (true) or is custom")
-    ]
 
 
 class RecipeIngredientInput(CamelModel):

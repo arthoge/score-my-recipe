@@ -1088,6 +1088,32 @@
             "title": "Quantity G",
             "description": "Quantity in grams"
           },
+          "origins": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxonomyItem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Origins of the ingredient"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TaxonomyItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels",
+            "description": "Labels of the ingredient"
+          },
           "quantity_value": {
             "anyOf": [
               {
@@ -1111,6 +1137,21 @@
             ],
             "title": "Quantity Unit",
             "description": "Unit of the quantity"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Notes about the ingredient"
           }
         },
         "type": "object",
@@ -1124,6 +1165,18 @@
           {
             "codified_ingredient": "apple",
             "is_in_taxonomy": true,
+            "labels": [
+              {
+                "id": "en:organic",
+                "isInTaxonomy": true,
+                "label": "Organic"
+              }
+            ],
+            "origins": {
+              "id": "en:france",
+              "isInTaxonomy": true,
+              "label": "France"
+            },
             "quantity_g": 150.0,
             "quantity_unit": "kg",
             "quantity_value": 0.15,

@@ -7,7 +7,7 @@
  */
 
 import type { components } from '../../api-schema';
-import type { Ingredient, IngredientType } from '$lib/types/ingredient';
+import type { Ingredient, IngredientType, TaxonomyItem } from '$lib/types/ingredient';
 import { generateIngredientId, isIngredientNotEmpty } from '$lib/types/ingredient';
 import { env } from '$env/dynamic/public';
 import type { IngredientsList } from '$lib/types/ingredientsList';
@@ -68,15 +68,21 @@ export function apiIngredientToIngredient(apiIngredient: RecipeIngredient): Ingr
 		label: apiIngredient.codified_ingredient,
 		isInTaxonomy: apiIngredient.is_in_taxonomy
 	};
+
+	// Pre-fill origin from the parsed text (e.g. "en:france").
+	const origin: TaxonomyItem | null = apiIngredient.origins ?? null;
+
+	const labels: TaxonomyItem[] = apiIngredient.labels ?? [];
+
 	return {
 		id: generateIngredientId(),
 		name: apiIngredient.codified_ingredient,
 		weight: apiIngredient.quantity_g ?? null,
 		codifiedIngredient: taxonomyItem,
-		labels: [],
+		labels,
+		origin,
 		isFreshPlant: false,
-		isInSeason: false,
-		origin: null
+		isInSeason: false
 	};
 }
 

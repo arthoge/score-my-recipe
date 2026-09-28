@@ -231,10 +231,23 @@ async def gather_epi_modifiers(
     """Gather the EPI bonus/malus points from origins for the recipe.
 
     No origins is equivalent to world, that is the worst case.
+
+    The EPI modifier is not cumulative with a label bonus: when an ingredient
+    already benefits from a label bonus, its EPI modifier is not applied.
+    See https://docs.score-environnemental.com/methodologie-recette/bonus-malus-recette/systeme-de-production/origine/synthese
     """
     epi_modifiers = await score_data.get_epi_modifiers()
     for ingredient, metric in safe_zip_recipe_metrics(recipe, recipe_metrics):
         if metric.missing:
+            continue
+        # EPI is not cumulative with a label bonus (see docstring): skip the
+        # modifier when the ingredient already has one, leaving epi_modifier
+        # as None so it does not contribute to the global weighted average.
+        if metric.labels_bonus is not None:
+            metric.add_note(
+                "EPI modifier: not applied, ingredient has a label bonus "
+                "(EPI and label bonuses are not cumulative)"
+            )
             continue
         if not ingredient.origin:
             metric.add_note("EPI modifier: no origin provided, defaulting to world")

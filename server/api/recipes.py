@@ -22,10 +22,42 @@ logger = logging.getLogger(__name__)
 QUANTITY_UNIT_REGEX = re.compile(r"^\s*(?P<value>\d+(\.\d+)?)\s*(?P<unit>.+)?\s*$")
 
 
-def off_ingredient_to_recipe_ingredient(
+async def off_ingredient_to_recipe_ingredient(
     off_ingredient: types.OFFIngredient,
+    lang: str,
 ) -> types.RecipeIngredient:
     """Convert an OFFIngredient to a RecipeIngredient"""
+    notes = []
+    # handle labels: split by comma if present
+    labels_obj = []
+    if off_ingredient.labels:
+        labels_ids = [label.strip() for label in off_ingredient.labels.split(",")]
+        labels_taxonomy = await off.get_labels_taxonomy()
+        labels_entries = [
+            labels_taxonomy[label_id] for label_id in labels_ids if label_id in labels_taxonomy
+        ]
+        labels_data = off.taxonomy_lang_label_and_synonyms(lang, labels_entries)
+        labels_obj = [
+            types.TaxonomyItem(id=label_id, label=label_label, is_in_taxonomy=True)
+            for label_id, label_label, _, _ in labels_data
+        ]
+    # handle origins: drop if multiple (contains comma)
+    origins_str = off_ingredient.origins
+    if origins_str and "," in origins_str:
+        notes.append(f"Dropped origins because multiple origins are not supported: {origins_str}")
+        origins_str = None
+    if origins_str:
+        origins_taxonomy = await off.get_origins_taxonomy()
+        origins_entry = origins_taxonomy[origins_str] if origins_str in origins_taxonomy else None
+        origins_data = off.taxonomy_lang_label_and_synonyms(
+            lang, [origins_entry] if origins_entry else []
+        )
+        origins_obj = [
+            types.TaxonomyItem(id=origin_id, label=origin_label, is_in_taxonomy=True)
+            for origin_id, origin_label, _, _ in origins_data
+        ]
+    else:
+        origins_obj = None
     # handle original quantity and unit
     quantity_value = None
     quantity_unit = None
@@ -42,8 +74,11 @@ def off_ingredient_to_recipe_ingredient(
         codified_ingredient=off_ingredient.text,
         is_in_taxonomy=bool(off_ingredient.is_in_taxonomy),
         quantity_g=off_ingredient.quantity_g,
+        origins=origins_obj[0] if origins_obj else None,
+        labels=labels_obj,
         quantity_value=quantity_value,
         quantity_unit=quantity_unit,
+        notes=notes,
     )
     return ingredient
 
@@ -55,7 +90,8 @@ async def parse_text(text: str, lang: str) -> list[types.RecipeIngredient]:
     lang = two_letter_lang_code(lang)
     off_ingredients = await off.parse_text(text, lang)
     ingredients = [
-        off_ingredient_to_recipe_ingredient(ingredient) for ingredient in off_ingredients
+        await off_ingredient_to_recipe_ingredient(ingredient, lang)
+        for ingredient in off_ingredients
     ]
     return ingredients
 
