@@ -3,7 +3,7 @@
 
   A single-choice country selector for the recipe-level country context.
   Fetches the list of countries relevant for the green-score computation from
-  the backend `/v1/countries` endpoint and exposes the selected
+  the backend `/v1/countries` endpoint on mount and exposes the selected
   ISO 3166-1 alpha-2 country code via a bindable `value` prop.
 
   Only countries with a usable country code are offered (see `getCountries`),
@@ -13,7 +13,9 @@
   - value: The currently selected country code (bindable, `null` when unselected).
 -->
 <script lang="ts">
-	import { _, locale } from '$lib/i18n';
+	import { onMount } from 'svelte';
+	import { _ } from '$lib/i18n';
+	import { getLocale } from '$lib/i18n';
 	import { getCountries } from '$lib/api/taxonomy';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
 	import type { components } from '../../api-schema';
@@ -30,21 +32,23 @@
 	let isLoading = $state(true);
 	let loadError = $state<string | null>(null);
 
-	// Fetch or reload countries whenever the active UI locale changes
-	$effect(() => {
-		const langKey = ($locale ?? '').startsWith('fr') ? 'fr' : 'en';
-		isLoading = true;
-		loadError = null;
-		getCountries(langKey)
-			.then((data) => {
-				countries = data;
-			})
-			.catch((e) => {
-				loadError = e instanceof Error ? e.message : 'An error occurred';
-			})
-			.finally(() => {
-				isLoading = false;
-			});
+	/**
+	 * Derive a short language key ("en" or "fr") from the current locale, as the
+	 * countries endpoint expects a 2-letter language code.
+	 */
+	function getLangKey(): string {
+		const locale = getLocale();
+		return locale.startsWith('fr') ? 'fr' : 'en';
+	}
+
+	onMount(async () => {
+		try {
+			countries = await getCountries(getLangKey());
+		} catch (e) {
+			loadError = e instanceof Error ? e.message : 'An error occurred';
+		} finally {
+			isLoading = false;
+		}
 	});
 </script>
 

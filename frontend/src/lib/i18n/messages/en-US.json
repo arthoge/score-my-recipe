@@ -100,8 +100,7 @@
 		"table_taxonomy": "In taxonomy",
 		"table_quantity": "Quantity (g)",
 		"yes": "Yes",
-		"no": "No",
-		"recipe_lang_label": "Recipe language"
+		"no": "No"
 	},
 	"onboarding": {
 		"title": "How to score your recipe",
@@ -118,7 +117,6 @@
 	"helpers": {
 		"more_info": "More information",
 		"recipe_text": "Enter each ingredient on a new line with its quantity (e.g. 200g flour, 3 eggs, 100g sugar).",
-		"recipe_language": "Language used to recognize and match ingredient names in your recipe text.",
 		"codified_ingredient": "Standardized ingredient from the Open Food Facts / Agribalyse database.",
 		"weight": "Net quantity of the ingredient in grams.",
 		"labels": "Official certifications (e.g. Organic, Label Rouge, Fair Trade) that grant Green-Score bonuses.",
@@ -131,14 +129,5 @@
 		"quiche": "Quiche Lorraine",
 		"apple_pie": "Apple Pie",
 		"ratatouille": "Ratatouille"
-	},
-	"languages": {
-		"ui_language": "Interface language",
-		"recipe_language": "Recipe language",
-		"en": "English",
-		"fr": "Français",
-		"es": "Español",
-		"de": "Deutsch",
-		"it": "Italiano"
 	}
 }

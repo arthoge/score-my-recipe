@@ -12,37 +12,21 @@
 	let onboardingRef = $state<ReturnType<typeof OnboardingBanner> | null>(null);
 	let isOnboardingDismissed = $state(true);
 
-	// Recipe input language (2-letter code)
-	let recipeLang = $state(getLocale().split('-')[0]);
-
-	// Keep default recipe language in sync with UI locale as long as the user hasn't typed anything
-	$effect(() => {
-		if (!recipeText && $locale) {
-			recipeLang = $locale.split('-')[0];
-		}
-	});
-
-	const recipeExamples: Record<
-		string,
-		Array<{ id: string; nameKey: string; lang: string; text: string }>
-	> = {
+	const recipeExamples: Record<string, Array<{ id: string; nameKey: string; text: string }>> = {
 		fr: [
 			{
 				id: 'quiche',
 				nameKey: 'examples.quiche',
-				lang: 'fr',
 				text: "200g de pâte brisée\n200g de lardons\n3 œufs\n200ml de crème fraîche\n150ml de lait\n100g d'emmental râpé"
 			},
 			{
 				id: 'apple_pie',
 				nameKey: 'examples.apple_pie',
-				lang: 'fr',
 				text: '1 pâte feuilletée\n4 pommes\n50g de sucre\n30g de beurre'
 			},
 			{
 				id: 'ratatouille',
 				nameKey: 'examples.ratatouille',
-				lang: 'fr',
 				text: "500g de tomates\n300g de courgettes\n300g d'aubergines\n200g de poivrons\n100g d'oignons\n30ml d'huile d'olive"
 			}
 		],
@@ -50,31 +34,27 @@
 			{
 				id: 'quiche',
 				nameKey: 'examples.quiche',
-				lang: 'en',
 				text: '200g shortcrust pastry\n200g bacon lardons\n3 eggs\n200ml crème fraîche\n150ml milk\n100g grated emmental'
 			},
 			{
 				id: 'apple_pie',
 				nameKey: 'examples.apple_pie',
-				lang: 'en',
 				text: '1 puff pastry\n4 apples\n50g sugar\n30g butter'
 			},
 			{
 				id: 'ratatouille',
 				nameKey: 'examples.ratatouille',
-				lang: 'en',
 				text: '500g tomatoes\n300g zucchini\n300g eggplant\n200g bell peppers\n100g onions\n30ml olive oil'
 			}
 		]
 	};
 
 	let currentExamples = $derived(
-		($locale ?? '').startsWith('fr') ? recipeExamples.fr : recipeExamples.en
+		($locale ?? getLocale()).startsWith('fr') ? recipeExamples.fr : recipeExamples.en
 	);
 
-	function loadExample(example: { text: string; lang: string }) {
+	function loadExample(example: { text: string }) {
 		recipeText = example.text;
-		recipeLang = example.lang;
 	}
 
 	async function handleSubmit(event: Event) {
@@ -83,7 +63,10 @@
 		error = null;
 
 		try {
-			const result = await parseRecipeText(recipeText, recipeLang);
+			// the recipe text is most likely written in the language of the
+			// interface, the API expects a 2-letter language code (eg. "fr")
+			const lang = getLocale().split('-')[0];
+			const result = await parseRecipeText(recipeText, lang);
 			const ingredients = apiIngredientsToIngredients(result.ingredients);
 			await goto('/score', { state: { ingredients } });
 		} catch (e) {
@@ -140,8 +123,8 @@
 	<!-- Recipe Form -->
 	<form onsubmit={handleSubmit} class="space-y-6">
 		<div class="form-control w-full space-y-2">
-			<!-- Field labels & Language selector row -->
-			<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+			<!-- Field label -->
+			<div class="flex items-center justify-between">
 				<label class="label justify-start p-0" for="recipe-text">
 					<span class="flex items-center gap-2 text-sm font-medium sm:text-base">
 						<span>{$_('add.recipe_label', { default: 'Votre recette' })}</span>
@@ -154,35 +137,6 @@
 						/>
 					</span>
 				</label>
-
-				<!-- Explicit recipe input language selector -->
-				<div class="flex items-center gap-2">
-					<label class="label p-0" for="recipe-lang-select">
-						<span
-							class="text-base-content/80 flex items-center gap-1.5 text-xs font-medium sm:text-sm"
-						>
-							{$_('add.recipe_lang_label', { default: 'Langue de la recette' })}
-							<HelperTooltip
-								tip={$_('helpers.recipe_language', {
-									default:
-										'Language used to recognize and match ingredient names in your recipe text.'
-								})}
-								ariaLabel={$_('helpers.more_info', { default: 'More information' })}
-							/>
-						</span>
-					</label>
-					<select
-						id="recipe-lang-select"
-						bind:value={recipeLang}
-						class="select select-bordered select-xs sm:select-sm font-normal"
-					>
-						<option value="fr">{$_('languages.fr', { default: 'Français' })}</option>
-						<option value="en">{$_('languages.en', { default: 'English' })}</option>
-						<option value="es">{$_('languages.es', { default: 'Español' })}</option>
-						<option value="de">{$_('languages.de', { default: 'Deutsch' })}</option>
-						<option value="it">{$_('languages.it', { default: 'Italiano' })}</option>
-					</select>
-				</div>
 			</div>
 
 			<!-- Example recipe shortcuts (honors UI language) -->
