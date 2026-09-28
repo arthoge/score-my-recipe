@@ -200,6 +200,7 @@ async def test_compute_green_score_fresh_plant_in_season(agribalyse_index):
         "All fresh produce ingredients are in season: maximum seasonality bonus"
     ]
     # the apple has no origin, so per-ingredient notes are populated
+    assert result.ingredients_notes is not None
     assert "i1" in result.ingredients_notes
     assert result.ingredients_notes["i1"]
     """An off-season fresh plant applies the -10 malus to the numeric score.
@@ -225,6 +226,7 @@ async def test_compute_green_score_fresh_plant_in_season(agribalyse_index):
     # the off-season branch does not emit a recipe-level note
     assert result.notes is None
     # the apple still has per-ingredient notes (no origin)
+    assert result.ingredients_notes is not None
     assert "i1" in result.ingredients_notes
     assert result.ingredients_notes["i1"]
     """A non-fresh ingredient yields a neutral (0) seasonality modifier."""
