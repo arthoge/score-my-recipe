@@ -17,9 +17,11 @@
 	import Tags from './Tags.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
 	import IconMdiAlertCircle from '@iconify-svelte/mdi/alert-circle';
+	import IconMdiLeaf from '@iconify-svelte/mdi/leaf';
 	import IconMaterialSymbolsSunnyOutline from '@iconify-svelte/material-symbols/sunny-outline';
 	import IconMaterialSymbolsCloudOutline from '@iconify-svelte/material-symbols/cloud-outline';
 	import type { Ingredient } from '$lib/types/ingredient';
+	import type { IngredientSuggestion } from '$lib/types/ingredient';
 	import { isIngredientEmpty, isIngredientNotEmpty } from '$lib/types/ingredient';
 
 	type Props = {
@@ -115,7 +117,23 @@
 				ingredient.codifiedIngredient = newTags[0] ?? null;
 			}}
 			single={true}
-		/>
+		>
+			{#snippet suggestionIcon(item)}
+				<!-- Show a leaf icon for ingredients that have an EF score (are scorable
+				     in the green-score). The snippet receives a TaxonomyItem from Tags;
+				     for ingredients it is an IngredientSuggestion carrying hasEfScore. -->
+				{@const suggestion = item as IngredientSuggestion}
+				{#if suggestion.hasEfScore}
+					<span
+						title={$_('recipe.ingredient_scorable', {
+							default: 'This ingredient can be counted in the green score'
+						})}
+					>
+						<IconMdiLeaf class="h-4 w-4 shrink-0" aria-hidden="true" />
+					</span>
+				{/if}
+			{/snippet}
+		</Tags>
 	</div>
 
 	<!-- Weight -->

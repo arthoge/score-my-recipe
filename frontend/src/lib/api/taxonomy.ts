@@ -6,13 +6,13 @@ import type { TaxonomySuggestionsQuery } from '@openfoodfacts/openfoodfacts-node
 import { OpenFoodFacts } from '@openfoodfacts/openfoodfacts-nodejs';
 import { getLocale } from '$lib/i18n';
 import { offLinks } from '$lib/offLink';
-import type { TaxonomyItem } from '$lib/types/ingredient';
+import type { TaxonomyItem, IngredientSuggestion } from '$lib/types/ingredient';
 import type { components } from '../../api-schema';
 import { env } from '$env/dynamic/public';
 
 type Label = components['schemas']['Label'];
 type Origin = components['schemas']['Origin'];
-type Ingredient = components['schemas']['Ingredient'];
+type SuggestedIngredient = components['schemas']['SuggestedIngredient'];
 type Country = components['schemas']['Country'];
 type CountriesResponse = components['schemas']['CountriesResponse'];
 
@@ -232,11 +232,18 @@ function getLocaleKey(): 'en' | 'fr' {
 }
 
 /**
- * Fetch the ingredients taxonomy from the backend API
+ * Fetch the ingredients taxonomy from the backend API.
+ *
+ * Each returned item carries `hasEfScore`, telling whether the ingredient
+ * resolves to an Agribalyse row with an EF score (i.e. whether it can be
+ * counted in the green-score computation).
+ *
  * @param includeSynonyms whether to also fetch synonyms (defaults to true, used for matching)
- * @returns Promise resolving to the list of ingredient taxonomy items
+ * @returns Promise resolving to the list of ingredient suggestions (with EF-score flag)
  */
-export async function getIngredientsTaxonomy(includeSynonyms = true): Promise<TaxonomyItem[]> {
+export async function getIngredientsTaxonomy(
+	includeSynonyms = true
+): Promise<IngredientSuggestion[]> {
 	const lang = getLocaleKey();
 	const params = new URLSearchParams({ lang });
 	if (includeSynonyms) {
@@ -246,12 +253,13 @@ export async function getIngredientsTaxonomy(includeSynonyms = true): Promise<Ta
 	if (!response.ok) {
 		throw new Error(`Failed to fetch ingredients: ${response.statusText}`);
 	}
-	const data = (await response.json()) as { ingredients: Ingredient[] };
+	const data = (await response.json()) as { ingredients: SuggestedIngredient[] };
 	return data.ingredients.map((ingredient) => ({
 		id: ingredient.id,
 		label: ingredient.label,
 		isInTaxonomy: true,
-		synonyms: ingredient.synonyms ?? []
+		synonyms: ingredient.synonyms ?? [],
+		hasEfScore: ingredient.has_ef_score
 	}));
 }
 

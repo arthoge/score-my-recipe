@@ -20,6 +20,7 @@
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import debounce from 'lodash.debounce';
 	import { getMatchingTags } from '$lib/api/taxonomy';
@@ -33,13 +34,22 @@
 		tags?: TaxonomyItem[];
 		single?: boolean; // optional prop to allow only a single tag
 		onChange?: (tags: TaxonomyItem[]) => void;
+		// Optional snippet rendered before the label of each autocomplete suggestion.
+		suggestionIcon?: Snippet<[TaxonomyItem]>;
 	};
 
 	type Suggestion = {
 		item: TaxonomyItem;
 	};
 
-	let { id, tagtype, tags = $bindable([]), single = false, onChange }: Props = $props();
+	let {
+		id,
+		tagtype,
+		tags = $bindable([]),
+		single = false,
+		onChange,
+		suggestionIcon
+	}: Props = $props();
 
 	let autoCompleteIndex = $state(-1);
 	// suggestions returned by API
@@ -310,7 +320,7 @@
 					<li>
 						<button
 							type="button"
-							class="bg-base-200 text-base-content hover:bg-primary hover:text-primary-content focus:bg-primary focus:text-primary-content w-full rounded-md px-4 py-2 text-left transition-colors duration-150"
+							class="bg-base-200 text-base-content hover:bg-primary hover:text-primary-content focus:bg-primary focus:text-primary-content flex w-full items-center gap-2 rounded-md px-4 py-2 text-left transition-colors duration-150"
 							class:bg-primary={autoCompleteIndex === index}
 							class:text-primary-content={autoCompleteIndex === index}
 							onmousedown={(e) => {
@@ -319,6 +329,9 @@
 								selectSuggestion(item);
 							}}
 						>
+							{#if suggestionIcon}
+								{@render suggestionIcon(item)}
+							{/if}
 							<span class="block truncate">{item.label}</span>
 						</button>
 					</li>

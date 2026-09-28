@@ -818,56 +818,11 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "Ingredient": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id",
-            "description": "Taxonomy id of the item"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "description": "Name of the item"
-          },
-          "synonyms": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Synonyms",
-            "description": "Synonyms in the requested language. Only present in the response when include_synonyms is true."
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "label"
-        ],
-        "title": "Ingredient",
-        "description": "Ingredient model for Score My Recipe API",
-        "examples": [
-          {
-            "id": "en:apple",
-            "label": "Apple",
-            "synonyms": [
-              "apples"
-            ]
-          }
-        ]
-      },
       "IngredientsResponse": {
         "properties": {
           "ingredients": {
             "items": {
-              "$ref": "#/components/schemas/Ingredient"
+              "$ref": "#/components/schemas/SuggestedIngredient"
             },
             "type": "array",
             "title": "Ingredients"
@@ -883,10 +838,12 @@
           {
             "ingredients": [
               {
+                "has_ef_score": true,
                 "id": "en:apple",
                 "label": "Apple"
               },
               {
+                "has_ef_score": false,
                 "id": "en:wheat-flour",
                 "label": "Wheat flour"
               }
@@ -1496,6 +1453,60 @@
         ],
         "title": "SuggestScoredIngredientResponse",
         "description": "Response model for the suggest-scored-ingredient endpoint."
+      },
+      "SuggestedIngredient": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Taxonomy id of the item"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Name of the item"
+          },
+          "synonyms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synonyms",
+            "description": "Synonyms in the requested language. Only present in the response when include_synonyms is true."
+          },
+          "has_ef_score": {
+            "type": "boolean",
+            "title": "Has Ef Score",
+            "description": "Whether the ingredient resolves to an Agribalyse row with an EF score, i.e. whether it can be scored in the green-score computation."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "has_ef_score"
+        ],
+        "title": "SuggestedIngredient",
+        "description": "An ingredient returned by the autocomplete API (``get_ingredients``),\nannotated with whether it can be scored in the green-score computation.",
+        "examples": [
+          {
+            "has_ef_score": true,
+            "id": "en:apple",
+            "label": "Apple"
+          },
+          {
+            "has_ef_score": false,
+            "id": "en:water",
+            "label": "Water"
+          }
+        ]
       },
       "TaxonomyItem": {
         "properties": {

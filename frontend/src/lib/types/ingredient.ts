@@ -35,6 +35,19 @@ export type Origin = TaxonomyItem;
 export type IngredientType = TaxonomyItem;
 
 /**
+ * An ingredient suggestion returned by the autocomplete API (`/v1/ingredients`),
+ * extending a TaxonomyItem with the EF-score presence flag.
+ *
+ * `hasEfScore` is true when the ingredient resolves (through its taxonomy node
+ * and its parents) to an Agribalyse row carrying an EF score — i.e. it can be
+ * counted in the green-score computation.
+ */
+export interface IngredientSuggestion extends TaxonomyItem {
+	/** Whether the ingredient has an EF score (is scorable in the green-score). */
+	hasEfScore: boolean;
+}
+
+/**
  * Represents a single ingredient in a recipe
  */
 export interface Ingredient {

@@ -428,43 +428,17 @@ export interface components {
 			detail?: components['schemas']['ValidationError'][];
 		};
 		/**
-		 * Ingredient
-		 * @description Ingredient model for Score My Recipe API
-		 * @example {
-		 *       "id": "en:apple",
-		 *       "label": "Apple",
-		 *       "synonyms": [
-		 *         "apples"
-		 *       ]
-		 *     }
-		 */
-		Ingredient: {
-			/**
-			 * Id
-			 * @description Taxonomy id of the item
-			 */
-			id: string;
-			/**
-			 * Label
-			 * @description Name of the item
-			 */
-			label: string;
-			/**
-			 * Synonyms
-			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
-			 */
-			synonyms?: string[] | null;
-		};
-		/**
 		 * IngredientsResponse
 		 * @description Response model for get_ingredients endpoint
 		 * @example {
 		 *       "ingredients": [
 		 *         {
+		 *           "has_ef_score": true,
 		 *           "id": "en:apple",
 		 *           "label": "Apple"
 		 *         },
 		 *         {
+		 *           "has_ef_score": false,
 		 *           "id": "en:wheat-flour",
 		 *           "label": "Wheat flour"
 		 *         }
@@ -473,7 +447,7 @@ export interface components {
 		 */
 		IngredientsResponse: {
 			/** Ingredients */
-			ingredients: components['schemas']['Ingredient'][];
+			ingredients: components['schemas']['SuggestedIngredient'][];
 		};
 		/**
 		 * Label
@@ -878,6 +852,43 @@ export interface components {
 		SuggestScoredIngredientResponse: {
 			/** Ingredients */
 			ingredients: components['schemas']['ScoredIngredient'][];
+		};
+		/**
+		 * SuggestedIngredient
+		 * @description An ingredient returned by the autocomplete API (``get_ingredients``),
+		 *     annotated with whether it can be scored in the green-score computation.
+		 * @example {
+		 *       "has_ef_score": true,
+		 *       "id": "en:apple",
+		 *       "label": "Apple"
+		 *     }
+		 * @example {
+		 *       "has_ef_score": false,
+		 *       "id": "en:water",
+		 *       "label": "Water"
+		 *     }
+		 */
+		SuggestedIngredient: {
+			/**
+			 * Id
+			 * @description Taxonomy id of the item
+			 */
+			id: string;
+			/**
+			 * Label
+			 * @description Name of the item
+			 */
+			label: string;
+			/**
+			 * Synonyms
+			 * @description Synonyms in the requested language. Only present in the response when include_synonyms is true.
+			 */
+			synonyms?: string[] | null;
+			/**
+			 * Has Ef Score
+			 * @description Whether the ingredient resolves to an Agribalyse row with an EF score, i.e. whether it can be scored in the green-score computation.
+			 */
+			has_ef_score: boolean;
 		};
 		/**
 		 * TaxonomyItem
