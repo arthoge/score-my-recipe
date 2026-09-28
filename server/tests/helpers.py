@@ -147,6 +147,7 @@ def build_ingredient_dict(
         ),
         "labels": [{"id": lid, "label": lid, "isInTaxonomy": True} for lid in (labels or [])],
         "isInSeason": False,
+        "isFreshPlant": False,
         "origin": None,
     }
 

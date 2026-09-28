@@ -55,18 +55,14 @@ def test_global_seasonality_modifier_no_fresh_plant():
     recipe = [build_ingredient_obj("i1", "flour", "en:wheat-flour", weight=200)]
     recipe_metrics = RecipeMetrics()
     assert score.global_seasonality_modifier(recipe, recipe_metrics) == 0.0
-    assert recipe_metrics.notes == [
-        "No fresh produce ingredients: no seasonality bonus/malus"
-    ]
+    assert recipe_metrics.notes == ["No fresh produce ingredients: no seasonality bonus/malus"]
 
 
 def test_global_seasonality_modifier_empty_recipe():
     """An empty ingredient list is neutral (0)."""
     recipe_metrics = RecipeMetrics()
     assert score.global_seasonality_modifier([], recipe_metrics) == 0.0
-    assert recipe_metrics.notes == [
-        "No fresh produce ingredients: no seasonality bonus/malus"
-    ]
+    assert recipe_metrics.notes == ["No fresh produce ingredients: no seasonality bonus/malus"]
 
 
 def test_global_seasonality_modifier_all_in_season():
@@ -203,6 +199,10 @@ async def test_compute_green_score_fresh_plant_in_season(agribalyse_index):
     assert result.ingredients_notes is not None
     assert "i1" in result.ingredients_notes
     assert result.ingredients_notes["i1"]
+
+
+@pytest.mark.asyncio
+async def test_compute_green_score_fresh_plant_off_season(agribalyse_index):
     """An off-season fresh plant applies the -10 malus to the numeric score.
 
     numeric = 76.38 + 0 + (-3) + (-7) + (-10) = 56.38
@@ -229,6 +229,10 @@ async def test_compute_green_score_fresh_plant_in_season(agribalyse_index):
     assert result.ingredients_notes is not None
     assert "i1" in result.ingredients_notes
     assert result.ingredients_notes["i1"]
+
+
+@pytest.mark.asyncio
+async def test_compute_green_score_non_fresh_is_neutral(agribalyse_index):
     """A non-fresh ingredient yields a neutral (0) seasonality modifier."""
     labels_taxonomy = create_taxonomy({})
     recipe = [build_ingredient_obj("i1", "apple", "en:apple")]
@@ -242,9 +246,7 @@ async def test_compute_green_score_fresh_plant_in_season(agribalyse_index):
         score.normalize_ef_score(0.3) + WORLD_EPI_MODIFIER + DEFAULT_DISTANCE_MODIFIER
     )
     # no fresh produce -> the neutral branch emits its own recipe-level note
-    assert result.notes == [
-        "No fresh produce ingredients: no seasonality bonus/malus"
-    ]
+    assert result.notes == ["No fresh produce ingredients: no seasonality bonus/malus"]
 
 
 @pytest.mark.asyncio

@@ -401,7 +401,7 @@ async def compute_green_score(
         epi_modifier = global_epi_modifier(recipe_metrics)
         distances_modifier = global_distance_modifier(recipe_metrics)
         seasonality_modifier = global_seasonality_modifier(recipe, recipe_metrics)
-        # TODO account for packaging, origins and seasonality in the green-score computation
+        # TODO account for packaging in the green-score computation
         numeric_score = (
             normalized_ef_score
             + labels_bonus

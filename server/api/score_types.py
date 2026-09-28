@@ -88,8 +88,4 @@ class RecipeMetrics(NotesMixin):
         """Return a dictionary of all notes from the ingredients metrics
         keyed by ingredient id.
         """
-        return {
-            metric.id: metric.notes
-            for metric in self.metrics
-            if metric.notes
-        }
+        return {metric.id: metric.notes for metric in self.metrics if metric.notes}
