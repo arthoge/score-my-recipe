@@ -10,9 +10,7 @@
 	let { onselect }: Props = $props();
 
 	// Resolve examples for the active UI language.
-	let currentExamples = $derived(
-		recipeExamples[($locale ?? getLocale()).split('-')[0]] ?? []
-	);
+	let currentExamples = $derived(recipeExamples[($locale ?? getLocale()).split('-')[0]] ?? []);
 
 	function loadExample(example: RecipeExample) {
 		onselect?.(example.text);
