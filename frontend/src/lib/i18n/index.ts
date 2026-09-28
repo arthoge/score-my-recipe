@@ -7,7 +7,7 @@
  *
  * It also exports functions from svelte-i18n, like the translate function (aka `_`)
  */
-import { init, register, getLocaleFromNavigator } from 'svelte-i18n';
+import { init, locale, register, getLocaleFromNavigator } from 'svelte-i18n';
 import { browser } from '$app/environment';
 import countries from './countries.json';
 
@@ -25,6 +25,17 @@ countries.forEach((country) => {
 });
 
 const FALLBACK_LOCALE = 'en-US';
+var currentLocale = FALLBACK_LOCALE;
+
+locale.subscribe((value) => {
+	if (value) {
+		currentLocale = value;
+	}
+});
+
+export function getLocale() {
+	return currentLocale;
+}
 
 // TODO: when we have many locales we should load them lazily, when we really need them
 countries.forEach((locale) => {
@@ -36,14 +47,14 @@ countries.forEach((locale) => {
 
 init({
 	fallbackLocale: FALLBACK_LOCALE,
-	initialLocale: getLocale()
+	initialLocale: getInitialLocale()
 });
 
 /**
- * getLocale to use to display the page
+ * getInitialLocale from the browser
  * @returns {String} locale code (eg. "en-US")
  */
-export function getLocale() {
+export function getInitialLocale() {
 	return browser ? getBrowserLocale() : FALLBACK_LOCALE;
 }
 
@@ -56,5 +67,5 @@ export function getBrowserLocale() {
 
 // Explicitly re-export the svelte-i18n helpers used elsewhere in the app
 // waitLocale and isLoading are used to wait for translations files to be ready
-export { isLoading, locale, waitLocale, _ } from 'svelte-i18n';
+export { dictionary, isLoading, locale, waitLocale, _ } from 'svelte-i18n';
 export { AVAILABLE_LOCALES };
