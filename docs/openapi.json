@@ -666,6 +666,39 @@
             "title": "Missingingredientids",
             "description": "List of ingredient ids that were missing from the Agribalyse computation",
             "default": []
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Notes about the recipe-level score computation (e.g. seasonality), null when no ingredients have a score"
+          },
+          "ingredientsNotes": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredientsnotes",
+            "description": "Per-ingredient notes keyed by ingredient id, only entries with at least one note are included, null if no ingredients have a score"
           }
         },
         "type": "object",

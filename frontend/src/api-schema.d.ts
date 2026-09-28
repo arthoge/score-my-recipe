@@ -357,6 +357,18 @@ export interface components {
 			 * @default []
 			 */
 			missingIngredientIds: string[];
+			/**
+			 * Notes
+			 * @description Notes about the recipe-level score computation (e.g. seasonality), null when no ingredients have a score
+			 */
+			notes?: string[] | null;
+			/**
+			 * Ingredientsnotes
+			 * @description Per-ingredient notes keyed by ingredient id, only entries with at least one note are included, null if no ingredients have a score
+			 */
+			ingredientsNotes?: {
+				[key: string]: string[];
+			} | null;
 		};
 		/** HTTPValidationError */
 		HTTPValidationError: {
