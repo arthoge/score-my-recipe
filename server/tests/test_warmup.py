@@ -23,19 +23,19 @@ WARMUP_MODULES = ["off", "score_data", "score", "agribalyse", "recipes", "units"
 
 
 def test_settings_warmup_splits_comma_separated_string():
-    assert Settings(warmup="fr,en").warmup == ["fr", "en"]
+    assert Settings(warmup="fr,en").warmup == ["fr", "en"]  # ty: ignore[invalid-argument-type]
 
 
 def test_settings_warmup_strips_whitespace_and_drops_empties():
-    assert Settings(warmup=" fr , ,en ").warmup == ["fr", "en"]
+    assert Settings(warmup=" fr , ,en ").warmup == ["fr", "en"]  # ty: ignore[invalid-argument-type]
 
 
 def test_settings_warmup_empty_string_yields_empty_list():
-    assert Settings(warmup="").warmup == []
+    assert Settings(warmup="").warmup == []  # ty: ignore[invalid-argument-type]
 
 
 def test_settings_warmup_none_yields_empty_list():
-    assert Settings(warmup=None).warmup == []
+    assert Settings(warmup=None).warmup == []  # ty: ignore[invalid-argument-type]
 
 
 def test_settings_warmup_default_is_empty():

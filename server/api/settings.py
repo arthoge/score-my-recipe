@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     @field_validator("warmup", mode="before")
     @classmethod
-    def _split_warmup_csv(cls, value: object) -> object:
+    def _split_warmup_csv(cls, value: str | None | list[str]) -> list[str]:
         """Parse the comma-separated ``WARMUP`` env value into a list of codes.
 
         ``NoDecode`` keeps pydantic-settings from JSON-decoding this list field
