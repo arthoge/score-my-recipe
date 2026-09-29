@@ -497,11 +497,19 @@ async def test_compute_green_score_epi_suppressed_per_ingredient(agribalyse_inde
     )
     recipe = [
         build_ingredient_obj(
-            "i_apple", "apple", "en:apple", weight=100,
-            labels=["en:eu-organic"], origin="en:france",
+            "i_apple",
+            "apple",
+            "en:apple",
+            weight=100,
+            labels=["en:eu-organic"],
+            origin="en:france",
         ),
         build_ingredient_obj(
-            "i_pear", "pear", "en:pear", weight=300, origin="en:argentina",
+            "i_pear",
+            "pear",
+            "en:pear",
+            weight=300,
+            origin="en:argentina",
         ),
     ]
     with (
@@ -518,10 +526,7 @@ async def test_compute_green_score_epi_suppressed_per_ingredient(agribalyse_inde
     assert result.epi_modifier == pytest.approx(expected_epi)
     assert result.distances_modifier == pytest.approx(expected_distance)
     assert result.numeric_score == pytest.approx(
-        score.normalize_ef_score(expected_ef)
-        + expected_labels
-        + expected_epi
-        + expected_distance
+        score.normalize_ef_score(expected_ef) + expected_labels + expected_epi + expected_distance
     )
 
 
@@ -546,12 +551,20 @@ async def test_compute_green_score_all_labeled_epi_none(agribalyse_index):
     )
     recipe = [
         build_ingredient_obj(
-            "i_apple", "apple", "en:apple", weight=100,
-            labels=["en:eu-organic"], origin="en:france",
+            "i_apple",
+            "apple",
+            "en:apple",
+            weight=100,
+            labels=["en:eu-organic"],
+            origin="en:france",
         ),
         build_ingredient_obj(
-            "i_pear", "pear", "en:pear", weight=300,
-            labels=["en:eu-organic"], origin="en:argentina",
+            "i_pear",
+            "pear",
+            "en:pear",
+            weight=300,
+            labels=["en:eu-organic"],
+            origin="en:argentina",
         ),
     ]
     with (

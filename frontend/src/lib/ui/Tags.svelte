@@ -24,6 +24,7 @@
 	import { fade } from 'svelte/transition';
 	import debounce from 'lodash.debounce';
 	import { getMatchingTags } from '$lib/api/taxonomy';
+	import { findMatchingSuggestion } from '$lib/utils/taxonomyMatch';
 	import type { TaxonomyItem } from '$lib/types/ingredient';
 
 	import IconMdiClose from '@iconify-svelte/mdi/close';
@@ -227,19 +228,61 @@
 	}
 
 	/**
-	 * Save the edited tag by updating the tags array if the value has changed and is not empty. Resets editing state and autocomplete index afterward.
-	 * @param index
+	 * Commit an in-progress edit by replacing the tag at `index` with `newTag`,
+	 * then reset the editing state. Shared by the suggestion-selection and
+	 * free-typed edit paths so they always leave a consistent state.
+	 * @param index - Index of the tag being edited.
+	 * @param newTag - The tag replacing the edited one.
+	 */
+	function applyEdit(index: number, newTag: TaxonomyItem) {
+		tags = tags.map((tag, i) => (i === index ? newTag : tag));
+		onChange?.(tags);
+		editingIndex = -1;
+		editingValue = '';
+		autoCompleteIndex = -1;
+	}
+
+	/**
+	 * Save a free-typed edit, i.e. a value typed by the user and submitted on
+	 * Enter/blur without being picked from the autocomplete suggestions.
+	 *
+	 * If the typed value exactly matches a proposed suggestion (by label or
+	 * synonym), it is registered as if the user had clicked it, keeping the
+	 * taxonomy id in sync with the selected item. Otherwise the id is reset to
+	 * `null` (and `isInTaxonomy` to false): the tag must not keep being matched
+	 * against the old taxonomy node.
+	 *
+	 * An empty value, an unchanged label, or a value already resolved to the
+	 * current item simply cancels the edit.
+	 * @param index - Index of the tag being edited.
 	 */
 	function saveEdit(index: number) {
 		const trimmedValue = editingValue.trim();
 		const originalTag = tags[index];
-		if (trimmedValue !== '' && trimmedValue !== originalTag.label) {
-			tags = tags.map((tag, i) => (i === index ? { ...originalTag, label: trimmedValue } : tag));
-			onChange?.(tags);
+
+		// A free-typed value that exactly matches a proposed suggestion (by label
+		// or synonym) is registered as if the user had clicked it, keeping the
+		// taxonomy id in sync instead of resetting it to null.
+		const matched =
+			trimmedValue !== ''
+				? findMatchingSuggestion(
+						trimmedValue,
+						currentSuggestions.map((s) => s.item)
+					)
+				: undefined;
+
+		if (matched && matched.id !== originalTag.id) {
+			// resolved to a (different) taxonomy item
+			applyEdit(index, matched);
+		} else if (!matched && trimmedValue !== '' && trimmedValue !== originalTag.label) {
+			// genuine free-text value not in the suggestions: reset the id to null
+			applyEdit(index, { id: null, label: trimmedValue, isInTaxonomy: false });
+		} else {
+			// empty, unchanged, or already resolved to the current item: cancel
+			editingIndex = -1;
+			editingValue = '';
+			autoCompleteIndex = -1;
 		}
-		editingIndex = -1;
-		editingValue = '';
-		autoCompleteIndex = -1;
 	}
 
 	/**
@@ -263,9 +306,11 @@
 	function handleEditKeydown(event: KeyboardEvent, index: number) {
 		if (event.key === 'Enter') {
 			if (autoCompleteIndex !== -1 && currentSuggestions[autoCompleteIndex]) {
-				editingValue = currentSuggestions[autoCompleteIndex].item.label;
-				autoCompleteIndex = -1;
+				// Enter on a highlighted suggestion: commit the full taxonomy item
+				// (id + label) instead of just copying its label, so the id stays
+				// in sync with the selected suggestion.
 				event.preventDefault();
+				applyEdit(index, currentSuggestions[autoCompleteIndex].item);
 				return;
 			}
 			event.preventDefault();
@@ -285,9 +330,10 @@
 	 */
 	function selectSuggestion(item: TaxonomyItem) {
 		if (editingIndex !== -1) {
-			editingValue = item.label;
-			const idx = editingIndex;
-			setTimeout(() => saveEdit(idx), 0);
+			// A suggestion was explicitly selected while editing: replace the
+			// edited tag with the full taxonomy item (id + label), keeping the id
+			// in sync with the selection.
+			applyEdit(editingIndex, item);
 		} else {
 			newValue = '';
 			autoCompleteIndex = -1;
@@ -359,7 +405,7 @@
 						onkeydown={(e) => handleEditKeydown(e, index)}
 						onblur={() => {
 							setTimeout(() => {
-								if (editingIndex === index) saveEdit(index);
+								saveEdit(index);
 							}, 150);
 						}}
 						use:focus

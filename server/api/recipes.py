@@ -243,8 +243,7 @@ async def _get_ingredients_entries(lang: str) -> list[IngredientEntry]:
 async def get_ingredients(
     lang: str, include_synonyms: bool = False
 ) -> list[types.SuggestedIngredient]:
-    """Get the list of ingredients relevant for green-score computation.
-    """
+    """Get the list of ingredients relevant for green-score computation."""
     lang = two_letter_lang_code(lang)
     _ingredients = await _get_ingredients_entries(lang)
     return [

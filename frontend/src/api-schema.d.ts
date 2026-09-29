@@ -894,8 +894,8 @@ export interface components {
 		 * TaxonomyItem
 		 * @description A taxonomy reference with an id and a localized label.
 		 *
-		 *     Mirrors the frontend `TaxonomyItem` (used for codified ingredients, labels
-		 *     and origins).
+		 *     Mirrors the frontend `TaxonomyItem`
+		 *     (used for codified ingredients, labels and origins).
 		 * @example {
 		 *       "id": "en:apple",
 		 *       "isInTaxonomy": true,
@@ -905,9 +905,9 @@ export interface components {
 		TaxonomyItem: {
 			/**
 			 * Id
-			 * @description Taxonomy identifier
+			 * @description Taxonomy identifier, null when the value is a free-text entry not resolved to a taxonomy node
 			 */
-			id: string;
+			id: string | null;
 			/**
 			 * Label
 			 * @description Display label in the current language

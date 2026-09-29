@@ -1,7 +1,7 @@
 import functools
 from typing import Annotated, Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 from pydantic_core import ValidationError
 from pydantic_async_validation import AsyncValidationModelMixin, async_field_validator
@@ -71,8 +71,8 @@ class CamelModel(BaseModel):
 class TaxonomyItem(CamelModel):
     """A taxonomy reference with an id and a localized label.
 
-    Mirrors the frontend `TaxonomyItem` (used for codified ingredients, labels
-    and origins).
+    Mirrors the frontend `TaxonomyItem`
+    (used for codified ingredients, labels and origins).
     """
 
     # json_schema_extra is merged with the inherited CamelModel config
@@ -81,11 +81,32 @@ class TaxonomyItem(CamelModel):
         json_schema_extra={"examples": [{"id": "en:apple", "label": "Apple", "isInTaxonomy": True}]}
     )
 
-    id: Annotated[str, Field(description="Taxonomy identifier")]
+    id: Annotated[
+        Optional[str],
+        Field(
+            description="Taxonomy identifier, null when the value is a free-text entry "
+            "not resolved to a taxonomy node",
+        ),
+    ]
     label: Annotated[str, Field(description="Display label in the current language")]
     is_in_taxonomy: Annotated[
         bool, Field(description="Whether the item comes from the taxonomy (true) or is custom")
     ]
+
+    @model_validator(mode="after")
+    def _enforce_free_text_not_in_taxonomy(self) -> "TaxonomyItem":
+        """A free-text entry (id is None) is, by definition, not resolved to a
+        taxonomy node, so it must not be flagged ``is_in_taxonomy=True``.
+
+        This keeps the two fields consistent: an item without a taxonomy id is
+        always a custom user entry, never a taxonomy match.
+        """
+        if self.id is None and self.is_in_taxonomy:
+            raise ValueError(
+                "is_in_taxonomy must be false when id is null "
+                "(a free-text entry is not resolved to a taxonomy node)"
+            )
+        return self
 
 
 class OFFIngredient(BaseModel):
