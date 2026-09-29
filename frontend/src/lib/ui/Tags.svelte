@@ -201,10 +201,10 @@
 
 	/**
 	 * Remove a tag by filtering it out of the tags array.
-	 * @param tag
+	 * @param index
 	 */
-	function removeTag(tag: TaxonomyItem) {
-		tags = tags.filter((t) => t.id !== tag.id);
+	function removeTag(index: number) {
+		tags = tags.filter((_, i) => i !== index);
 		onChange?.(tags);
 	}
 
@@ -235,6 +235,11 @@
 	 * @param newTag - The tag replacing the edited one.
 	 */
 	function applyEdit(index: number, newTag: TaxonomyItem) {
+		if (newTag.isInTaxonomy && tags.some((tag, i) => i !== index && tag.id === newTag.id)) {
+			console.warn(`Tag "${newTag.label}" already exists.`);
+			cancelEdit();
+			return;
+		}
 		tags = tags.map((tag, i) => (i === index ? newTag : tag));
 		onChange?.(tags);
 		editingIndex = -1;
@@ -393,7 +398,7 @@
 	class="bg-base-100 border-base-200 focus-within:border-primary focus-within:outline-primary flex h-auto min-h-12 w-full flex-wrap gap-x-1.5 gap-y-1 rounded-md"
 >
 	<!-- each value of the tag (multi valued) -->
-	{#each tags as tag, index (tag.id)}
+	{#each tags as tag, index (tag)}
 		<div class="badge badge-ghost flex h-min items-center py-2" transition:fade={{ duration: 100 }}>
 			{#if editingIndex === index}
 				<!-- Existing tag editing input with autocomplete dropdown -->
@@ -433,7 +438,7 @@
 			<!-- Remove tag button -->
 			<button
 				class="hover:bg-base-300 ml-1 cursor-pointer p-1 leading-0"
-				onclick={() => removeTag(tag)}
+				onclick={() => removeTag(index)}
 				aria-label={`Remove tag "${tag.label}"`}
 			>
 				<IconMdiClose class="h-4 w-4" />
