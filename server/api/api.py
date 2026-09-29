@@ -30,14 +30,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: schedule cache warmup in the background if configured.
-
-    The ``SCORE_MY_RECIPE_WARMUP`` setting holds a comma-separated list of
-    language codes. When set, caches are pre-populated for those languages so the
-    first user does not pay the cold-cache latency. Warmup runs as a background
-    task (the server starts serving immediately) and is best-effort: a failing
-    call is logged and does not block startup.
+    """Startup:
+    * configure logs
+    * warmup cache if settings.warmup is a non-empty list of language codes
     """
+    logging_config.setup_logging()
     settings = get_settings()
     task = None
     if settings.warmup:
@@ -50,18 +47,6 @@ async def lifespan(app: FastAPI):
         # Cancel an unfinished warmup on shutdown to avoid leaking the task.
         if task is not None and not task.done():
             task.cancel()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Configure application logging on server startup.
-
-    The ``api`` logger level follows the ``SCORE_MY_RECIPE_LOG_LEVEL`` setting
-    (info by default, warning on staging/prod). See
-    :func:`api.logging_config.setup_logging` for details.
-    """
-    logging_config.setup_logging()
-    yield
 
 
 app = FastAPI(
