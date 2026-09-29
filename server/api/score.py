@@ -449,3 +449,25 @@ async def compute_green_score(
         notes=notes,
         ingredients_notes=ingredients_notes,
     )
+
+
+async def warmup(lang: str) -> None:
+    """Pre-populate the green-score label-bonus caches.
+
+    ``lang`` is accepted for a uniform warmup signature but ignored: the label
+    bonus and ingredient-restriction tables are language-independent. Both rely
+    on OFF taxonomies (warmed by :func:`api.off.warmup`), so this module is
+    warmed after ``off`` in the orchestrator's dependency order.
+    """
+    # Lazy import breaks the otherwise circular dependency with api.warmup.
+    from api.warmup import gather_warmup
+
+    await gather_warmup(
+        lang,
+        {
+            "score.labels_bonus_full": labels_bonus_full(),
+            "score.labels_bonus_ingredients_restrictions_full": (
+                labels_bonus_ingredients_restrictions_full()
+            ),
+        },
+    )

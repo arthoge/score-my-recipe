@@ -9,8 +9,10 @@
  * A taxonomy item with id and localized label
  */
 export interface TaxonomyItem {
-	/** Taxonomy identifier */
-	id: string;
+	/**
+	 * Taxonomy identifier, or `null` when the value is not in the taxonomy.
+	 */
+	id: string | null;
 	/** Display label in the current language */
 	label: string;
 	/** Whether this item comes from the taxonomy (true) or is a custom user entry (false) */

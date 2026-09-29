@@ -185,7 +185,7 @@ def build_origin_obj(origin_id: str, label: str | None = None) -> types.Taxonomy
 def build_ingredient_obj(
     id_: str,
     name: str,
-    taxonomy_id: str,
+    taxonomy_id: str | None = None,
     weight: float = 100.0,
     labels: list[str] | None = None,
     origin: str | None = None,
@@ -194,6 +194,11 @@ def build_ingredient_obj(
 ) -> types.RecipeIngredientInput:
     """Build a ``RecipeIngredientInput`` with a codified ingredient.
 
+    When ``taxonomy_id`` is ``None``, the codified ingredient is a free-text
+    entry (``id=None``, ``is_in_taxonomy=False``).
+
+    :param taxonomy_id: taxonomy id of the codified ingredient, or ``None`` for
+        a free-text entry
     :param origin: optional origin taxonomy id (e.g. ``"en:france"``)
     :param is_fresh_plant: whether the ingredient is a fresh fruit/vegetable
     :param is_in_season: whether the ingredient is in season (only meaningful
@@ -203,7 +208,11 @@ def build_ingredient_obj(
         id=id_,
         name=name,
         weight=weight,
-        codified_ingredient=types.TaxonomyItem(id=taxonomy_id, label=name, is_in_taxonomy=True),
+        codified_ingredient=types.TaxonomyItem(
+            id=taxonomy_id,
+            label=name,
+            is_in_taxonomy=taxonomy_id is not None,
+        ),
         labels=[build_label_obj(lid) for lid in (labels or [])],
         is_fresh_plant=is_fresh_plant,
         is_in_season=is_in_season,

@@ -41,7 +41,12 @@ def mock_ingredients_taxonomy():
         # en:pear (agribalyse_proxy_food_code 13037); inherited by en:raw-pear
         "13037": {"code": "13037", "ciqual_code": "13037", "name_fr": "Pear", "score": 0.2},
         # en:conference-pear (agribalyse_proxy_food_code 13188)
-        "13188": {"code": "13188", "ciqual_code": "13188", "name_fr": "Conference pear", "score": 0.25},
+        "13188": {
+            "code": "13188",
+            "ciqual_code": "13188",
+            "name_fr": "Conference pear",
+            "score": 0.25,
+        },
     }
     # Rows indexed by Ciqual code (``ciqual_*`` taxonomy properties).
     by_ciqual = {

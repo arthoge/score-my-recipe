@@ -259,3 +259,19 @@ async def _safe_unit_conversion(unit_id: str, lang: str) -> tuple[str | None, fl
         return await _unit_conversion(unit_id, lang)
     except exceptions.UnknownUnitError:
         return None, None
+
+
+async def warmup(lang: str) -> None:
+    """Pre-populate the per-language unit views for ``lang``.
+
+    ``_unit_name_to_id`` builds on :func:`_get_units_entries` (for ``lang`` and
+    the neutral ``xx`` language), so the units entries are warmed first, then the
+    name-to-id mapping.
+    """
+    # Lazy import breaks the otherwise circular dependency with api.warmup.
+    from api.warmup import gather_warmup
+
+    # Phase 1: per-language units list (also pulls the units taxonomy, warmed by off).
+    await gather_warmup(lang, {"units._get_units_entries": _get_units_entries(lang)})
+    # Phase 2: name->id mapping (depends on phase 1; also warms the "xx" language).
+    await gather_warmup(lang, {"units._unit_name_to_id": _unit_name_to_id(lang)})

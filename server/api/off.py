@@ -139,6 +139,7 @@ async def get_labels_taxonomy() -> taxonomy.Taxonomy:
     return labels_taxonomy
 
 
+@async_cache(maxsize=1)
 async def get_countries_taxonomy() -> taxonomy.Taxonomy:
     """Get the countries taxonomy from Open Food Facts API"""
     countries_taxonomy = await asyncio.to_thread(
@@ -147,6 +148,7 @@ async def get_countries_taxonomy() -> taxonomy.Taxonomy:
     return countries_taxonomy
 
 
+@async_cache(maxsize=1)
 async def get_languages_taxonomy() -> taxonomy.Taxonomy:
     """Get the languages taxonomy from Open Food Facts API"""
     languages_taxonomy = await asyncio.to_thread(
@@ -217,3 +219,42 @@ async def languages_by_code() -> dict[str, str]:
         for node in languages_taxonomy.iter_nodes()
     )
     return {code: node_id for code, node_id in _iter if code is not None}
+
+
+async def warmup(lang: str) -> None:
+    """Pre-populate the lang-independent OpenFoodFacts caches.
+
+    ``lang`` is accepted for a uniform warmup signature but ignored: all caches
+    here are language-independent. The calls are split in dependency phases so
+    derived caches (``origins_by_country_code``, ``origin_to_country_origin``,
+    ``languages_by_code``) run only after the taxonomies they rely on.
+
+    Independent calls within a phase run concurrently via :func:`gather_warmup`,
+    and each call is individually fault-tolerant (see ``api.warmup``).
+    """
+    # Lazy import breaks the otherwise circular dependency with api.warmup
+    # (this module is imported by api.warmup at load time).
+    from api.warmup import gather_warmup
+
+    # Phase 1: independent leaf taxonomy fetches (each downloads once).
+    await gather_warmup(
+        lang,
+        {
+            "off.get_origins_taxonomy": get_origins_taxonomy(),
+            "off.get_ingredients_taxonomy": get_ingredients_taxonomy(),
+            "off.get_units_taxonomy": get_units_taxonomy(),
+            "off.get_labels_taxonomy": get_labels_taxonomy(),
+            "off.get_countries_taxonomy": get_countries_taxonomy(),
+            "off.get_languages_taxonomy": get_languages_taxonomy(),
+        },
+    )
+    # Phase 2: derived caches built from phase-1 taxonomies (independent of each other).
+    await gather_warmup(
+        lang,
+        {
+            "off.origins_by_country_code": origins_by_country_code(),
+            "off.languages_by_code": languages_by_code(),
+        },
+    )
+    # Phase 3: depends on origins_by_country_code (hence after phase 2).
+    await gather_warmup(lang, {"off.origin_to_country_origin": origin_to_country_origin()})

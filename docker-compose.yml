@@ -17,5 +17,6 @@ services:
       SCORE_MY_RECIPE_OPENFOODFACTS_ENV: ${OPENFOODFACTS_ENV:-prod}
       # application log verbosity: info by default, set to warning on staging/prod
       SCORE_MY_RECIPE_LOG_LEVEL: ${LOG_LEVEL:-info}
+      SCORE_MY_RECIPE_WARMUP: ${WARMUP:-}
     volumes:
       - server_data:/app/data

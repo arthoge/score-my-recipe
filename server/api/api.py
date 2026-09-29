@@ -5,6 +5,9 @@ Note: the business logic is in api/recipes.py,
 this file should only handle the HTTP specific parts.
 """
 
+import asyncio
+import logging
+from contextlib import asynccontextmanager
 from typing import Annotated
 from contextlib import asynccontextmanager
 
@@ -19,6 +22,34 @@ import api.exceptions as exceptions
 import api.score as score
 import api.types as types
 import api.units as units
+from api.settings import get_settings
+from api.warmup import warmup as warmup_caches
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup: schedule cache warmup in the background if configured.
+
+    The ``SCORE_MY_RECIPE_WARMUP`` setting holds a comma-separated list of
+    language codes. When set, caches are pre-populated for those languages so the
+    first user does not pay the cold-cache latency. Warmup runs as a background
+    task (the server starts serving immediately) and is best-effort: a failing
+    call is logged and does not block startup.
+    """
+    settings = get_settings()
+    task = None
+    if settings.warmup:
+        logger.info("Scheduling cache warmup for languages: %s", settings.warmup)
+        task = asyncio.create_task(warmup_caches(list(settings.warmup)))
+        app.state.warmup_task = task
+    try:
+        yield
+    finally:
+        # Cancel an unfinished warmup on shutdown to avoid leaking the task.
+        if task is not None and not task.done():
+            task.cancel()
 
 
 @asynccontextmanager
