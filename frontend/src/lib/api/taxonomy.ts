@@ -65,7 +65,7 @@ export async function getMatchingTags(
 			const matched = (result.matches ?? [])
 				.filter((m) => m.key === 'synonyms' && typeof m.value === 'string')
 				.map((m) => m.value as string);
-			// the condition on item.id avoid types problem (as it can be null in type definition)
+			// The condition on item.id avoids type problems because it can be null.
 			if (matched.length > 0 && result.item.id !== null) {
 				matched_synonyms[result.item.id] = [...new Set(matched)];
 			}
