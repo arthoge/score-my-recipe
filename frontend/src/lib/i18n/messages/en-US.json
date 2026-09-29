@@ -72,7 +72,12 @@
 		"country_load_error": "Could not load countries",
 		"ingredient_not_accounted": "Not accounted",
 		"ingredient_not_accounted_tooltip": "We could not find a correspondence in our impact database for this ingredient",
-		"ingredient_scorable": "This ingredient can be counted in the green score"
+		"ingredient_scorable": "This ingredient can be counted in the green score",
+		"recompute": "Recompute",
+		"total_weight": "Total weight",
+		"no_score_short": "No score yet",
+		"expand_details": "Expand details",
+		"collapse_details": "Collapse details"
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",

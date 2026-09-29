@@ -25,6 +25,9 @@
 		totalWeight?: number;
 		isLoading?: boolean;
 		error?: string | null;
+		showHeader?: boolean;
+		size?: 'sm' | 'md' | 'lg';
+		class?: string;
 	};
 
 	let {
@@ -33,7 +36,10 @@
 		ignoredWeight = 0,
 		totalWeight = 0,
 		isLoading = false,
-		error = null
+		error = null,
+		showHeader = true,
+		size = 'lg',
+		class: className = 'bg-base-200 rounded-lg p-4'
 	}: Props = $props();
 
 	/** Number of ignored ingredients. */
@@ -45,10 +51,12 @@
 	);
 </script>
 
-<div class="bg-base-200 rounded-lg p-4">
-	<h2 class="text-lg font-semibold">
-		{$_('recipe.green_score', { default: 'Green Score' })}
-	</h2>
+<div class={className}>
+	{#if showHeader}
+		<h2 class="text-lg font-semibold">
+			{$_('recipe.green_score', { default: 'Green Score' })}
+		</h2>
+	{/if}
 
 	{#if isLoading}
 		<div class="flex items-center gap-3 py-4">
@@ -62,7 +70,7 @@
 	{:else if score?.letterGrade}
 		<!-- Score logo + numeric score -->
 		<div class="mt-2">
-			<GreenScore letterGrade={score.letterGrade} numericScore={score.numericScore} />
+			<GreenScore letterGrade={score.letterGrade} numericScore={score.numericScore} {size} />
 		</div>
 
 		<!-- Ignored ingredients summary -->

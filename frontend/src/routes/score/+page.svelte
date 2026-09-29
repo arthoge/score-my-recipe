@@ -15,7 +15,9 @@
 	import { page } from '$app/state';
 	import RecipeRowEditor from '$lib/ui/RecipeRowEditor.svelte';
 	import ScoreDisplay from '$lib/ui/ScoreDisplay.svelte';
+	import ScoreSheet from '$lib/ui/ScoreSheet.svelte';
 	import CountrySelect from '$lib/ui/CountrySelect.svelte';
+	import IconMdiRefresh from '@iconify-svelte/mdi/refresh';
 	import { createEmptyIngredient } from '$lib/types/ingredient';
 	import { addEmptyIngredientIfNeeded, countNonEmptyIngredients } from '$lib/types/ingredientsList';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
@@ -99,6 +101,9 @@
 		isScoreLoading || !greenScore ? [] : greenScore.missingIngredientIds
 	);
 
+	/** Whether there is at least one non-empty ingredient to compute a score for. */
+	let hasIngredients = $derived(ingredients.some(isIngredientNotEmpty));
+
 	/**
 	 * Compute the green-score for the current ingredients.
 	 *
@@ -109,11 +114,10 @@
 	async function fetchGreenScore() {
 		currentScoreRequestController?.abort(); // abort previous request
 		// Only compute when there is at least one non-empty ingredient
-		if (!ingredients.some(isIngredientNotEmpty)) {
+		if (!hasIngredients) {
 			currentScoreRequestController = null;
 			isScoreLoading = false;
 			greenScore = null;
-			isScoreLoading = false;
 			return;
 		}
 		const requestController = new AbortController();
@@ -151,49 +155,108 @@
 	<title>{$_('recipe.title', { default: 'Recipe Editor' })}</title>
 </svelte:head>
 
-<div class="mx-auto max-w-7xl px-4 py-8">
-	<!-- Header -->
-	<div class="mb-8">
-		<h1 class="text-3xl font-bold">{$_('recipe.title', { default: 'Recipe Editor' })}</h1>
-		<p class="text-base-content/70 mt-2">
-			{$_('recipe.description', { default: 'Add ingredients to your recipe' })}
-		</p>
+<div class="mx-auto max-w-7xl px-4 py-8 pb-32 lg:pb-8">
+	<!-- Responsive Grid: On desktop (lg+), 2 columns with sticky sidebar; on mobile, single column with sticky bottom sheet -->
+	<div class="lg:grid lg:grid-cols-12 lg:items-start lg:gap-8">
+		<!-- Left Column: Recipe Editor & Actions -->
+		<div class="space-y-6 lg:col-span-7 xl:col-span-8">
+			<!-- Header -->
+			<div>
+				<h1 class="text-3xl font-bold">{$_('recipe.title', { default: 'Recipe Editor' })}</h1>
+				<p class="text-base-content/70 mt-2">
+					{$_('recipe.description', { default: 'Add ingredients to your recipe' })}
+				</p>
+			</div>
+
+			<!-- Ingredients List (row edition logic delegated to RecipeRowEditor) -->
+			<RecipeRowEditor bind:ingredients {missingIngredientIds} />
+
+			<!-- Actions -->
+			<div class="flex flex-wrap items-end gap-4">
+				<CountrySelect bind:value={country} />
+				<button
+					class="btn btn-primary"
+					onclick={fetchGreenScore}
+					disabled={isScoreLoading || !hasIngredients}
+				>
+					{#if isScoreLoading}
+						<span class="loading loading-spinner loading-sm"></span>
+					{/if}
+					{$_('recipe.compute_score', { default: 'Compute score' })}
+				</button>
+			</div>
+		</div>
+
+		<!-- Right Column: Desktop Sidebar (visible on lg+ screens, sticky) -->
+		<aside class="sticky top-6 hidden space-y-6 lg:col-span-5 lg:block xl:col-span-4">
+			<div class="bg-base-200 border-base-300 space-y-6 rounded-2xl border p-6 shadow-sm">
+				<!-- Header with title and Recompute button -->
+				<div class="border-base-content/10 flex items-center justify-between gap-3 border-b pb-4">
+					<h2 class="text-xl font-bold tracking-tight">
+						{$_('recipe.green_score', { default: 'Green Score' })}
+					</h2>
+					<button
+						type="button"
+						class="btn btn-primary btn-sm gap-1.5"
+						onclick={fetchGreenScore}
+						disabled={isScoreLoading || !hasIngredients}
+					>
+						{#if isScoreLoading}
+							<span class="loading loading-spinner loading-xs"></span>
+						{:else}
+							<IconMdiRefresh class="h-4 w-4" />
+						{/if}
+						{$_('recipe.recompute', { default: 'Recompute' })}
+					</button>
+				</div>
+
+				<!-- Green Score visual & details -->
+				<ScoreDisplay
+					score={greenScore}
+					totalIngredientCount={nonEmptyIngredientCount}
+					{totalWeight}
+					{ignoredWeight}
+					isLoading={isScoreLoading}
+					error={scoreError}
+					showHeader={false}
+					class="space-y-4"
+				/>
+
+				<!-- Summary Stats Card -->
+				<div class="bg-base-100/80 border-base-content/5 space-y-2 rounded-xl border p-4">
+					<h3 class="text-base-content/80 text-sm font-semibold">
+						{$_('recipe.summary', { default: 'Summary' })}
+					</h3>
+					<div class="flex justify-between text-sm">
+						<span class="text-base-content/70">
+							{$_('recipe.ingredients_count', { default: 'ingredient(s) added' })}:
+						</span>
+						<span class="font-medium">{nonEmptyIngredientCount}</span>
+					</div>
+					{#if totalWeight > 0}
+						<div class="flex justify-between text-sm">
+							<span class="text-base-content/70">
+								{$_('recipe.total_weight', { default: 'Total weight' })}:
+							</span>
+							<span class="font-medium">{totalWeight} g</span>
+						</div>
+					{/if}
+				</div>
+			</div>
+		</aside>
 	</div>
 
-	<!-- Ingredients List (row edition logic delegated to RecipeRowEditor) -->
-	<RecipeRowEditor bind:ingredients {missingIngredientIds} />
-
-	<!-- Actions -->
-	<div class="mt-6 flex flex-wrap items-end gap-4">
-		<CountrySelect bind:value={country} />
-		<button
-			class="btn btn-primary"
-			onclick={fetchGreenScore}
-			disabled={isScoreLoading || !ingredients.some(isIngredientNotEmpty)}
-		>
-			{#if isScoreLoading}
-				<span class="loading loading-spinner loading-sm"></span>
-			{/if}
-			{$_('recipe.compute_score', { default: 'Compute score' })}
-		</button>
+	<!-- Mobile: Sticky Bottom Sheet (hidden on lg+ screens) -->
+	<div class="lg:hidden">
+		<ScoreSheet
+			score={greenScore}
+			isLoading={isScoreLoading}
+			error={scoreError}
+			totalIngredientCount={nonEmptyIngredientCount}
+			{totalWeight}
+			{ignoredWeight}
+			canCompute={hasIngredients}
+			onRecompute={fetchGreenScore}
+		/>
 	</div>
-
-	<!-- Summary -->
-	<div class="bg-base-200 mt-8 rounded-lg p-4">
-		<h2 class="text-lg font-semibold">{$_('recipe.summary', { default: 'Summary' })}</h2>
-		<p class="text-base-content/70 mt-1">
-			{nonEmptyIngredientCount}
-			{$_('recipe.ingredients_count', { default: 'ingredient(s) added' })}
-		</p>
-	</div>
-
-	<!-- Green Score display (logo + limitations) -->
-	<ScoreDisplay
-		score={greenScore}
-		totalIngredientCount={nonEmptyIngredientCount}
-		{totalWeight}
-		{ignoredWeight}
-		isLoading={isScoreLoading}
-		error={scoreError}
-	/>
 </div>

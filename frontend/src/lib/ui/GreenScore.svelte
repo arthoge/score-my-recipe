@@ -17,9 +17,24 @@
 	type Props = {
 		letterGrade?: string | null;
 		numericScore?: number | null;
+		size?: 'sm' | 'md' | 'lg';
+		showScoreText?: boolean;
+		class?: string;
 	};
 
-	let { letterGrade = null, numericScore = null }: Props = $props();
+	let {
+		letterGrade = null,
+		numericScore = null,
+		size = 'lg',
+		showScoreText = true,
+		class: className = ''
+	}: Props = $props();
+
+	let imgHeightClass = $derived.by(() => {
+		if (size === 'sm') return 'h-9 sm:h-10';
+		if (size === 'md') return 'h-24';
+		return 'h-32';
+	});
 
 	// Map each green-score SVG asset to its letter grade key.
 	// Keys use a lowercase, hyphenated form of the grade (e.g. "A+" -> "a-plus").
@@ -51,9 +66,13 @@
 	});
 </script>
 
-<div class="flex flex-col items-center gap-2">
-	<img src={scoreLogoUrl} alt={letterGrade ?? 'unknown'} class="h-32" />
-	{#if numericScore !== null}
+<div class="flex flex-col items-center gap-2 {className}">
+	<img
+		src={scoreLogoUrl}
+		alt={letterGrade ?? 'unknown'}
+		class="{imgHeightClass} w-auto object-contain"
+	/>
+	{#if showScoreText && numericScore !== null}
 		<span class="text-base-content/70 text-sm">
 			{$_('recipe.numeric_score', { default: 'Score' })}: {numericScore.toFixed(1)}/100
 		</span>
