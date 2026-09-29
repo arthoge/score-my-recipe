@@ -17,6 +17,7 @@ the second column.
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import logging
 import sys
@@ -382,3 +383,18 @@ def _dedupe_reported(
             continue
         result.append((n, code))
     return result
+
+
+async def warmup(lang: str) -> None:
+    """Pre-parse the Agribalyse CSV into lookup indexes.
+
+    ``lang`` is ignored: the Agribalyse indexes are language-independent. This
+    removes the first green-score / ingredients request latency and populates the
+    lazy module global (:func:`_load_agribalyse`) upfront, avoiding a
+    concurrent-load race when several languages are warmed. The (synchronous) CSV
+    parse runs in a thread so it does not block the event loop.
+    """
+    # Lazy import breaks the otherwise circular dependency with api.warmup.
+    from api.warmup import gather_warmup
+
+    await gather_warmup(lang, {"agribalyse._load_agribalyse": asyncio.to_thread(_load_agribalyse)})

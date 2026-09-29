@@ -110,3 +110,33 @@ async def test_no_score_when_all_missing(agribalyse_index):
     assert result.numeric_score is None
     assert result.letter_grade is None
     assert result.missing_ingredient_ids == ["i1"]
+
+
+@pytest.mark.asyncio
+async def test_free_text_codified_ingredient_is_missing(agribalyse_index):
+    """A codified ingredient with a null id is accepted and reported as missing.
+
+    This mirrors an ingredient whose value was edited in the UI without
+    selecting a suggestion: the frontend (see ``Tags.svelte`` edit flow) resets
+    the id to null so the ingredient is no longer matched against the
+    previously selected taxonomy node. Even when the taxonomy contains a node
+    with the same label, no Agribalyse row is matched and the ingredient is
+    flagged as missing instead of being scored against the old entry.
+    """
+    taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            )
+        }
+    )
+    with patch_ingredients_taxonomy(taxonomy):
+        result = await score.compute_green_score(
+            types.GreenScoreRequest(
+                ingredients=[build_ingredient_obj("i1", "apple", taxonomy_id=None)]
+            ).ingredients,
+            country="FR",
+        )
+    assert result.numeric_score is None
+    assert result.letter_grade is None
+    assert result.missing_ingredient_ids == ["i1"]

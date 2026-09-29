@@ -1511,9 +1511,16 @@
       "TaxonomyItem": {
         "properties": {
           "id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Id",
-            "description": "Taxonomy identifier"
+            "description": "Taxonomy identifier, null when the value is a free-text entry not resolved to a taxonomy node"
           },
           "label": {
             "type": "string",
@@ -1533,7 +1540,7 @@
           "isInTaxonomy"
         ],
         "title": "TaxonomyItem",
-        "description": "A taxonomy reference with an id and a localized label.\n\nMirrors the frontend `TaxonomyItem` (used for codified ingredients, labels\nand origins).",
+        "description": "A taxonomy reference with an id and a localized label.\n\nMirrors the frontend `TaxonomyItem`\n(used for codified ingredients, labels and origins).",
         "examples": [
           {
             "id": "en:apple",

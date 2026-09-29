@@ -131,3 +131,23 @@ async def get_distances_modifiers() -> dict[tuple[str, str], float]:
             if distance_score.strip():
                 distances_modifiers[(origin_id, row_origin_id)] = float(distance_score) / 10 - 7
     return distances_modifiers
+
+
+async def warmup(lang: str) -> None:
+    """Pre-populate the green-score modifier tables.
+
+    ``lang`` is accepted for a uniform warmup signature but ignored: the EPI and
+    distance modifier tables are language-independent. Both rely on the OFF
+    origins taxonomy (warmed by :func:`api.off.warmup`), so this module is warmed
+    after ``off`` in the orchestrator's dependency order.
+    """
+    # Lazy import breaks the otherwise circular dependency with api.warmup.
+    from api.warmup import gather_warmup
+
+    await gather_warmup(
+        lang,
+        {
+            "score_data.get_epi_modifiers": get_epi_modifiers(),
+            "score_data.get_distances_modifiers": get_distances_modifiers(),
+        },
+    )
