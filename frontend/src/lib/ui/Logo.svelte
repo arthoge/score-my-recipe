@@ -15,7 +15,13 @@
 	} = $props();
 </script>
 
-<div class="flex items-center gap-4 {className}">
+<picture class="flex items-center gap-4 {className}">
+	<source
+		srcset={mono
+			? `https://static.openfoodfacts.org/images/logos/off-logo-horizontal-mono-white.svg`
+			: `https://static.openfoodfacts.org/images/logos/off-logo-horizontal-dark.svg`}
+		media="(prefers-color-scheme: dark)"
+	/>
 	<a href="/">
 		<img
 			src="https://static.openfoodfacts.org/images/logos/off-logo-horizontal-light.svg"
@@ -26,8 +32,4 @@
 	<a href="/" class="border-base-content/20 border-l pl-4 text-xl font-bold"
 		>{$_('navbar.for_the_recipes')}</a
 	>
-<<<<<<< Updated upstream
 </picture>
-=======
-</div>
->>>>>>> Stashed changes
