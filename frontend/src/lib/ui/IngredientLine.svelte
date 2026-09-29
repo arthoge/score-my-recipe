@@ -53,6 +53,11 @@
 	let wasEmptyOnMount = $state(ingredient.name === '');
 	let isNotEmpty = $derived(wasEmptyOnMount && isIngredientNotEmpty(ingredient));
 
+	/** Whether the ingredient has an explicit quantity of 0g, which excludes it
+	 * from the score computation. `null` (empty) is distinct from 0 and is not
+	 * flagged, so the always-present empty new line is never marked invalid. */
+	let isZeroWeight = $derived(isNotEmpty && (ingredient.weight === 0 || ingredient.weight == null));
+
 	// trigger onNotEmpty when isNoteEmpty becomes true
 	$effect(() => {
 		if (isNotEmpty && onNotEmpty) {
@@ -160,19 +165,48 @@
 	<div class="flex w-24 flex-col">
 		<label class="label py-1" for="ingredient-weight-{ingredient.id}">
 			<span class="flex items-center gap-1.5">
-				<span class="label-text text-xs">{$_('recipe.weight', { default: 'Weight (g)' })}</span>
+				<span class="label-text text-xs" class:text-error={isZeroWeight}
+					>{$_('recipe.weight', { default: 'Weight (g)' })}</span
+				>
+				{#if isZeroWeight}
+					<!-- Screen-reader status: the zero-quantity state is otherwise
+					     conveyed only by colour + icon, so expose it as text here. -->
+					<span class="sr-only">
+						{$_('recipe.ingredient_zero_quantity', { default: 'Zero quantity' })}
+					</span>
+				{/if}
 				<HelperTooltip
 					tip={$_('helpers.weight', {
 						default: 'Net quantity of the ingredient in grams.'
 					})}
 					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 				/>
+				{#if isZeroWeight}
+					<!-- Stop icon is itself the tooltip trigger (via HelperTooltip's
+					     custom icon snippet) explaining why a 0g quantity cannot be
+					     taken into account in the score computation. -->
+					<HelperTooltip
+						tip={$_('recipe.ingredient_zero_quantity_tooltip', {
+							default:
+								"This ingredient's quantity is 0g, so it cannot be taken into account in the calculation."
+						})}
+						ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+					>
+						{#snippet icon()}
+							<IconMdiStopCircleOutline
+								class="text-error h-4 w-4 shrink-0 transition-colors duration-200"
+								aria-hidden="true"
+							/>
+						{/snippet}
+					</HelperTooltip>
+				{/if}
 			</span>
 		</label>
 		<input
 			id="ingredient-weight-{ingredient.id}"
 			type="number"
 			class="input input-bordered w-full"
+			class:input-error={isZeroWeight}
 			placeholder="0"
 			bind:value={ingredient.weight}
 			min="0"
