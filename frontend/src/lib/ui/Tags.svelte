@@ -37,6 +37,9 @@
 		onChange?: (tags: TaxonomyItem[]) => void;
 		// Optional snippet rendered before the label of each autocomplete suggestion.
 		suggestionIcon?: Snippet<[TaxonomyItem]>;
+		// When true, the widget border turns red to signal an invalid/unresolved
+		// value (e.g. an ingredient missing from the green-score computation).
+		invalid?: boolean;
 	};
 
 	type Suggestion = {
@@ -49,8 +52,18 @@
 		tags = $bindable([]),
 		single = false,
 		onChange,
-		suggestionIcon
+		suggestionIcon,
+		invalid = false
 	}: Props = $props();
+
+	// Border treatment mirrors the focus state: red when invalid, otherwise the
+	// default base/primary colours. A border width is only applied when invalid
+	// so the normal (valid) layout is unchanged.
+	let borderClass = $derived(
+		invalid
+			? 'border border-error focus-within:border-error focus-within:outline-error'
+			: 'border-base-200 focus-within:border-primary focus-within:outline-primary'
+	);
 
 	let autoCompleteIndex = $state(-1);
 	// suggestions returned by API
@@ -395,7 +408,7 @@
 <!-- Tag widget -->
 <div
 	{id}
-	class="bg-base-100 border-base-200 focus-within:border-primary focus-within:outline-primary flex h-auto min-h-12 w-full flex-wrap gap-x-1.5 gap-y-1 rounded-md"
+	class="bg-base-100 {borderClass} flex h-auto min-h-12 w-full flex-wrap gap-x-1.5 gap-y-1 rounded-md"
 >
 	<!-- each value of the tag (multi valued) -->
 	{#each tags as tag, index (tag)}

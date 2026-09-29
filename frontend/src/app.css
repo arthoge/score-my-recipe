@@ -8,13 +8,6 @@
 	--font-sans: 'Plus Jakarta Sans Variable', system-ui, sans-serif;
 }
 
-/* Ingredient row flagged as missing from the green-score computation.
-   The tint is derived from the daisyUI warning color so it stays theme-aware
-   and configurable via the `--color-warning` theme token. */
-.ingredient-missing {
-	background-color: color-mix(in oklch, var(--color-warning) 20%, transparent);
-}
-
 @plugin 'daisyui/theme' {
 	name: 'light';
 	default: true;

@@ -12,13 +12,19 @@
 </script>
 
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+
 	type Props = {
 		tip: string;
 		ariaLabel?: string;
 		position?: 'top' | 'bottom' | 'left' | 'right';
+		// Optional custom trigger icon rendered in place of the default info
+		// icon, so callers can reuse this accessible tooltip wrapper for a
+		// status icon (e.g. a "not accounted" stop icon).
+		icon?: Snippet;
 	};
 
-	let { tip, ariaLabel = 'More information', position = 'top' }: Props = $props();
+	let { tip, ariaLabel = 'More information', position = 'top', icon }: Props = $props();
 
 	let positionClass = $derived(`tooltip-${position}`);
 
@@ -37,16 +43,21 @@
 		aria-label={ariaLabel}
 		aria-describedby={tipId}
 	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			viewBox="0 0 24 24"
-			class="text-primary hover:text-primary/70 h-4 w-4 transition-colors duration-200"
-			fill="currentColor"
-		>
-			<path
-				d="M11 9h2V7h-2m1 13c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8m0-18A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2m-1 15h2v-6h-2v6Z"
-			/>
-		</svg>
+		{#if icon}
+			<!-- Custom trigger icon provided by the caller (e.g. a status icon). -->
+			{@render icon()}
+		{:else}
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 24 24"
+				class="text-primary hover:text-primary/70 h-4 w-4 transition-colors duration-200"
+				fill="currentColor"
+			>
+				<path
+					d="M11 9h2V7h-2m1 13c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8m0-18A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2m-1 15h2v-6h-2v6Z"
+				/>
+			</svg>
+		{/if}
 	</button>
 	<!-- Screen-reader text: daisyUI renders the visible tooltip from data-tip
 	     via a CSS pseudo-element, which assistive technology does not reliably

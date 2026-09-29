@@ -17,7 +17,7 @@
 	import Tags from './Tags.svelte';
 	import HelperTooltip from './HelperTooltip.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
-	import IconMdiAlertCircle from '@iconify-svelte/mdi/alert-circle';
+	import IconMdiStopCircleOutline from '@iconify-svelte/mdi/stop-circle-outline';
 	import IconMdiLeaf from '@iconify-svelte/mdi/leaf';
 	import IconMaterialSymbolsSunnyOutline from '@iconify-svelte/material-symbols/sunny-outline';
 	import IconMaterialSymbolsCloudOutline from '@iconify-svelte/material-symbols/cloud-outline';
@@ -81,41 +81,46 @@
 	}
 </script>
 
-<div
-	class="flex flex-col gap-2 rounded-lg p-3 sm:flex-row sm:items-start"
-	class:ingredient-missing={isMissing}
->
-	{#if isMissing}
-		<!-- Badge column: an invisible label spacer aligns the badge with the
-		     sibling form fields (which sit below their own labels), rather than
-		     at the labels' top level. -->
-		<div class="flex w-auto flex-col">
-			<span class="label invisible py-1">&nbsp;</span>
-			<span
-				class="tooltip badge badge-warning badge-sm gap-1"
-				data-tip={$_('recipe.ingredient_not_accounted_tooltip', {
-					default: 'We could not find a correspondence in our impact database for this ingredient'
-				})}
-			>
-				<IconMdiAlertCircle class="h-4 w-4" aria-hidden="true" />
-				{$_('recipe.ingredient_not_accounted', { default: 'Not accounted' })}
-			</span>
-		</div>
-	{/if}
-
+<div class="flex flex-col gap-2 rounded-lg p-3 sm:flex-row sm:items-start">
 	<!-- Codified Ingredient name -->
 	<div class="flex grow-3 flex-col">
 		<label class="label py-1" for="ingredient-codified-{ingredient.id}">
 			<span class="flex items-center gap-1.5">
-				<span class="label-text text-xs"
+				<span class="label-text text-xs" class:text-error={isMissing}
 					>{$_('recipe.codified_ingredient', { default: 'Codified' })}</span
 				>
+				{#if isMissing}
+					<!-- Screen-reader status: the missing state is otherwise conveyed
+					     only by colour + icon, so expose it as text here. -->
+					<span class="sr-only">
+						{$_('recipe.ingredient_not_accounted', { default: 'Not accounted' })}
+					</span>
+				{/if}
 				<HelperTooltip
 					tip={$_('helpers.codified_ingredient', {
 						default: 'Standardized ingredient from the Open Food Facts / Agribalyse database.'
 					})}
 					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 				/>
+				{#if isMissing}
+					<!-- Stop icon is itself the tooltip trigger (via HelperTooltip's
+					     custom icon snippet) explaining why the ingredient is not
+					     accounted for in the green-score. -->
+					<HelperTooltip
+						tip={$_('recipe.ingredient_not_accounted_tooltip', {
+							default:
+								'We could not find a correspondence in our impact database for this ingredient'
+						})}
+						ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+					>
+						{#snippet icon()}
+							<IconMdiStopCircleOutline
+								class="text-error h-4 w-4 shrink-0 transition-colors duration-200"
+								aria-hidden="true"
+							/>
+						{/snippet}
+					</HelperTooltip>
+				{/if}
 			</span>
 		</label>
 		<Tags
@@ -126,6 +131,7 @@
 				ingredient.codifiedIngredient = newTags[0] ?? null;
 			}}
 			single={true}
+			invalid={isMissing}
 		>
 			{#snippet suggestionIcon(item)}
 				<!-- Show a leaf icon for ingredients that have an EF score (are scorable
