@@ -7,9 +7,13 @@
 	import { navigating } from '$app/state';
 
 	import { _ } from '$lib/i18n';
+	import { Matomo } from '$lib/matomo';
+	import { MATOMO_HOST, MATOMO_SITE_ID } from '$lib/const';
 
 	let { children }: LayoutProps = $props();
 </script>
+
+<Matomo url={MATOMO_HOST} siteId={MATOMO_SITE_ID} />
 
 <svelte:head>
 	<title>Open Food Facts for recipes</title>
