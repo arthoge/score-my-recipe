@@ -5,3 +5,13 @@ pull_request_title: 'l10n: New Crowdin translations to review and merge'
 files:
   - source: /frontend/src/lib/i18n/messages/en-US.json
     translation: /frontend/src/lib/i18n/messages/%locale%.json
+    languages_mapping:
+      locale:
+        en: en-US
+        fr: fr-FR
+        de: de-DE
+        es: es-ES
+        it: it-IT
+        ca: ca-ES
+        nl: nl-NL
+        pt: pt-PT

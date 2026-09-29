@@ -1,14 +1,74 @@
 [
 	{
 		"id": "en:united-states",
-		"label": "English",
+		"label": "English (US)",
 		"languageCode": "en",
 		"countryCode": "us"
+	},
+	{
+		"id": "en:united-kingdom",
+		"label": "English (UK)",
+		"languageCode": "en",
+		"countryCode": "gb"
+	},
+	{
+		"id": "en:australia",
+		"label": "English (Australia)",
+		"languageCode": "en",
+		"countryCode": "au"
 	},
 	{
 		"id": "en:france",
 		"label": "Français",
 		"languageCode": "fr",
 		"countryCode": "fr"
+	},
+	{
+		"id": "en:germany",
+		"label": "Deutsch",
+		"languageCode": "de",
+		"countryCode": "de"
+	},
+	{
+		"id": "en:spain",
+		"label": "Español",
+		"languageCode": "es",
+		"countryCode": "es"
+	},
+	{
+		"id": "en:italy",
+		"label": "Italiano",
+		"languageCode": "it",
+		"countryCode": "it"
+	},
+	{
+		"id": "en:spain",
+		"label": "Català",
+		"languageCode": "ca",
+		"countryCode": "es"
+	},
+	{
+		"id": "en:netherlands",
+		"label": "Nederlands",
+		"languageCode": "nl",
+		"countryCode": "nl"
+	},
+	{
+		"id": "en:belgium",
+		"label": "Nederlands (België)",
+		"languageCode": "nl",
+		"countryCode": "be"
+	},
+	{
+		"id": "en:portugal",
+		"label": "Português",
+		"languageCode": "pt",
+		"countryCode": "pt"
+	},
+	{
+		"id": "en:brazil",
+		"label": "Português (Brasil)",
+		"languageCode": "pt",
+		"countryCode": "br"
 	}
 ]
