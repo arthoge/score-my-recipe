@@ -6,12 +6,14 @@ this file should only handle the HTTP specific parts.
 """
 
 from typing import Annotated
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+import api.logging_config as logging_config
 import api.recipes as recipes
 import api.exceptions as exceptions
 import api.score as score
@@ -19,10 +21,23 @@ import api.types as types
 import api.units as units
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Configure application logging on server startup.
+
+    The ``api`` logger level follows the ``SCORE_MY_RECIPE_LOG_LEVEL`` setting
+    (info by default, warning on staging/prod). See
+    :func:`api.logging_config.setup_logging` for details.
+    """
+    logging_config.setup_logging()
+    yield
+
+
 app = FastAPI(
     title="Score My Recipe",
     description="A tool to compute Green-Score of recipes.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 

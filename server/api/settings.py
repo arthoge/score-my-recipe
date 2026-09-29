@@ -13,6 +13,21 @@ class OpenFoodFactsEnvironments(StrEnum):
     STAGING = "staging"
 
 
+class LogLevel(StrEnum):
+    """Enum for the application logging levels.
+
+    Values are lowercase so the corresponding ``SCORE_MY_RECIPE_LOG_LEVEL``
+    environment variable stays readable (eg. ``warning``), mirroring the
+    casing convention of :class:`OpenFoodFactsEnvironments`.
+    """
+
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SCORE_MY_RECIPE_")
 
@@ -30,6 +45,17 @@ class Settings(BaseSettings):
         OpenFoodFactsEnvironments,
         Field(description="Environment to use for OpenFoodFacts API (prod or staging)"),
     ] = OpenFoodFactsEnvironments.PROD
+
+    log_level: Annotated[
+        LogLevel,
+        Field(
+            description=(
+                "Application logging level (debug, info, warning, error, critical). "
+                "Defaults to info; should be set to warning on staging and prod "
+                "to reduce log verbosity."
+            ),
+        ),
+    ] = LogLevel.INFO
 
 
 _settings: Settings | None = None
