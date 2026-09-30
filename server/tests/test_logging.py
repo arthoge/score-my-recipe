@@ -151,10 +151,14 @@ def test_setup_logging_is_idempotent(reset_api_logger):
 def test_setup_logging_does_not_touch_subloggers(reset_settings, reset_api_logger):
     """setup_logging only reconfigures the api namespace, not arbitrary loggers."""
     other = logging.getLogger("openfoodfacts")
-    other.setLevel(logging.DEBUG)
-    logging_config.setup_logging(LogLevel.WARNING)
-    # An unrelated logger must keep its own level untouched.
-    assert logging.getLogger("openfoodfacts").level == logging.DEBUG
+    saved_level = other.level
+    try:
+        other.setLevel(logging.DEBUG)
+        logging_config.setup_logging(LogLevel.WARNING)
+        # An unrelated logger must keep its own level untouched.
+        assert other.level == logging.DEBUG
+    finally:
+        other.setLevel(saved_level)
 
 
 # Sanity check: get_settings still works after the reset fixture restored state.
