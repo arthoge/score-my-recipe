@@ -21,20 +21,34 @@ dev:
     {{ use_nvm }} && pnpm run dev
 
 # ===========================================
-# QUALITY
+# i18n
 # ===========================================
 
 # sync translations
+[group('i18n')]
 i18nsync:
     {{ use_nvm }} && pnpm i18nsync && pnpm prettier --write src/lib/i18n/messages
 
+
+# ===========================================
+# QUALITY
+# ===========================================
+
+[group('quality')]
 lint:
     {{ use_nvm }} && pnpm format
 
+[group('quality')]
 lint-one file:
     {{ use_nvm }} && pnpm prettier --write {{ file }}
 
-check:
+# quality checks & tests
+[group('quality')]
+check: quality_check test
+
+# quality checks
+[group('quality')]
+quality_check:
     @echo "pnpm check ======================================"
     {{ use_nvm }} && pnpm check
     @echo "pnpm lint ======================================"
@@ -44,5 +58,6 @@ check:
     @echo "pnpm build ======================================"
     {{ use_nvm }} && pnpm build
 
+[group('quality')]
 test:
     {{ use_nvm }} && pnpm test
