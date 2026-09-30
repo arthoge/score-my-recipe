@@ -24,6 +24,10 @@ dev:
 # QUALITY
 # ===========================================
 
+# sync translations
+i18nsync:
+    {{ use_nvm }} && pnpm i18nsync
+
 lint:
     {{ use_nvm }} && pnpm format
 
