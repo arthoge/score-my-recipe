@@ -1,151 +1,151 @@
 {
-  "navbar": {
-    "for_the_recipes": "For the recipes",
-    "score_recipe": "Score a recipe",
-    "join_community": "Join the community",
-    "open_food_facts": "Open Food Facts",
-    "methodology": "About the Green-Score"
-  },
-  "footer": {
-    "stay_updated": "Stay Updated",
-    "contribute": "Contribute",
-    "discover_title": "Discover our Project",
-    "tagline": "A collaborative, free and open database of food products",
-    "tagline_break": "from around the world.",
-    "decorative_alt": "A decorative graphic",
-    "social": {
-      "x": "X (formerly Twitter)",
-      "instagram": "Instagram",
-      "github": "GitHub",
-      "facebook": "Facebook",
-      "slack": "Slack"
-    },
-    "links": {
-      "newsletter": "Newsletter",
-      "forum": "Forum",
-      "producers": "Producers Platform",
-      "translate": "Translate",
-      "github": "GitHub",
-      "data_api_sdks": "Data, API, SDKs",
-      "wiki": "Wiki",
-      "legal": "Legal",
-      "privacy": "Privacy",
-      "terms_of_use": "Terms of use"
-    },
-    "discover": {
-      "who_we_are": "Who we are",
-      "blog": "Blog",
-      "code_of_conduct": "Code of Conduct",
-      "vision_mission_values_and_programs": "Vision, Mission, Values and Programs",
-      "partners": "Partners",
-      "faq": "FAQ",
-      "press": "Press"
-    }
-  },
-  "recipe": {
-    "title": "Recipe Editor",
-    "description": "Add ingredients to your recipe",
-    "ingredient_name": "Ingredient Name",
-    "ingredient_name_placeholder": "e.g., Tomato",
-    "weight": "Weight (g)",
-    "codified_ingredient": "Codified",
-    "labels": "Labels",
-    "seasonality": "Seasonal",
-    "fresh_plant": "Fresh fruit/veg",
-    "off_season": "Off season",
-    "in_season": "In season",
-    "origin": "Origin",
-    "unknown": "Unknown",
-    "delete_ingredient": "Delete ingredient",
-    "action": "Action",
-    "summary": "Summary",
-    "ingredients_count": "ingredient(s) added",
-    "green_score": "Green Score",
-    "computing": "Computing score...",
-    "numeric_score": "Score",
-    "ignored_ingredients": "ingredient(s) ignored",
-    "ignored_weight": "of total weight",
-    "no_score": "No score available. Add ingredients with weights to compute the score.",
-    "compute_score": "Compute score",
-    "country": "Country",
-    "country_placeholder": "Select your country",
-    "country_load_error": "Could not load countries",
-    "ingredient_not_accounted": "Not accounted",
-    "ingredient_not_accounted_tooltip": "We could not find a correspondence in our impact database for this ingredient",
-    "ingredient_zero_quantity": "Zero quantity",
-    "ingredient_zero_quantity_tooltip": "This ingredient's quantity is 0g, so it cannot be taken into account in the calculation.",
-    "ingredient_scorable": "This ingredient can be counted in the green score"
-  },
-  "homepage": {
-    "title": "Score My Recipe - Open Food Facts",
-    "badge": "The open-source tool for environmental assessment of recipes",
-    "hero_title": "Calculate the environmental impact of your recipes",
-    "hero_title_highlight": "in real time.",
-    "hero_description": "Come with your existing recipes. Our tool adapts to what you have and instantly calculates the Green-Score and helps you move towards more sustainable menus.",
-    "cta_recipe_calculator": "Open the recipe calculator",
-    "section2_title": "Works for home and professional kitchens",
-    "section2_description": "Beyond single recipes, easily score many recipes with reliable data.",
-    "feature1_title": "Real-time calculation",
-    "feature1_description": "Easily adjust a recipe's impact by \"jamming\" on quantities or testing ingredient substitutions on the fly.",
-    "feature2_title": "A transparent methodology grounded in PEF/Agribalyse",
-    "feature2_description": "A transparent calculation methodology, based on the rigor of the public PEF/Agribalyse database carried by ADEME.",
-    "feature3_title": "Highly-recognized score",
-    "feature3_description": "Rely on a validated indicator already identified by millions of consumers on Open Food Facts and Yuka.",
-    "footer_text": "An open-source project led by Open Food Facts, designed to help us reduce the impact of at-home cooking, out of home dining and catering.",
-    "footer_badge": "Project carried out collaboratively thanks to the support of ADEME's Call for Commons",
-    "footer_github_link": "Discover the project on GitHub"
-  },
-  "add": {
-    "title": "Add a recipe",
-    "description": "Enter your recipe below",
-    "recipe_label": "Your recipe",
-    "recipe_placeholder": "Enter your recipe here...\n\nExample:\n200g flour\n3 eggs\n100g sugar",
-    "score_button": "Score recipe",
-    "loading": "Calculating...",
-    "result_title": "Detected ingredients",
-    "table_ingredient": "Ingredient",
-    "table_taxonomy": "In taxonomy",
-    "table_quantity": "Quantity (g)",
-    "yes": "Yes",
-    "no": "No"
-  },
-  "onboarding": {
-    "title": "How to score your recipe",
-    "subtitle": "Calculate the environmental impact of your culinary creations in seconds.",
-    "step1_title": "1. Enter ingredients",
-    "step1_desc": "Paste or type your ingredients with their quantities (e.g. 200g flour, 3 eggs).",
-    "step2_title": "2. Automatic matching",
-    "step2_desc": "We recognize your ingredients and match them to the official Agribalyse/PEF database.",
-    "step3_title": "3. Real-time Green-Score",
-    "step3_desc": "Get your score from A to F, see missing matches, and optimize your recipe's impact.",
-    "dismiss": "Got it!",
-    "help_button": "How does it work?"
-  },
-  "helpers": {
-    "more_info": "More information",
-    "recipe_text": "Enter each ingredient on a new line with its quantity (e.g. 200g flour, 3 eggs, 100g sugar).",
-    "codified_ingredient": "Standardized ingredient from the Open Food Facts / Agribalyse database.",
-    "weight": "Net quantity of the ingredient in grams.",
-    "labels": "Official certifications (e.g. Organic, Label Rouge, Fair Trade) that grant Green-Score bonuses.",
-    "seasonality": "Check if seasonal fruits and vegetables are produced in season for a score bonus.",
-    "origin": "Geographical origin of the ingredient, used to evaluate transportation impact.",
-    "country": "Country where the recipe is prepared or consumed, used to calculate transport distances."
-  },
-  "examples": {
-    "title": "Or try an example recipe:"
-  },
-  "recipes": {
-    "quiche": {
-      "name": "Quiche Lorraine",
-      "content": "200g shortcrust dough\n200g lardon\n3 eggs\n200ml fresh cream\n150ml milk\n100g grated emmental"
-    },
-    "apple_pie": {
-      "name": "Apple Pie",
-      "content": "1 puff pastry\n4 apples\n50g sugar\n30g butter"
-    },
-    "ratatouille": {
-      "name": "Ratatouille",
-      "content": "500g tomatoes\n300g zucchini\n300g eggplant\n200g bell peppers\n100g onions\n30ml olive oil"
-    }
-  }
+	"navbar": {
+		"for_the_recipes": "For the recipes",
+		"score_recipe": "Score a recipe",
+		"join_community": "Join the community",
+		"open_food_facts": "Open Food Facts",
+		"methodology": "About the Green-Score"
+	},
+	"footer": {
+		"stay_updated": "Stay Updated",
+		"contribute": "Contribute",
+		"discover_title": "Discover our Project",
+		"tagline": "A collaborative, free and open database of food products",
+		"tagline_break": "from around the world.",
+		"decorative_alt": "A decorative graphic",
+		"social": {
+			"x": "X (formerly Twitter)",
+			"instagram": "Instagram",
+			"github": "GitHub",
+			"facebook": "Facebook",
+			"slack": "Slack"
+		},
+		"links": {
+			"newsletter": "Newsletter",
+			"forum": "Forum",
+			"producers": "Producers Platform",
+			"translate": "Translate",
+			"github": "GitHub",
+			"data_api_sdks": "Data, API, SDKs",
+			"wiki": "Wiki",
+			"legal": "Legal",
+			"privacy": "Privacy",
+			"terms_of_use": "Terms of use"
+		},
+		"discover": {
+			"who_we_are": "Who we are",
+			"blog": "Blog",
+			"code_of_conduct": "Code of Conduct",
+			"vision_mission_values_and_programs": "Vision, Mission, Values and Programs",
+			"partners": "Partners",
+			"faq": "FAQ",
+			"press": "Press"
+		}
+	},
+	"recipe": {
+		"title": "Recipe Editor",
+		"description": "Add ingredients to your recipe",
+		"ingredient_name": "Ingredient Name",
+		"ingredient_name_placeholder": "e.g., Tomato",
+		"weight": "Weight (g)",
+		"codified_ingredient": "Codified",
+		"labels": "Labels",
+		"seasonality": "Seasonal",
+		"fresh_plant": "Fresh fruit/veg",
+		"off_season": "Off season",
+		"in_season": "In season",
+		"origin": "Origin",
+		"unknown": "Unknown",
+		"delete_ingredient": "Delete ingredient",
+		"action": "Action",
+		"summary": "Summary",
+		"ingredients_count": "ingredient(s) added",
+		"green_score": "Green Score",
+		"computing": "Computing score...",
+		"numeric_score": "Score",
+		"ignored_ingredients": "ingredient(s) ignored",
+		"ignored_weight": "of total weight",
+		"no_score": "No score available. Add ingredients with weights to compute the score.",
+		"compute_score": "Compute score",
+		"country": "Country",
+		"country_placeholder": "Select your country",
+		"country_load_error": "Could not load countries",
+		"ingredient_not_accounted": "Not accounted",
+		"ingredient_not_accounted_tooltip": "We could not find a correspondence in our impact database for this ingredient",
+		"ingredient_zero_quantity": "Zero quantity",
+		"ingredient_zero_quantity_tooltip": "This ingredient's quantity is 0g, so it cannot be taken into account in the calculation.",
+		"ingredient_scorable": "This ingredient can be counted in the green score"
+	},
+	"homepage": {
+		"title": "Score My Recipe - Open Food Facts",
+		"badge": "The open-source tool for environmental assessment of recipes",
+		"hero_title": "Calculate the environmental impact of your recipes",
+		"hero_title_highlight": "in real time.",
+		"hero_description": "Come with your existing recipes. Our tool adapts to what you have and instantly calculates the Green-Score and helps you move towards more sustainable menus.",
+		"cta_recipe_calculator": "Open the recipe calculator",
+		"section2_title": "Works for home and professional kitchens",
+		"section2_description": "Beyond single recipes, easily score many recipes with reliable data.",
+		"feature1_title": "Real-time calculation",
+		"feature1_description": "Easily adjust a recipe's impact by \"jamming\" on quantities or testing ingredient substitutions on the fly.",
+		"feature2_title": "A transparent methodology grounded in PEF/Agribalyse",
+		"feature2_description": "A transparent calculation methodology, based on the rigor of the public PEF/Agribalyse database carried by ADEME.",
+		"feature3_title": "Highly-recognized score",
+		"feature3_description": "Rely on a validated indicator already identified by millions of consumers on Open Food Facts and Yuka.",
+		"footer_text": "An open-source project led by Open Food Facts, designed to help us reduce the impact of at-home cooking, out of home dining and catering.",
+		"footer_badge": "Project carried out collaboratively thanks to the support of ADEME's Call for Commons",
+		"footer_github_link": "Discover the project on GitHub"
+	},
+	"add": {
+		"title": "Add a recipe",
+		"description": "Enter your recipe below",
+		"recipe_label": "Your recipe",
+		"recipe_placeholder": "Enter your recipe here...\n\nExample:\n200g flour\n3 eggs\n100g sugar",
+		"score_button": "Score recipe",
+		"loading": "Calculating...",
+		"result_title": "Detected ingredients",
+		"table_ingredient": "Ingredient",
+		"table_taxonomy": "In taxonomy",
+		"table_quantity": "Quantity (g)",
+		"yes": "Yes",
+		"no": "No"
+	},
+	"onboarding": {
+		"title": "How to score your recipe",
+		"subtitle": "Calculate the environmental impact of your culinary creations in seconds.",
+		"step1_title": "1. Enter ingredients",
+		"step1_desc": "Paste or type your ingredients with their quantities (e.g. 200g flour, 3 eggs).",
+		"step2_title": "2. Automatic matching",
+		"step2_desc": "We recognize your ingredients and match them to the official Agribalyse/PEF database.",
+		"step3_title": "3. Real-time Green-Score",
+		"step3_desc": "Get your score from A to F, see missing matches, and optimize your recipe's impact.",
+		"dismiss": "Got it!",
+		"help_button": "How does it work?"
+	},
+	"helpers": {
+		"more_info": "More information",
+		"recipe_text": "Enter each ingredient on a new line with its quantity (e.g. 200g flour, 3 eggs, 100g sugar).",
+		"codified_ingredient": "Standardized ingredient from the Open Food Facts / Agribalyse database.",
+		"weight": "Net quantity of the ingredient in grams.",
+		"labels": "Official certifications (e.g. Organic, Label Rouge, Fair Trade) that grant Green-Score bonuses.",
+		"seasonality": "Check if seasonal fruits and vegetables are produced in season for a score bonus.",
+		"origin": "Geographical origin of the ingredient, used to evaluate transportation impact.",
+		"country": "Country where the recipe is prepared or consumed, used to calculate transport distances."
+	},
+	"examples": {
+		"title": "Or try an example recipe:"
+	},
+	"recipes": {
+		"quiche": {
+			"name": "Quiche Lorraine",
+			"content": "200g shortcrust dough\n200g lardon\n3 eggs\n200ml fresh cream\n150ml milk\n100g grated emmental"
+		},
+		"apple_pie": {
+			"name": "Apple Pie",
+			"content": "1 puff pastry\n4 apples\n50g sugar\n30g butter"
+		},
+		"ratatouille": {
+			"name": "Ratatouille",
+			"content": "500g tomatoes\n300g zucchini\n300g eggplant\n200g bell peppers\n100g onions\n30ml olive oil"
+		}
+	}
 }

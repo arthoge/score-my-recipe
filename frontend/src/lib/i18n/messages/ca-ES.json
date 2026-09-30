@@ -1,151 +1,151 @@
 {
-  "navbar": {
-    "for_the_recipes": "Per a les receptes",
-    "score_recipe": "Puntuar una recepta",
-    "join_community": "Uneix-te a la comunitat",
-    "open_food_facts": "Open Food Facts",
-    "methodology": "Quant al Green-Score"
-  },
-  "footer": {
-    "stay_updated": "Informa't",
-    "contribute": "Contribueix",
-    "discover_title": "Descobreix el nostre projecte",
-    "tagline": "Una base de dades col·laborativa, lliure i oberta sobre productes alimentaris",
-    "tagline_break": "d'arreu del món.",
-    "decorative_alt": "Un gràfic decoratiu",
-    "social": {
-      "x": "X (abans Twitter)",
-      "instagram": "Instagram",
-      "github": "GitHub",
-      "facebook": "Facebook",
-      "slack": "Slack"
-    },
-    "links": {
-      "newsletter": "Butlletí de notícies",
-      "forum": "Fòrum",
-      "producers": "Plataforma de productors",
-      "translate": "Traduir",
-      "github": "GitHub",
-      "data_api_sdks": "Dades, API, SDK",
-      "wiki": "Viqui",
-      "legal": "Avís legal",
-      "privacy": "Privadesa",
-      "terms_of_use": "Condicions d'ús"
-    },
-    "discover": {
-      "who_we_are": "Qui som",
-      "blog": "Blog",
-      "code_of_conduct": "Codi de conducta",
-      "vision_mission_values_and_programs": "Visió, Missió, Valors i Programes",
-      "partners": "Col·laboradors",
-      "faq": "Preguntes freqüents",
-      "press": "Premsa"
-    }
-  },
-  "recipe": {
-    "title": "Editor de receptes",
-    "description": "Afegeix ingredients a la teva recepta",
-    "ingredient_name": "Nom de l'ingredient",
-    "ingredient_name_placeholder": "ex. Tomàquet",
-    "weight": "Pes (g)",
-    "codified_ingredient": "Codificat",
-    "labels": "Segells i etiquetes",
-    "seasonality": "De temporada",
-    "fresh_plant": "Fruita/verdura fresca",
-    "off_season": "Fora de temporada",
-    "in_season": "De temporada",
-    "origin": "Origen",
-    "unknown": "Desconegut",
-    "delete_ingredient": "Eliminar ingredient",
-    "action": "Acció",
-    "summary": "Resum",
-    "ingredients_count": "ingredient(s) afegit(s)",
-    "green_score": "Green-Score",
-    "computing": "Calculant puntuació...",
-    "numeric_score": "Puntuació",
-    "ignored_ingredients": "ingredient(s) ignorat(s)",
-    "ignored_weight": "del pes total",
-    "no_score": "No hi ha puntuació disponible. Afegeix ingredients amb pes per calcular la puntuació.",
-    "compute_score": "Calcular puntuació",
-    "country": "País",
-    "country_placeholder": "Selecciona el teu país",
-    "country_load_error": "No s'han pogut carregar els països",
-    "ingredient_not_accounted": "No comptabilitzat",
-    "ingredient_not_accounted_tooltip": "No hem trobat correspondència a la nostra base de dades d'impacte per a aquest ingredient",
-    "ingredient_zero_quantity": "Zero quantity",
-    "ingredient_zero_quantity_tooltip": "This ingredient's quantity is 0g, so it cannot be taken into account in the calculation.",
-    "ingredient_scorable": "Aquest ingredient es pot comptabilitzar al Green-Score"
-  },
-  "homepage": {
-    "title": "Score My Recipe - Open Food Facts",
-    "badge": "L'eina de codi obert per a l'avaluació ambiental de receptes",
-    "hero_title": "Calcula l'impacte ambiental de les teves receptes",
-    "hero_title_highlight": "en temps real.",
-    "hero_description": "Fes servir les teves receptes existents. La nostra eina s'adapta al que tens, calcula a l'instant el Green-Score i t'ajuda a crear menús més sostenibles.",
-    "cta_recipe_calculator": "Obrir la calculadora de receptes",
-    "section2_title": "Apte per a cuines casolanes i professionals",
-    "section2_description": "Més enllà de receptes individuals, puntua fàcilment moltes receptes amb dades fiables.",
-    "feature1_title": "Càlcul en temps real",
-    "feature1_description": "Ajusta fàcilment l'impacte d'una recepta variant quantitats o provant substitucions d'ingredients a l'instant.",
-    "feature2_title": "Metodologia transparent basada en PEF/Agribalyse",
-    "feature2_description": "Una metodologia de càlcul transparent, basada en el rigor de la base pública PEF/Agribalyse impulsada per l'ADEME.",
-    "feature3_title": "Puntuació àmpliament reconeguda",
-    "feature3_description": "Confia en un indicador validat i ja identificat per milions de consumidors a Open Food Facts i Yuka.",
-    "footer_text": "Un projecte de codi obert liderat per Open Food Facts, dissenyat per ajudar-nos a reduir l'impacte de la cuina a casa, la restauració i els menjadors col·lectius.",
-    "footer_badge": "Projecte realitzat col·laborativament gràcies al suport del Call for Commons de l'ADEME",
-    "footer_github_link": "Descobreix el projecte a GitHub"
-  },
-  "add": {
-    "title": "Afegir una recepta",
-    "description": "Introdueix la teva recepta a continuació",
-    "recipe_label": "La teva recepta",
-    "recipe_placeholder": "Introdueix la teva recepta aquí...\n\nExemple:\n200g de farina\n3 ous\n100g de sucre",
-    "score_button": "Puntuar la recepta",
-    "loading": "Calculant...",
-    "result_title": "Ingredients detectats",
-    "table_ingredient": "Ingredient",
-    "table_taxonomy": "A la taxonomia",
-    "table_quantity": "Quantitat (g)",
-    "yes": "Sí",
-    "no": "No"
-  },
-  "onboarding": {
-    "title": "Com puntuar la teva recepta",
-    "subtitle": "Calcula l'impacte ambiental de les teves creacions culinàries en pocs segons.",
-    "step1_title": "1. Introdueix els ingredients",
-    "step1_desc": "Enganxa o escriu els teus ingredients amb les quantitats (ex. 200g de farina, 3 ous).",
-    "step2_title": "2. Detecció automàtica",
-    "step2_desc": "Reconeixem els teus ingredients i els vinculem a la base oficial Agribalyse / PEF.",
-    "step3_title": "3. Green-Score en directe",
-    "step3_desc": "Descobreix la teva puntuació de la A a la F, visualitza les coincidències i optimitza l'impacte de la recepta.",
-    "dismiss": "Entesos!",
-    "help_button": "Com funciona?"
-  },
-  "helpers": {
-    "more_info": "Més informació",
-    "recipe_text": "Introdueix cada ingredient en una línia nova amb la seva quantitat (ex. 200g de farina, 3 ous, 100g de sucre).",
-    "codified_ingredient": "Ingredient estandarditzat de la base de dades Open Food Facts / Agribalyse.",
-    "weight": "Quantitat neta de l'ingredient en grams.",
-    "labels": "Certificacions oficials (ex. Ecològic, Label Rouge, Comerç Just) que atorguen bonificacions al Green-Score.",
-    "seasonality": "Marca si les fruites i verdures són de temporada per obtenir una bonificació ambiental.",
-    "origin": "Origen geogràfic de l'ingredient, utilitzat per avaluar l'impacte del transport.",
-    "country": "País on es prepara o es consumeix la recepta, utilitzat per calcular distàncies de transport."
-  },
-  "examples": {
-    "title": "O prova una recepta d'exemple:"
-  },
-  "recipes": {
-    "quiche": {
-      "name": "Quiche Lorraine",
-      "content": "200g de massa brisa\n200g de cansalada\n3 ous\n200ml de nata fresca\n150ml de llet\n100g d'emmental ratllat"
-    },
-    "apple_pie": {
-      "name": "Pastís de poma",
-      "content": "1 massa de pasta de full\n4 pomes\n50g de sucre\n30g de mantega"
-    },
-    "ratatouille": {
-      "name": "Samfaina / Ratatouille",
-      "content": "500g de tomàquets\n300g de carbassó\n300g d'albergínia\n200g de pebrots\n100g de cebes\n30ml d'oli d'oliva"
-    }
-  }
+	"navbar": {
+		"for_the_recipes": "Per a les receptes",
+		"score_recipe": "Puntuar una recepta",
+		"join_community": "Uneix-te a la comunitat",
+		"open_food_facts": "Open Food Facts",
+		"methodology": "Quant al Green-Score"
+	},
+	"footer": {
+		"stay_updated": "Informa't",
+		"contribute": "Contribueix",
+		"discover_title": "Descobreix el nostre projecte",
+		"tagline": "Una base de dades col·laborativa, lliure i oberta sobre productes alimentaris",
+		"tagline_break": "d'arreu del món.",
+		"decorative_alt": "Un gràfic decoratiu",
+		"social": {
+			"x": "X (abans Twitter)",
+			"instagram": "Instagram",
+			"github": "GitHub",
+			"facebook": "Facebook",
+			"slack": "Slack"
+		},
+		"links": {
+			"newsletter": "Butlletí de notícies",
+			"forum": "Fòrum",
+			"producers": "Plataforma de productors",
+			"translate": "Traduir",
+			"github": "GitHub",
+			"data_api_sdks": "Dades, API, SDK",
+			"wiki": "Viqui",
+			"legal": "Avís legal",
+			"privacy": "Privadesa",
+			"terms_of_use": "Condicions d'ús"
+		},
+		"discover": {
+			"who_we_are": "Qui som",
+			"blog": "Blog",
+			"code_of_conduct": "Codi de conducta",
+			"vision_mission_values_and_programs": "Visió, Missió, Valors i Programes",
+			"partners": "Col·laboradors",
+			"faq": "Preguntes freqüents",
+			"press": "Premsa"
+		}
+	},
+	"recipe": {
+		"title": "Editor de receptes",
+		"description": "Afegeix ingredients a la teva recepta",
+		"ingredient_name": "Nom de l'ingredient",
+		"ingredient_name_placeholder": "ex. Tomàquet",
+		"weight": "Pes (g)",
+		"codified_ingredient": "Codificat",
+		"labels": "Segells i etiquetes",
+		"seasonality": "De temporada",
+		"fresh_plant": "Fruita/verdura fresca",
+		"off_season": "Fora de temporada",
+		"in_season": "De temporada",
+		"origin": "Origen",
+		"unknown": "Desconegut",
+		"delete_ingredient": "Eliminar ingredient",
+		"action": "Acció",
+		"summary": "Resum",
+		"ingredients_count": "ingredient(s) afegit(s)",
+		"green_score": "Green-Score",
+		"computing": "Calculant puntuació...",
+		"numeric_score": "Puntuació",
+		"ignored_ingredients": "ingredient(s) ignorat(s)",
+		"ignored_weight": "del pes total",
+		"no_score": "No hi ha puntuació disponible. Afegeix ingredients amb pes per calcular la puntuació.",
+		"compute_score": "Calcular puntuació",
+		"country": "País",
+		"country_placeholder": "Selecciona el teu país",
+		"country_load_error": "No s'han pogut carregar els països",
+		"ingredient_not_accounted": "No comptabilitzat",
+		"ingredient_not_accounted_tooltip": "No hem trobat correspondència a la nostra base de dades d'impacte per a aquest ingredient",
+		"ingredient_zero_quantity": "Zero quantity",
+		"ingredient_zero_quantity_tooltip": "This ingredient's quantity is 0g, so it cannot be taken into account in the calculation.",
+		"ingredient_scorable": "Aquest ingredient es pot comptabilitzar al Green-Score"
+	},
+	"homepage": {
+		"title": "Score My Recipe - Open Food Facts",
+		"badge": "L'eina de codi obert per a l'avaluació ambiental de receptes",
+		"hero_title": "Calcula l'impacte ambiental de les teves receptes",
+		"hero_title_highlight": "en temps real.",
+		"hero_description": "Fes servir les teves receptes existents. La nostra eina s'adapta al que tens, calcula a l'instant el Green-Score i t'ajuda a crear menús més sostenibles.",
+		"cta_recipe_calculator": "Obrir la calculadora de receptes",
+		"section2_title": "Apte per a cuines casolanes i professionals",
+		"section2_description": "Més enllà de receptes individuals, puntua fàcilment moltes receptes amb dades fiables.",
+		"feature1_title": "Càlcul en temps real",
+		"feature1_description": "Ajusta fàcilment l'impacte d'una recepta variant quantitats o provant substitucions d'ingredients a l'instant.",
+		"feature2_title": "Metodologia transparent basada en PEF/Agribalyse",
+		"feature2_description": "Una metodologia de càlcul transparent, basada en el rigor de la base pública PEF/Agribalyse impulsada per l'ADEME.",
+		"feature3_title": "Puntuació àmpliament reconeguda",
+		"feature3_description": "Confia en un indicador validat i ja identificat per milions de consumidors a Open Food Facts i Yuka.",
+		"footer_text": "Un projecte de codi obert liderat per Open Food Facts, dissenyat per ajudar-nos a reduir l'impacte de la cuina a casa, la restauració i els menjadors col·lectius.",
+		"footer_badge": "Projecte realitzat col·laborativament gràcies al suport del Call for Commons de l'ADEME",
+		"footer_github_link": "Descobreix el projecte a GitHub"
+	},
+	"add": {
+		"title": "Afegir una recepta",
+		"description": "Introdueix la teva recepta a continuació",
+		"recipe_label": "La teva recepta",
+		"recipe_placeholder": "Introdueix la teva recepta aquí...\n\nExemple:\n200g de farina\n3 ous\n100g de sucre",
+		"score_button": "Puntuar la recepta",
+		"loading": "Calculant...",
+		"result_title": "Ingredients detectats",
+		"table_ingredient": "Ingredient",
+		"table_taxonomy": "A la taxonomia",
+		"table_quantity": "Quantitat (g)",
+		"yes": "Sí",
+		"no": "No"
+	},
+	"onboarding": {
+		"title": "Com puntuar la teva recepta",
+		"subtitle": "Calcula l'impacte ambiental de les teves creacions culinàries en pocs segons.",
+		"step1_title": "1. Introdueix els ingredients",
+		"step1_desc": "Enganxa o escriu els teus ingredients amb les quantitats (ex. 200g de farina, 3 ous).",
+		"step2_title": "2. Detecció automàtica",
+		"step2_desc": "Reconeixem els teus ingredients i els vinculem a la base oficial Agribalyse / PEF.",
+		"step3_title": "3. Green-Score en directe",
+		"step3_desc": "Descobreix la teva puntuació de la A a la F, visualitza les coincidències i optimitza l'impacte de la recepta.",
+		"dismiss": "Entesos!",
+		"help_button": "Com funciona?"
+	},
+	"helpers": {
+		"more_info": "Més informació",
+		"recipe_text": "Introdueix cada ingredient en una línia nova amb la seva quantitat (ex. 200g de farina, 3 ous, 100g de sucre).",
+		"codified_ingredient": "Ingredient estandarditzat de la base de dades Open Food Facts / Agribalyse.",
+		"weight": "Quantitat neta de l'ingredient en grams.",
+		"labels": "Certificacions oficials (ex. Ecològic, Label Rouge, Comerç Just) que atorguen bonificacions al Green-Score.",
+		"seasonality": "Marca si les fruites i verdures són de temporada per obtenir una bonificació ambiental.",
+		"origin": "Origen geogràfic de l'ingredient, utilitzat per avaluar l'impacte del transport.",
+		"country": "País on es prepara o es consumeix la recepta, utilitzat per calcular distàncies de transport."
+	},
+	"examples": {
+		"title": "O prova una recepta d'exemple:"
+	},
+	"recipes": {
+		"quiche": {
+			"name": "Quiche Lorraine",
+			"content": "200g de massa brisa\n200g de cansalada\n3 ous\n200ml de nata fresca\n150ml de llet\n100g d'emmental ratllat"
+		},
+		"apple_pie": {
+			"name": "Pastís de poma",
+			"content": "1 massa de pasta de full\n4 pomes\n50g de sucre\n30g de mantega"
+		},
+		"ratatouille": {
+			"name": "Samfaina / Ratatouille",
+			"content": "500g de tomàquets\n300g de carbassó\n300g d'albergínia\n200g de pebrots\n100g de cebes\n30ml d'oli d'oliva"
+		}
+	}
 }

@@ -1,151 +1,151 @@
 {
-  "navbar": {
-    "for_the_recipes": "Voor de recepten",
-    "score_recipe": "Beoordeel een recept",
-    "join_community": "Word lid van de community",
-    "open_food_facts": "Open Food Facts",
-    "methodology": "Over de Green-Score"
-  },
-  "footer": {
-    "stay_updated": "Blijf op de hoogte",
-    "contribute": "Bijdragen",
-    "discover_title": "Ontdek ons project",
-    "tagline": "Een collaboratieve, vrije en open database van voedingsmiddelen",
-    "tagline_break": "van over de hele wereld.",
-    "decorative_alt": "Een decoratieve afbeelding",
-    "social": {
-      "x": "X (voorheen Twitter)",
-      "instagram": "Instagram",
-      "github": "GitHub",
-      "facebook": "Facebook",
-      "slack": "Slack"
-    },
-    "links": {
-      "newsletter": "Nieuwsbrief",
-      "forum": "Forum",
-      "producers": "Producentenplatform",
-      "translate": "Vertalen",
-      "github": "GitHub",
-      "data_api_sdks": "Gegevens, API, SDK's",
-      "wiki": "Wiki",
-      "legal": "Juridische informatie",
-      "privacy": "Privacy",
-      "terms_of_use": "Gebruiksvoorwaarden"
-    },
-    "discover": {
-      "who_we_are": "Wie we zijn",
-      "blog": "Blog",
-      "code_of_conduct": "Gedragscode",
-      "vision_mission_values_and_programs": "Visie, Missie, Waarden en Programma's",
-      "partners": "Partners",
-      "faq": "Veelgestelde vragen",
-      "press": "Pers"
-    }
-  },
-  "recipe": {
-    "title": "Recepteneditor",
-    "description": "Voeg ingrediënten toe aan je recept",
-    "ingredient_name": "Naam ingrediënt",
-    "ingredient_name_placeholder": "bijv. Tomaat",
-    "weight": "Gewicht (g)",
-    "codified_ingredient": "Gecodeerd",
-    "labels": "Keurmerken & labels",
-    "seasonality": "Seizoensgebonden",
-    "fresh_plant": "Vers fruit / verse groente",
-    "off_season": "Buiten het seizoen",
-    "in_season": "In het seizoen",
-    "origin": "Herkomst",
-    "unknown": "Onbekend",
-    "delete_ingredient": "Ingrediënt verwijderen",
-    "action": "Actie",
-    "summary": "Samenvatting",
-    "ingredients_count": "ingrediënt(en) toegevoegd",
-    "green_score": "Green-Score",
-    "computing": "Score berekenen...",
-    "numeric_score": "Score",
-    "ignored_ingredients": "genegeerd(e) ingrediënt(en)",
-    "ignored_weight": "van het totale gewicht",
-    "no_score": "Geen score beschikbaar. Voeg ingrediënten met gewicht toe om de score te berekenen.",
-    "compute_score": "Score berekenen",
-    "country": "Land",
-    "country_placeholder": "Selecteer je land",
-    "country_load_error": "Kon landen niet laden",
-    "ingredient_not_accounted": "Niet meegeteld",
-    "ingredient_not_accounted_tooltip": "We hebben geen overeenkomst gevonden in onze impactdatabase voor dit ingrediënt",
-    "ingredient_zero_quantity": "Zero quantity",
-    "ingredient_zero_quantity_tooltip": "This ingredient's quantity is 0g, so it cannot be taken into account in the calculation.",
-    "ingredient_scorable": "Dit ingrediënt kan worden meegeteld in de Green-Score"
-  },
-  "homepage": {
-    "title": "Score My Recipe - Open Food Facts",
-    "badge": "De open-source tool voor milieubeoordeling van recepten",
-    "hero_title": "Bereken de milieu-impact van je recepten",
-    "hero_title_highlight": "in realtime.",
-    "hero_description": "Gebruik je bestaande recepten. Onze tool past zich aan je invoer aan, berekent onmiddellijk de Green-Score en helpt je te verduurzamen.",
-    "cta_recipe_calculator": "Open de receptcalculator",
-    "section2_title": "Geschikt voor zowel thuis- als professionele keukens",
-    "section2_description": "Beoordeel eenvoudig vele recepten met betrouwbare data.",
-    "feature1_title": "Realtime berekening",
-    "feature1_description": "Pas de impact van een recept eenvoudig aan door hoeveelheden te variëren of ingrediënten direct te vervangen.",
-    "feature2_title": "Transparante methodologie gebaseerd op PEF/Agribalyse",
-    "feature2_description": "Een transparante rekenmethode, gebaseerd op de nauwkeurigheid van de publieke PEF/Agribalyse-database van ADEME.",
-    "feature3_title": "Breed erkende score",
-    "feature3_description": "Vertrouw op een gevalideerde indicator die al door miljoenen consumenten wordt herkend op Open Food Facts en Yuka.",
-    "footer_text": "Een open-source project onder leiding van Open Food Facts, ontworpen om de impact van thuiskoken, horeca en catering te verkleinen.",
-    "footer_badge": "Samenwerkingsproject mogelijk gemaakt dankzij de steun van de Call for Commons van ADEME",
-    "footer_github_link": "Ontdek het project op GitHub"
-  },
-  "add": {
-    "title": "Recept toevoegen",
-    "description": "Voer hieronder je recept in",
-    "recipe_label": "Jouw recept",
-    "recipe_placeholder": "Voer hier je recept in...\n\nVoorbeeld:\n200g bloem\n3 eieren\n100g suiker",
-    "score_button": "Recept beoordelen",
-    "loading": "Bezig met berekenen...",
-    "result_title": "Gedetecteerde ingrediënten",
-    "table_ingredient": "Ingrediënt",
-    "table_taxonomy": "In taxonomie",
-    "table_quantity": "Hoeveelheid (g)",
-    "yes": "Ja",
-    "no": "Nee"
-  },
-  "onboarding": {
-    "title": "Hoe beoordeel je je recept",
-    "subtitle": "Bereken de milieu-impact van je gerechten in enkele seconden.",
-    "step1_title": "1. Voer ingrediënten in",
-    "step1_desc": "Plak of typ je ingrediënten met hun hoeveelheden (bijv. 200g bloem, 3 eieren).",
-    "step2_title": "2. Automatische herkenning",
-    "step2_desc": "We herkennen je ingrediënten en koppelen ze aan de officiële Agribalyse/PEF-database.",
-    "step3_title": "3. Live Green-Score",
-    "step3_desc": "Ontdek je score van A tot F, bekijk overeenkomsten en optimaliseer de impact van je recept.",
-    "dismiss": "Begrepen!",
-    "help_button": "Hoe werkt het?"
-  },
-  "helpers": {
-    "more_info": "Meer informatie",
-    "recipe_text": "Voer elk ingrediënt op een nieuwe regel in met de hoeveelheid (bijv. 200g bloem, 3 eieren, 100g suiker).",
-    "codified_ingredient": "Gestandaardiseerd ingrediënt uit de database van Open Food Facts / Agribalyse.",
-    "weight": "Netto gewicht van het ingrediënt in grammen.",
-    "labels": "Officiële keurmerken (bijv. Biologisch, Fair Trade) die bonussen opleveren voor de Green-Score.",
-    "seasonality": "Vink aan als seizoensgebonden groenten en fruit in het seizoen geteeld zijn voor een milieubonus.",
-    "origin": "Geografische herkomst van het ingrediënt, gebruikt om transportimpact te berekenen.",
-    "country": "Land waar het recept bereid of geconsumeerd wordt, gebruikt om transportafstanden te berekenen."
-  },
-  "examples": {
-    "title": "Of probeer een voorbeeldrecept:"
-  },
-  "recipes": {
-    "quiche": {
-      "name": "Quiche Lorraine",
-      "content": "200g kruimeldeeg\n200g spekreepjes\n3 eieren\n200ml crème fraîche\n150ml melk\n100g geraspte emmentaler"
-    },
-    "apple_pie": {
-      "name": "Appeltaart",
-      "content": "1 rol bladerdeeg\n4 appels\n50g suiker\n30g boter"
-    },
-    "ratatouille": {
-      "name": "Ratatouille",
-      "content": "500g tomaten\n300g courgette\n300g aubergine\n200g paprika\n100g uien\n30ml olijfolie"
-    }
-  }
+	"navbar": {
+		"for_the_recipes": "Voor de recepten",
+		"score_recipe": "Beoordeel een recept",
+		"join_community": "Word lid van de community",
+		"open_food_facts": "Open Food Facts",
+		"methodology": "Over de Green-Score"
+	},
+	"footer": {
+		"stay_updated": "Blijf op de hoogte",
+		"contribute": "Bijdragen",
+		"discover_title": "Ontdek ons project",
+		"tagline": "Een collaboratieve, vrije en open database van voedingsmiddelen",
+		"tagline_break": "van over de hele wereld.",
+		"decorative_alt": "Een decoratieve afbeelding",
+		"social": {
+			"x": "X (voorheen Twitter)",
+			"instagram": "Instagram",
+			"github": "GitHub",
+			"facebook": "Facebook",
+			"slack": "Slack"
+		},
+		"links": {
+			"newsletter": "Nieuwsbrief",
+			"forum": "Forum",
+			"producers": "Producentenplatform",
+			"translate": "Vertalen",
+			"github": "GitHub",
+			"data_api_sdks": "Gegevens, API, SDK's",
+			"wiki": "Wiki",
+			"legal": "Juridische informatie",
+			"privacy": "Privacy",
+			"terms_of_use": "Gebruiksvoorwaarden"
+		},
+		"discover": {
+			"who_we_are": "Wie we zijn",
+			"blog": "Blog",
+			"code_of_conduct": "Gedragscode",
+			"vision_mission_values_and_programs": "Visie, Missie, Waarden en Programma's",
+			"partners": "Partners",
+			"faq": "Veelgestelde vragen",
+			"press": "Pers"
+		}
+	},
+	"recipe": {
+		"title": "Recepteneditor",
+		"description": "Voeg ingrediënten toe aan je recept",
+		"ingredient_name": "Naam ingrediënt",
+		"ingredient_name_placeholder": "bijv. Tomaat",
+		"weight": "Gewicht (g)",
+		"codified_ingredient": "Gecodeerd",
+		"labels": "Keurmerken & labels",
+		"seasonality": "Seizoensgebonden",
+		"fresh_plant": "Vers fruit / verse groente",
+		"off_season": "Buiten het seizoen",
+		"in_season": "In het seizoen",
+		"origin": "Herkomst",
+		"unknown": "Onbekend",
+		"delete_ingredient": "Ingrediënt verwijderen",
+		"action": "Actie",
+		"summary": "Samenvatting",
+		"ingredients_count": "ingrediënt(en) toegevoegd",
+		"green_score": "Green-Score",
+		"computing": "Score berekenen...",
+		"numeric_score": "Score",
+		"ignored_ingredients": "genegeerd(e) ingrediënt(en)",
+		"ignored_weight": "van het totale gewicht",
+		"no_score": "Geen score beschikbaar. Voeg ingrediënten met gewicht toe om de score te berekenen.",
+		"compute_score": "Score berekenen",
+		"country": "Land",
+		"country_placeholder": "Selecteer je land",
+		"country_load_error": "Kon landen niet laden",
+		"ingredient_not_accounted": "Niet meegeteld",
+		"ingredient_not_accounted_tooltip": "We hebben geen overeenkomst gevonden in onze impactdatabase voor dit ingrediënt",
+		"ingredient_zero_quantity": "Zero quantity",
+		"ingredient_zero_quantity_tooltip": "This ingredient's quantity is 0g, so it cannot be taken into account in the calculation.",
+		"ingredient_scorable": "Dit ingrediënt kan worden meegeteld in de Green-Score"
+	},
+	"homepage": {
+		"title": "Score My Recipe - Open Food Facts",
+		"badge": "De open-source tool voor milieubeoordeling van recepten",
+		"hero_title": "Bereken de milieu-impact van je recepten",
+		"hero_title_highlight": "in realtime.",
+		"hero_description": "Gebruik je bestaande recepten. Onze tool past zich aan je invoer aan, berekent onmiddellijk de Green-Score en helpt je te verduurzamen.",
+		"cta_recipe_calculator": "Open de receptcalculator",
+		"section2_title": "Geschikt voor zowel thuis- als professionele keukens",
+		"section2_description": "Beoordeel eenvoudig vele recepten met betrouwbare data.",
+		"feature1_title": "Realtime berekening",
+		"feature1_description": "Pas de impact van een recept eenvoudig aan door hoeveelheden te variëren of ingrediënten direct te vervangen.",
+		"feature2_title": "Transparante methodologie gebaseerd op PEF/Agribalyse",
+		"feature2_description": "Een transparante rekenmethode, gebaseerd op de nauwkeurigheid van de publieke PEF/Agribalyse-database van ADEME.",
+		"feature3_title": "Breed erkende score",
+		"feature3_description": "Vertrouw op een gevalideerde indicator die al door miljoenen consumenten wordt herkend op Open Food Facts en Yuka.",
+		"footer_text": "Een open-source project onder leiding van Open Food Facts, ontworpen om de impact van thuiskoken, horeca en catering te verkleinen.",
+		"footer_badge": "Samenwerkingsproject mogelijk gemaakt dankzij de steun van de Call for Commons van ADEME",
+		"footer_github_link": "Ontdek het project op GitHub"
+	},
+	"add": {
+		"title": "Recept toevoegen",
+		"description": "Voer hieronder je recept in",
+		"recipe_label": "Jouw recept",
+		"recipe_placeholder": "Voer hier je recept in...\n\nVoorbeeld:\n200g bloem\n3 eieren\n100g suiker",
+		"score_button": "Recept beoordelen",
+		"loading": "Bezig met berekenen...",
+		"result_title": "Gedetecteerde ingrediënten",
+		"table_ingredient": "Ingrediënt",
+		"table_taxonomy": "In taxonomie",
+		"table_quantity": "Hoeveelheid (g)",
+		"yes": "Ja",
+		"no": "Nee"
+	},
+	"onboarding": {
+		"title": "Hoe beoordeel je je recept",
+		"subtitle": "Bereken de milieu-impact van je gerechten in enkele seconden.",
+		"step1_title": "1. Voer ingrediënten in",
+		"step1_desc": "Plak of typ je ingrediënten met hun hoeveelheden (bijv. 200g bloem, 3 eieren).",
+		"step2_title": "2. Automatische herkenning",
+		"step2_desc": "We herkennen je ingrediënten en koppelen ze aan de officiële Agribalyse/PEF-database.",
+		"step3_title": "3. Live Green-Score",
+		"step3_desc": "Ontdek je score van A tot F, bekijk overeenkomsten en optimaliseer de impact van je recept.",
+		"dismiss": "Begrepen!",
+		"help_button": "Hoe werkt het?"
+	},
+	"helpers": {
+		"more_info": "Meer informatie",
+		"recipe_text": "Voer elk ingrediënt op een nieuwe regel in met de hoeveelheid (bijv. 200g bloem, 3 eieren, 100g suiker).",
+		"codified_ingredient": "Gestandaardiseerd ingrediënt uit de database van Open Food Facts / Agribalyse.",
+		"weight": "Netto gewicht van het ingrediënt in grammen.",
+		"labels": "Officiële keurmerken (bijv. Biologisch, Fair Trade) die bonussen opleveren voor de Green-Score.",
+		"seasonality": "Vink aan als seizoensgebonden groenten en fruit in het seizoen geteeld zijn voor een milieubonus.",
+		"origin": "Geografische herkomst van het ingrediënt, gebruikt om transportimpact te berekenen.",
+		"country": "Land waar het recept bereid of geconsumeerd wordt, gebruikt om transportafstanden te berekenen."
+	},
+	"examples": {
+		"title": "Of probeer een voorbeeldrecept:"
+	},
+	"recipes": {
+		"quiche": {
+			"name": "Quiche Lorraine",
+			"content": "200g kruimeldeeg\n200g spekreepjes\n3 eieren\n200ml crème fraîche\n150ml melk\n100g geraspte emmentaler"
+		},
+		"apple_pie": {
+			"name": "Appeltaart",
+			"content": "1 rol bladerdeeg\n4 appels\n50g suiker\n30g boter"
+		},
+		"ratatouille": {
+			"name": "Ratatouille",
+			"content": "500g tomaten\n300g courgette\n300g aubergine\n200g paprika\n100g uien\n30ml olijfolie"
+		}
+	}
 }
