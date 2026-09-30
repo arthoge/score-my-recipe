@@ -53,11 +53,11 @@
 	let wasEmptyOnMount = $state(ingredient.name === '');
 	let isNotEmpty = $derived(wasEmptyOnMount && isIngredientNotEmpty(ingredient));
 
-/** Whether a non-empty ingredient has a zero or missing quantity, which excludes
- * it from score computation. The always-present empty line remains unflagged. */
-let isZeroWeight = $derived(
-	isIngredientNotEmpty(ingredient) && (ingredient.weight === 0 || ingredient.weight == null)
-);
+	/** Whether a non-empty ingredient has a zero or missing quantity, which excludes
+	 * it from score computation. The always-present empty line remains unflagged. */
+	let isZeroWeight = $derived(
+		isIngredientNotEmpty(ingredient) && (ingredient.weight === 0 || ingredient.weight == null)
+	);
 
 	// trigger onNotEmpty when isNoteEmpty becomes true
 	$effect(() => {
