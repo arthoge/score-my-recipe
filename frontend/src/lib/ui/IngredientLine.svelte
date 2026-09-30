@@ -17,7 +17,7 @@
 	import Tags from './Tags.svelte';
 	import HelperTooltip from './HelperTooltip.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
-	import IconMdiStopCircleOutline from '@iconify-svelte/mdi/stop-circle-outline';
+	import IconMdiAlertOutline from '@iconify-svelte/mdi/alert-outline';
 	import IconMdiLeaf from '@iconify-svelte/mdi/leaf';
 	import IconMaterialSymbolsSunnyOutline from '@iconify-svelte/material-symbols/sunny-outline';
 	import IconMaterialSymbolsCloudOutline from '@iconify-svelte/material-symbols/cloud-outline';
@@ -120,7 +120,7 @@
 						ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 					>
 						{#snippet icon()}
-							<IconMdiStopCircleOutline
+							<IconMdiAlertOutline
 								class="text-error h-4 w-4 shrink-0 transition-colors duration-200"
 								aria-hidden="true"
 							/>
@@ -194,7 +194,7 @@
 						ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 					>
 						{#snippet icon()}
-							<IconMdiStopCircleOutline
+							<IconMdiAlertOutline
 								class="text-error h-4 w-4 shrink-0 transition-colors duration-200"
 								aria-hidden="true"
 							/>
