@@ -26,7 +26,7 @@ dev:
 
 # sync translations
 i18nsync:
-    {{ use_nvm }} && pnpm i18nsync
+    {{ use_nvm }} && pnpm i18nsync && pnpm prettier --write src/lib/i18n/messages
 
 lint:
     {{ use_nvm }} && pnpm format
