@@ -143,7 +143,7 @@ describe('ingredientToGreenScoreInput', () => {
 		).toEqual({ id: 'custom thing', label: 'custom thing', isInTaxonomy: false });
 	});
 
-	it('defaults a null weight to 0 to satisfy the API\'s non-null weight schema', () => {
+	it("defaults a null weight to 0 to satisfy the API's non-null weight schema", () => {
 		expect(ingredientToGreenScoreInput(ingredient({ weight: null })).weight).toBe(0);
 	});
 
