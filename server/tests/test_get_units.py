@@ -7,7 +7,6 @@ property (mirroring the real OFF units taxonomy where ``standard_unit`` is store
 as a language -> value dict, e.g. ``{"en": "ml"}``).
 """
 
-from unittest.mock import patch, AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,10 +17,12 @@ from api import types
 from api import exceptions
 
 from tests.helpers import (
+    build_mock_units_taxonomy,
     create_taxonomy,
     create_taxonomy_node,
     patch_ingredients_taxonomy,
     patch_language_check,
+    patch_units_taxonomy,
 )
 
 
@@ -30,64 +31,10 @@ client = TestClient(app)
 
 @pytest.fixture
 def mock_units_taxonomy():
-    """Mock the OpenFoodFacts units taxonomy with 6 units.
-
-    Two mass units (``en:gram``, ``en:kilogram``), two volume units
-    (``en:cup``, ``en:litre``), one energy unit (``en:kilojoule``, filtered out)
-    and ``en:piece`` which intentionally has no ``standard_unit`` property to
-    exercise the optional/omitted case.
-    """
-    mock_nodes = [
-        create_taxonomy_node(
-            id="en:cup",
-            names={"en": "cup", "fr": "tasse", "xx": "cup"},
-            synonyms={"en": ["cups"], "fr": ["tasses"]},
-            properties={"standard_unit": {"en": "ml"}},
-        ),
-        create_taxonomy_node(
-            id="en:litre",
-            names={"en": "litre", "fr": "litre", "xx": "l"},
-            synonyms={"en": ["litres"], "fr": ["litres"]},
-            properties={"standard_unit": {"en": "ml"}},
-        ),
-        create_taxonomy_node(
-            id="en:gram",
-            names={"en": "gram", "fr": "gramme", "xx": "g"},
-            synonyms={"en": ["g", "grams"], "fr": ["g", "grammes"]},
-            properties={"standard_unit": {"en": "g"}},
-        ),
-        create_taxonomy_node(
-            id="en:kilogram",
-            names={"en": "kilogram", "fr": "kilogramme", "xx": "kg"},
-            synonyms={"en": ["kg", "kilograms"], "fr": ["kg", "kilogrammes"]},
-            properties={"standard_unit": {"en": "g"}},
-        ),
-        create_taxonomy_node(
-            id="en:kilojoule",
-            names={"en": "kilojoule", "fr": "kilojoule", "xx": "kj"},
-            synonyms={"en": ["kilojoules"], "fr": ["kilojoules"]},
-            properties={"standard_unit": {"en": "kJ"}},
-        ),
-        # no standard_unit property: must default to None (and be omitted by the API)
-        create_taxonomy_node(
-            id="en:piece",
-            names={"en": "piece", "fr": "pièce", "xx": "piece"},
-            synonyms={"en": ["pieces"], "fr": ["pièces"]},
-        ),
-    ]
-    mocked_taxonomy = create_taxonomy(mock_nodes)
-
-    # reset cache so a previous run (with another taxonomy) does not leak
-    units._get_units_entries.cache_clear()
-    try:
-        with (
-            patch("api.off.get_units_taxonomy", new_callable=AsyncMock) as mock,
-            patch_language_check(),
-        ):
-            mock.return_value = mocked_taxonomy
-            yield mock
-    finally:
-        units._get_units_entries.cache_clear()
+    """Mock the OpenFoodFacts units taxonomy (6 units, see build_mock_units_taxonomy)."""
+    mocked_taxonomy = build_mock_units_taxonomy()
+    with patch_units_taxonomy(mocked_taxonomy), patch_language_check():
+        yield mocked_taxonomy
 
 
 def unit_list_to_dict(units: list[types.Unit]) -> dict[str, str]:

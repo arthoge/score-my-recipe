@@ -244,6 +244,56 @@ async def _resolve_unit_name(name: str, lang: str) -> str | None:
     return name_to_id.get(_normalize_unit_name(name))
 
 
+async def resolve_unit_to_taxonomy_item(
+    unit_name: str | None, lang: str
+) -> types.TaxonomyItem:
+    """Resolve a raw unit string (as parsed from a recipe) into a TaxonomyItem.
+
+    Used to turn the ``quantity`` unit extracted from the recipe text into the
+    structured ``TaxonomyItem`` stored on :class:`types.RecipeIngredient`,
+    consistent with how origins and labels are resolved.
+
+    Resolution order:
+
+    * ``None`` or blank -> the synthetic ``item`` unit
+      ``{id: ITEM_UNIT, label: ITEM_UNIT, is_in_taxonomy: True}``, the unit
+      used for countable ingredients (e.g. "3 eggs") that have no measurable
+      mass/volume unit.
+    * a known taxonomy id (e.g. ``xx:kg``) or a localized unit name resolvable
+      through ``lang`` (e.g. ``"kg"``, ``"tasse"``) -> ``{id, label, True}``
+      with the label localized in ``lang``.
+    * an unresolvable unit string -> a free-text entry
+      ``{id: None, label: <raw>, is_in_taxonomy: False}`` so the user still
+      sees what was parsed.
+
+    :param unit_name: the raw unit string from the parser, or ``None``.
+    :param lang: the language code used to resolve names and localize labels.
+    """
+    lang = two_letter_lang_code(lang)
+    # No unit: countable ingredient.
+    if not unit_name or not unit_name.strip():
+        return types.TaxonomyItem(
+            id=types.ITEM_UNIT, label=types.ITEM_UNIT, is_in_taxonomy=True
+        )
+    unit_name = unit_name.strip()
+    # Build an id -> localized label map from the units list for this language.
+    units_entries = await _get_units_entries(lang)
+    id_to_label = {unit_id: unit_label for unit_id, unit_label, _, _ in units_entries}
+    # Try resolving as a taxonomy id first.
+    if unit_name in id_to_label:
+        return types.TaxonomyItem(
+            id=unit_name, label=id_to_label[unit_name], is_in_taxonomy=True
+        )
+    # Then try resolving as a localized unit name (label or synonym).
+    resolved_id = await _resolve_unit_name(unit_name, lang)
+    if resolved_id is not None:
+        return types.TaxonomyItem(
+            id=resolved_id, label=id_to_label[resolved_id], is_in_taxonomy=True
+        )
+    # Unresolvable: keep as a free-text entry so the user still sees the value.
+    return types.TaxonomyItem(id=None, label=unit_name, is_in_taxonomy=False)
+
+
 async def recompute_quantity(
     quantity_g: float,
     old_value: float,

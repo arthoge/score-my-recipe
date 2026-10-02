@@ -78,6 +78,8 @@ export function apiIngredientToIngredient(apiIngredient: RecipeIngredient): Ingr
 		id: generateIngredientId(),
 		name: apiIngredient.codified_ingredient,
 		weight: apiIngredient.quantity_g ?? null,
+		quantityValue: apiIngredient.quantity_value ?? null,
+		quantityUnit: apiIngredient.quantity_unit ?? null,
 		codifiedIngredient: taxonomyItem,
 		labels,
 		origin,

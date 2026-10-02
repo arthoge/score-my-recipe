@@ -40,6 +40,14 @@
 		// When true, the widget border turns red to signal an invalid/unresolved
 		// value (e.g. an ingredient missing from the green-score computation).
 		invalid?: boolean;
+		// Minimum number of characters before fetching suggestions (default 3).
+		// Set to 0 for short-value taxonomies (e.g. units like "g", "kg") so all
+		// options appear as soon as the input is focused.
+		minChars?: number;
+		// Optional function to override how a tag's label is displayed, both for
+		// selected tags and autocomplete suggestions. Used to substitute the label
+		// of the synthetic 'item' unit with the ingredient name at render time.
+		formatLabel?: (tag: TaxonomyItem) => string;
 	};
 
 	type Suggestion = {
@@ -53,7 +61,9 @@
 		single = false,
 		onChange,
 		suggestionIcon,
-		invalid = false
+		invalid = false,
+		minChars = 3,
+		formatLabel = (tag: TaxonomyItem) => tag.label
 	}: Props = $props();
 
 	// Border treatment mirrors the focus state: red when invalid, otherwise the
@@ -86,7 +96,7 @@
 
 	async function rawFetchSuggestions(value: string): Promise<void> {
 		const q = value.trim();
-		if (q.length < 3) {
+		if (q.length < minChars) {
 			currentSuggestions = [];
 			return;
 		}
@@ -396,7 +406,7 @@
 							{#if suggestionIcon}
 								{@render suggestionIcon(item)}
 							{/if}
-							<span class="block truncate">{item.label}</span>
+							<span class="block truncate">{formatLabel(item)}</span>
 						</button>
 					</li>
 				{/each}
@@ -445,7 +455,7 @@
 						}
 					}}
 				>
-					{tag.label}
+					{formatLabel(tag)}
 				</span>
 			{/if}
 			<!-- Remove tag button -->

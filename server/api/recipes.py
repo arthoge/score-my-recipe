@@ -13,6 +13,7 @@ import api.agribalyse as agribalyse
 import api.off as off
 import api.types as types
 import api.score_data as score_data
+import api.units as units
 from api.lang import two_letter_lang_code
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ async def off_ingredient_to_recipe_ingredient(
         origins_obj = None
     # handle original quantity and unit
     quantity_value = None
-    quantity_unit = None
+    raw_unit = None
     if off_ingredient.quantity is not None:
         # get quantity / unit
         matched = QUANTITY_UNIT_REGEX.match(off_ingredient.quantity)
@@ -68,7 +69,10 @@ async def off_ingredient_to_recipe_ingredient(
             if matched.group("value"):
                 quantity_value = float(matched.group("value"))
             if matched.group("unit"):
-                quantity_unit = matched.group("unit")
+                raw_unit = matched.group("unit")
+    # Resolve the raw unit string into a structured TaxonomyItem
+    # (a taxonomy unit, a free-text entry, or the 'item' sentinel).
+    quantity_unit = await units.resolve_unit_to_taxonomy_item(raw_unit, lang)
     ingredient = types.RecipeIngredient(
         taxonomy_id=off_ingredient.id,
         codified_ingredient=off_ingredient.text,

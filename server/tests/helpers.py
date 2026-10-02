@@ -49,6 +49,79 @@ def patch_ingredients_taxonomy(taxonomy):
 
 
 @contextmanager
+def patch_units_taxonomy(taxonomy):
+    """Patch ``api.off.get_units_taxonomy`` to return ``taxonomy``.
+
+    Also resets the ``units._get_units_entries`` and
+    ``units._unit_name_to_id`` caches so each test rebuilds the per-language
+    views from the provided (mocked) taxonomy instead of a previous run's.
+    """
+    import api.units as units
+
+    units._get_units_entries.cache_clear()
+    units._unit_name_to_id.cache_clear()
+    try:
+        with patch("api.off.get_units_taxonomy", new_callable=AsyncMock) as mock_tax:
+            mock_tax.return_value = taxonomy
+            yield mock_tax
+    finally:
+        units._get_units_entries.cache_clear()
+        units._unit_name_to_id.cache_clear()
+
+
+def build_mock_units_taxonomy() -> Taxonomy:
+    """Build a small units taxonomy mirroring the real OFF units taxonomy.
+
+    Two mass units (``en:gram``, ``en:kilogram``), two volume units
+    (``en:cup``, ``en:litre``), one energy unit (``en:kilojoule``, filtered out
+    by the g/ml rule) and ``en:piece`` which has no ``standard_unit`` property
+    to exercise the optional/omitted case.
+
+    Used by the units tests and the parse_text tests (which need a unit like
+    ``"g"`` to resolve to ``en:gram``).
+    """
+    mock_nodes = [
+        create_taxonomy_node(
+            id="en:cup",
+            names={"en": "cup", "fr": "tasse", "xx": "cup"},
+            synonyms={"en": ["cups"], "fr": ["tasses"]},
+            properties={"standard_unit": {"en": "ml"}},
+        ),
+        create_taxonomy_node(
+            id="en:litre",
+            names={"en": "litre", "fr": "litre", "xx": "l"},
+            synonyms={"en": ["litres"], "fr": ["litres"]},
+            properties={"standard_unit": {"en": "ml"}},
+        ),
+        create_taxonomy_node(
+            id="en:gram",
+            names={"en": "gram", "fr": "gramme", "xx": "g"},
+            synonyms={"en": ["g", "grams"], "fr": ["g", "grammes"]},
+            properties={"standard_unit": {"en": "g"}},
+        ),
+        create_taxonomy_node(
+            id="en:kilogram",
+            names={"en": "kilogram", "fr": "kilogramme", "xx": "kg"},
+            synonyms={"en": ["kg", "kilograms"], "fr": ["kg", "kilogrammes"]},
+            properties={"standard_unit": {"en": "g"}},
+        ),
+        create_taxonomy_node(
+            id="en:kilojoule",
+            names={"en": "kilojoule", "fr": "kilojoule", "xx": "kj"},
+            synonyms={"en": ["kilojoules"], "fr": ["kilojoules"]},
+            properties={"standard_unit": {"en": "kJ"}},
+        ),
+        # no standard_unit property: must default to None (and be omitted by the API)
+        create_taxonomy_node(
+            id="en:piece",
+            names={"en": "piece", "fr": "pièce", "xx": "piece"},
+            synonyms={"en": ["pieces"], "fr": ["pièces"]},
+        ),
+    ]
+    return create_taxonomy(mock_nodes)
+
+
+@contextmanager
 def patch_labels_taxonomy(taxonomy):
     """Patch ``api.off.get_labels_taxonomy`` to return ``taxonomy``.
 

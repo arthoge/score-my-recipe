@@ -151,7 +151,11 @@ export interface paths {
 		 * Get Units
 		 * @description Get the list of units available in the Open Food Facts units taxonomy
 		 *
-		 *     Note: as the list is not too big, we let clients handle suggestions to users
+		 *     Note: as the list is not too big, we let clients handle suggestions to users.
+		 *
+		 *     When ``compatible_with_unit`` is provided, only the units compatible with
+		 *     that source unit are returned (plus the synthetic ``item`` unit when
+		 *     applicable).
 		 */
 		get: operations['get_units_v1_units_get'];
 		put?: never;
@@ -570,7 +574,11 @@ export interface components {
 		 *         "label": "France"
 		 *       },
 		 *       "quantity_g": 150,
-		 *       "quantity_unit": "kg",
+		 *       "quantity_unit": {
+		 *         "id": "xx:kg",
+		 *         "isInTaxonomy": true,
+		 *         "label": "kilogram"
+		 *       },
 		 *       "quantity_value": 0.15,
 		 *       "taxonomy_id": "en:apple"
 		 *     }
@@ -608,11 +616,8 @@ export interface components {
 			 * @description Numeric value of the quantity
 			 */
 			quantity_value?: number | null;
-			/**
-			 * Quantity Unit
-			 * @description Unit of the quantity
-			 */
-			quantity_unit?: string | null;
+			/** @description Unit of the quantity, as a TaxonomyItem. Resolved from the parsed unit string through the units taxonomy (a free-text entry when unresolvable, or the 'item' sentinel for countable ingredients with no unit). */
+			quantity_unit?: components['schemas']['TaxonomyItem'] | null;
 			/**
 			 * Notes
 			 * @description Notes about the ingredient
@@ -1218,6 +1223,10 @@ export interface operations {
 				lang: string;
 				/** @description If true, include the synonyms of each item in the response. */
 				include_synonyms?: boolean;
+				/** @description If provided, only return the units compatible with this source unit (a unit id, a localized unit name, or the 'item' sentinel). */
+				compatible_with_unit?: string | null;
+				/** @description Taxonomy id of an ingredient, used together with compatible_with_unit to determine if the 'item' unit is a compatible target (when the ingredient defines a positive average_weight_per_unit). */
+				ingredient_id?: string | null;
 			};
 			header?: never;
 			path?: never;

@@ -145,7 +145,7 @@ class RecipeIngredient(BaseModel):
                     "origins": {"id": "en:france", "label": "France", "isInTaxonomy": True},
                     "labels": [{"id": "en:organic", "label": "Organic", "isInTaxonomy": True}],
                     "quantity_value": 0.15,
-                    "quantity_unit": "kg",
+                    "quantity_unit": {"id": "xx:kg", "label": "kilogram", "isInTaxonomy": True},
                 }
             ]
         }
@@ -164,7 +164,15 @@ class RecipeIngredient(BaseModel):
     quantity_value: Annotated[
         Optional[float], Field(description="Numeric value of the quantity")
     ] = None
-    quantity_unit: Annotated[Optional[str], Field(description="Unit of the quantity")] = None
+    quantity_unit: Annotated[
+        Optional[TaxonomyItem],
+        Field(
+            description="Unit of the quantity, as a TaxonomyItem. "
+            "Resolved from the parsed unit string through the units taxonomy "
+            f"(a free-text entry when unresolvable, or the '{ITEM_UNIT}' "
+            "sentinel for countable ingredients with no unit)."
+        ),
+    ] = None
     notes: Annotated[Optional[list[str]], Field(description="Notes about the ingredient")] = None
 
 

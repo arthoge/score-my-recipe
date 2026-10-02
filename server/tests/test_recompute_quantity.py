@@ -184,8 +184,8 @@ async def test_change_to_mass_unit_uses_conversion_factor(mock_units_taxonomy):
 async def test_change_to_mass_unit_name_uses_conversion_factor(mock_units_taxonomy):
     """Case 2 with a unit *name*: "kg" resolves to xx:kg (factor 1000).
 
-    Mirrors the real discrepancy: parse returns quantity_unit "kg" (a name), and
-    recompute must accept it.
+    Mirrors the real scenario: a unit name like "kg" must be resolved by
+    recompute, even though the parse endpoint now returns it as a TaxonomyItem.
     """
     quantity_g, value, unit = await units.recompute_quantity(
         quantity_g=2000, old_value=2000, old_unit="g", new_value=2, new_unit="kg", lang="en"

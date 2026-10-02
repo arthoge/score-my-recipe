@@ -4,7 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api.api import app
+from api import types
 from api.types import OFFIngredient
+from tests.helpers import build_mock_units_taxonomy, patch_units_taxonomy
 
 client = TestClient(app)
 
@@ -12,7 +14,10 @@ client = TestClient(app)
 @pytest.fixture
 def mock_off_parse_text():
     """Mock the OpenFoodFacts API parse_text response"""
-    with patch("api.recipes.off.parse_text", new_callable=AsyncMock) as mock:
+    with (
+        patch("api.recipes.off.parse_text", new_callable=AsyncMock) as mock,
+        patch_units_taxonomy(build_mock_units_taxonomy()),
+    ):
         mock.return_value = [
             OFFIngredient(
                 id="en:tomatoes",
@@ -119,7 +124,10 @@ def test_parse_text_normalizes_language_code(mock_off_parse_text):
 @pytest.fixture
 def mock_off_parse_text_with_origins_and_labels():
     """Mock returning ingredients that have origins and labels detected"""
-    with patch("api.recipes.off.parse_text", new_callable=AsyncMock) as mock:
+    with (
+        patch("api.recipes.off.parse_text", new_callable=AsyncMock) as mock,
+        patch_units_taxonomy(build_mock_units_taxonomy()),
+    ):
         mock.return_value = [
             OFFIngredient(
                 id="en:butter",
@@ -189,7 +197,10 @@ def test_parse_text_origins_and_labels_null_when_not_in_text(mock_off_parse_text
 @pytest.fixture
 def mock_off_parse_text_with_multiple_values():
     """Mock returning an ingredient with comma-separated origins and labels"""
-    with patch("api.recipes.off.parse_text", new_callable=AsyncMock) as mock:
+    with (
+        patch("api.recipes.off.parse_text", new_callable=AsyncMock) as mock,
+        patch_units_taxonomy(build_mock_units_taxonomy()),
+    ):
         mock.return_value = [
             OFFIngredient(
                 id="en:salad",
@@ -226,3 +237,119 @@ def test_parse_text_handles_multiple_origins_and_labels(mock_off_parse_text_with
     assert len(ingredients[0]["notes"]) == 1
     assert "Dropped origins" in ingredients[0]["notes"][0]
     assert "en:france,en:italy" in ingredients[0]["notes"][0]
+
+
+# ---------------------------------------------------------------------------
+# quantity_unit resolution into a TaxonomyItem
+# ---------------------------------------------------------------------------
+
+
+def test_parse_text_resolves_known_unit_name(mock_off_parse_text):
+    """A parsed unit name (e.g. 'g') resolves to a taxonomy TaxonomyItem."""
+    response = client.post("/v1/parse_text", json={"text": "tomates 500g", "lang": "fr"})
+    assert response.status_code == 200
+    ingredient = response.json()["ingredients"][0]
+    # 'g' resolves to en:gram (label localized in fr: "gramme")
+    assert ingredient["quantity_unit"] == {
+        "id": "en:gram",
+        "label": "gramme",
+        "isInTaxonomy": True,
+    }
+    assert ingredient["quantity_value"] == 500.0
+
+
+def test_parse_text_unresolvable_unit_becomes_free_text(mock_off_parse_text):
+    """A parsed unit not in the taxonomy becomes a free-text TaxonomyItem."""
+    response = client.post(
+        "/v1/parse_text", json={"text": "oignons 2 units", "lang": "fr"}
+    )
+    assert response.status_code == 200
+    # The mock returns two ingredients; the second (oignons) has unit "units".
+    ingredient = response.json()["ingredients"][1]
+    # 'units' is not a known unit: free-text entry with id=null
+    assert ingredient["quantity_unit"] == {
+        "id": None,
+        "label": "units",
+        "isInTaxonomy": False,
+    }
+    assert ingredient["quantity_value"] == 2.0
+
+
+@pytest.mark.asyncio
+async def test_off_ingredient_to_recipe_ingredient_no_unit_returns_item():
+    """An ingredient without a unit resolves to the synthetic 'item' unit."""
+    from api.recipes import off_ingredient_to_recipe_ingredient
+
+    off_ingredient = OFFIngredient(
+        id="en:egg",
+        text="egg",
+        quantity="3",
+        quantity_g=150.0,
+        is_in_taxonomy=1,
+    )
+    with patch_units_taxonomy(build_mock_units_taxonomy()):
+        ingredient = await off_ingredient_to_recipe_ingredient(off_ingredient, "en")
+    assert ingredient.quantity_unit == types.TaxonomyItem(
+        id="item", label="item", is_in_taxonomy=True
+    )
+    assert ingredient.quantity_value == 3.0
+
+
+@pytest.mark.asyncio
+async def test_off_ingredient_to_recipe_ingredient_none_quantity_returns_item():
+    """An ingredient with quantity=None resolves to the 'item' unit."""
+    from api.recipes import off_ingredient_to_recipe_ingredient
+
+    off_ingredient = OFFIngredient(
+        id="en:egg",
+        text="egg",
+        quantity=None,
+        quantity_g=None,
+        is_in_taxonomy=1,
+    )
+    with patch_units_taxonomy(build_mock_units_taxonomy()):
+        ingredient = await off_ingredient_to_recipe_ingredient(off_ingredient, "en")
+    assert ingredient.quantity_unit is not None
+    assert ingredient.quantity_unit.id == "item"
+    assert ingredient.quantity_value is None
+
+
+@pytest.mark.asyncio
+async def test_off_ingredient_to_recipe_ingredient_resolves_unit_id():
+    """A unit given as a taxonomy id resolves to the matching TaxonomyItem."""
+    from api.recipes import off_ingredient_to_recipe_ingredient
+
+    off_ingredient = OFFIngredient(
+        id="en:flour",
+        text="flour",
+        quantity="2 kg",
+        quantity_g=2000.0,
+        is_in_taxonomy=1,
+    )
+    with patch_units_taxonomy(build_mock_units_taxonomy()):
+        ingredient = await off_ingredient_to_recipe_ingredient(off_ingredient, "en")
+    # 'kg' resolves to en:kilogram via the 'xx' name
+    assert ingredient.quantity_unit == types.TaxonomyItem(
+        id="en:kilogram", label="kilogram", is_in_taxonomy=True
+    )
+    assert ingredient.quantity_value == 2.0
+
+
+@pytest.mark.asyncio
+async def test_off_ingredient_to_recipe_ingredient_resolves_synonym():
+    """A unit given as a synonym (e.g. 'tasse') resolves to its TaxonomyItem."""
+    from api.recipes import off_ingredient_to_recipe_ingredient
+
+    off_ingredient = OFFIngredient(
+        id="en:flour",
+        text="flour",
+        quantity="1 tasse",
+        quantity_g=120.0,
+        is_in_taxonomy=1,
+    )
+    with patch_units_taxonomy(build_mock_units_taxonomy()):
+        ingredient = await off_ingredient_to_recipe_ingredient(off_ingredient, "fr")
+    # 'tasse' is the fr label of en:cup
+    assert ingredient.quantity_unit == types.TaxonomyItem(
+        id="en:cup", label="tasse", is_in_taxonomy=True
+    )

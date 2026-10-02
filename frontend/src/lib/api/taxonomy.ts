@@ -15,6 +15,7 @@ type Origin = components['schemas']['Origin'];
 type SuggestedIngredient = components['schemas']['SuggestedIngredient'];
 type Country = components['schemas']['Country'];
 type CountriesResponse = components['schemas']['CountriesResponse'];
+type UnitsResponse = components['schemas']['UnitsResponse'];
 
 const API_BASE_URL = env.PUBLIC_RECIPE_API_URL ?? '';
 
@@ -40,17 +41,26 @@ export async function getMatchingTags(
 	const values = {
 		ingredients: getIngredientsTaxonomy(),
 		labels: getLabelsTaxonomy(),
-		countries: getCountriesTaxonomy()
+		countries: getCountriesTaxonomy(),
+		units: getUnitsTaxonomy()
 	};
 	if (Object.hasOwn(values, tagtype)) {
 		const list = await values[tagtype as keyof typeof values];
+		// Empty query: return all items (up to limit). Used by short-value
+		// taxonomies like units (minChars=0) to show every option on focus.
+		if (query.trim() === '') {
+			return { suggestions: list.slice(0, limit), matched_synonyms: {} };
+		}
+		// Units have short labels/synonyms (e.g. "g", "kg", "l"), so a lower
+		// minimum match length is needed than for ingredients/labels/countries.
+		const minMatchCharLength = tagtype === 'units' ? 1 : 3;
 		const fuse = new Fuse(list, {
 			// search both the canonical label and the synonyms so that
 			// alternative names also yield a match
 			keys: ['label', 'synonyms'],
 			includeScore: true,
 			includeMatches: true,
-			minMatchCharLength: 3,
+			minMatchCharLength,
 			ignoreDiacritics: true
 		});
 		const results = fuse
@@ -333,4 +343,55 @@ export async function getCountries(lang: string): Promise<Country[]> {
 
 	const data = (await response.json()) as CountriesResponse;
 	return data.countries.filter((country) => country.country_code != null);
+}
+
+/**
+ * The id of the synthetic ``item`` unit, used for countable ingredients
+ * (e.g. "3 eggs"). Mirrors the backend ``types.ITEM_UNIT`` sentinel.
+ */
+export const ITEM_UNIT_ID = 'item';
+
+/**
+ * Cache for the units taxonomy, keyed by language code.
+ *
+ * The units list is small and changes rarely, so it is fetched once per
+ * language and reused across all ingredient lines.
+ */
+const unitsCache: Record<string, TaxonomyItem[]> = {};
+
+/**
+ * Fetch the list of units (mass and volume) from the backend, with synonyms
+ * for client-side matching.
+ *
+ * The synthetic ``item`` unit (for countable ingredients) is appended
+ * client-side because its label is context-dependent (it should read as the
+ * ingredient name, handled by the Tags ``formatLabel`` prop).
+ *
+ * @returns The list of unit TaxonomyItems (taxonomy units + the ``item`` sentinel).
+ * @throws {Error} If the backend responds with a non-2xx status code.
+ */
+export async function getUnitsTaxonomy(): Promise<TaxonomyItem[]> {
+	const lang = getLocaleKey();
+	if (unitsCache[lang]) {
+		return unitsCache[lang];
+	}
+	const params = new URLSearchParams({ lang, include_synonyms: 'true' });
+	const response = await fetch(`${API_BASE_URL}/v1/units?${params.toString()}`);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch units: ${response.statusText}`);
+	}
+	const data = (await response.json()) as UnitsResponse;
+	// Map the backend Unit to the frontend TaxonomyItem shape.
+	const units: TaxonomyItem[] = data.units.map((unit) => ({
+		id: unit.id,
+		label: unit.label,
+		isInTaxonomy: true,
+		synonyms: unit.synonyms ?? []
+	}));
+	// Append the synthetic 'item' unit for countable ingredients.
+	// Its label is substituted at render time (see IngredientLine) so it
+	// displays as the ingredient name instead of the literal 'item'.
+	units.push({ id: ITEM_UNIT_ID, label: ITEM_UNIT_ID, isInTaxonomy: true, synonyms: [] });
+	unitsCache[lang] = units;
+	return units;
 }

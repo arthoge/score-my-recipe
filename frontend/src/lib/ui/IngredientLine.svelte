@@ -22,8 +22,13 @@
 	import IconMaterialSymbolsSunnyOutline from '@iconify-svelte/material-symbols/sunny-outline';
 	import IconMaterialSymbolsCloudOutline from '@iconify-svelte/material-symbols/cloud-outline';
 	import type { Ingredient } from '$lib/types/ingredient';
-	import type { IngredientSuggestion } from '$lib/types/ingredient';
+	import type { IngredientSuggestion, TaxonomyItem } from '$lib/types/ingredient';
 	import { isIngredientEmpty, isIngredientNotEmpty } from '$lib/types/ingredient';
+	import { ITEM_UNIT_ID } from '$lib/api/taxonomy';
+
+	/** Taxonomy id of the gram unit — the only unit for which grams track the
+	 * quantity value live (identity, not a transformation). */
+	const GRAM_UNIT_ID = 'en:gram';
 
 	type Props = {
 		// The ingredient data object (bindable): name, weight, etc.
@@ -58,6 +63,37 @@
 	let isZeroWeight = $derived(
 		isIngredientNotEmpty(ingredient) && (ingredient.weight === 0 || ingredient.weight == null)
 	);
+
+	/**
+	 * Keep the grams (weight) in sync with the quantity value when the unit is
+	 * the gram unit. This is the only live conversion: for any other unit (kg,
+	 * ml, cup, item…), grams stay frozen (the parser's quantity_g, or 0) — unit
+	 * transformations are deferred to a later step.
+	 *
+	 * Writing ``ingredient.weight`` here does not re-trigger this effect
+	 * because ``weight`` is not read (only ``quantityUnit`` and
+	 * ``quantityValue`` are), so there is no update cycle.
+	 */
+	$effect(() => {
+		if (ingredient.quantityUnit?.id === GRAM_UNIT_ID) {
+			ingredient.weight = ingredient.quantityValue;
+		}
+	});
+
+	/**
+	 * Display label for a unit TaxonomyItem.
+	 *
+	 * The synthetic ``item`` unit (for countable ingredients) is shown as the
+	 * ingredient name instead of the literal 'item', so that "3 eggs" reads
+	 * naturally as "3" + "eggs". Falls back to the codified ingredient label,
+	 * then to 'item' when the name is empty (e.g. a fresh empty line).
+	 */
+	function formatUnitLabel(unit: TaxonomyItem): string {
+		if (unit.id === ITEM_UNIT_ID) {
+			return ingredient.name || ingredient.codifiedIngredient?.label || ITEM_UNIT_ID;
+		}
+		return unit.label;
+	}
 
 	// trigger onNotEmpty when isNoteEmpty becomes true
 	$effect(() => {
@@ -162,12 +198,49 @@
 		</Tags>
 	</div>
 
-	<!-- Weight -->
-	<div class="flex w-24 flex-col">
-		<label class="label py-1" for="ingredient-weight-{ingredient.id}">
+	<!-- Quantity -->
+	<div class="flex w-20 flex-col">
+		<label class="label py-1" for="ingredient-quantity-{ingredient.id}">
+			<span class="label-text text-xs">
+				{$_('recipe.quantity', { default: 'Quantity' })}
+			</span>
+		</label>
+		<input
+			id="ingredient-quantity-{ingredient.id}"
+			type="number"
+			class="input input-bordered w-full"
+			placeholder="0"
+			bind:value={ingredient.quantityValue}
+			min="0"
+		/>
+	</div>
+
+	<!-- Unit -->
+	<div class="flex w-32 flex-col">
+		<label class="label py-1" for="ingredient-unit-{ingredient.id}">
+			<span class="label-text text-xs">
+				{$_('recipe.unit', { default: 'Unit' })}
+			</span>
+		</label>
+		<Tags
+			tagtype="units"
+			id="ingredient-unit-{ingredient.id}"
+			tags={ingredient.quantityUnit ? [ingredient.quantityUnit] : []}
+			onChange={(newTags) => {
+				ingredient.quantityUnit = newTags[0] ?? null;
+			}}
+			single={true}
+			minChars={0}
+			formatLabel={formatUnitLabel}
+		/>
+	</div>
+
+	<!-- Grams (read-only, frozen except for the gram unit) -->
+	<div class="flex w-20 flex-col">
+		<label class="label py-1" for="ingredient-grams-{ingredient.id}">
 			<span class="flex items-center gap-1.5">
 				<span class="label-text text-xs" class:text-error={isZeroWeight}
-					>{$_('recipe.weight', { default: 'Weight (g)' })}</span
+					>{$_('recipe.grams', { default: 'Grams' })}</span
 				>
 				{#if isZeroWeight}
 					<!-- Screen-reader status: the zero-quantity state is otherwise
@@ -177,15 +250,14 @@
 					</span>
 				{/if}
 				<HelperTooltip
-					tip={$_('helpers.weight', {
-						default: 'Net quantity of the ingredient in grams.'
+					tip={$_('helpers.grams', {
+						default:
+							'Quantity in grams, used for the green-score computation. ' +
+							'For non-gram units it is frozen from the parsed value (no conversion yet).'
 					})}
 					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 				/>
 				{#if isZeroWeight}
-					<!-- Stop icon is itself the tooltip trigger (via HelperTooltip's
-					     custom icon snippet) explaining why a 0g quantity cannot be
-					     taken into account in the score computation. -->
 					<HelperTooltip
 						tip={$_('recipe.ingredient_zero_quantity_tooltip', {
 							default:
@@ -204,13 +276,13 @@
 			</span>
 		</label>
 		<input
-			id="ingredient-weight-{ingredient.id}"
+			id="ingredient-grams-{ingredient.id}"
 			type="number"
 			class="input input-bordered w-full"
 			class:input-error={isZeroWeight}
+			value={ingredient.weight ?? 0}
+			readonly
 			placeholder="0"
-			bind:value={ingredient.weight}
-			min="0"
 		/>
 	</div>
 
