@@ -15,10 +15,12 @@ from fastapi.testclient import TestClient
 from api.api import app
 from api import units
 from api import types
+from api import exceptions
 
 from tests.helpers import (
     create_taxonomy,
     create_taxonomy_node,
+    patch_ingredients_taxonomy,
     patch_language_check,
 )
 
@@ -28,10 +30,12 @@ client = TestClient(app)
 
 @pytest.fixture
 def mock_units_taxonomy():
-    """Mock the OpenFoodFacts units taxonomy with 4 units.
+    """Mock the OpenFoodFacts units taxonomy with 6 units.
 
-    ``en:piece`` intentionally has no ``standard_unit`` property to exercise the
-    optional/omitted case.
+    Two mass units (``en:gram``, ``en:kilogram``), two volume units
+    (``en:cup``, ``en:litre``), one energy unit (``en:kilojoule``, filtered out)
+    and ``en:piece`` which intentionally has no ``standard_unit`` property to
+    exercise the optional/omitted case.
     """
     mock_nodes = [
         create_taxonomy_node(
@@ -41,14 +45,26 @@ def mock_units_taxonomy():
             properties={"standard_unit": {"en": "ml"}},
         ),
         create_taxonomy_node(
+            id="en:litre",
+            names={"en": "litre", "fr": "litre", "xx": "l"},
+            synonyms={"en": ["litres"], "fr": ["litres"]},
+            properties={"standard_unit": {"en": "ml"}},
+        ),
+        create_taxonomy_node(
             id="en:gram",
-            names={"en": "gram", "fr": "gramme", "xx": "gram"},
+            names={"en": "gram", "fr": "gramme", "xx": "g"},
             synonyms={"en": ["g", "grams"], "fr": ["g", "grammes"]},
             properties={"standard_unit": {"en": "g"}},
         ),
         create_taxonomy_node(
+            id="en:kilogram",
+            names={"en": "kilogram", "fr": "kilogramme", "xx": "kg"},
+            synonyms={"en": ["kg", "kilograms"], "fr": ["kg", "kilogrammes"]},
+            properties={"standard_unit": {"en": "g"}},
+        ),
+        create_taxonomy_node(
             id="en:kilojoule",
-            names={"en": "kilojoule", "fr": "kilojoule", "xx": "kilojoule"},
+            names={"en": "kilojoule", "fr": "kilojoule", "xx": "kj"},
             synonyms={"en": ["kilojoules"], "fr": ["kilojoules"]},
             properties={"standard_unit": {"en": "kJ"}},
         ),
@@ -91,6 +107,8 @@ async def test_get_units_filters_to_g_and_ml_standard_units(mock_units_taxonomy)
     assert unit_list_to_dict(result) == {
         "en:cup": "cup",
         "en:gram": "gram",
+        "en:kilogram": "kilogram",
+        "en:litre": "litre",
     }
     # units with other (or no) standard_unit are filtered out
     assert all(unit.id not in ("en:kilojoule", "en:piece") for unit in result)
@@ -103,6 +121,8 @@ async def test_get_units_returns_standard_unit(mock_units_taxonomy):
     standard_unit_by_id = {unit.id: unit.standard_unit for unit in result}
     assert standard_unit_by_id["en:cup"] == "ml"
     assert standard_unit_by_id["en:gram"] == "g"
+    assert standard_unit_by_id["en:kilogram"] == "g"
+    assert standard_unit_by_id["en:litre"] == "ml"
 
 
 @pytest.mark.asyncio
@@ -112,6 +132,8 @@ async def test_get_units_uses_correct_language_labels(mock_units_taxonomy):
     assert unit_list_to_dict(result_fr) == {
         "en:cup": "tasse",
         "en:gram": "gramme",
+        "en:kilogram": "kilogramme",
+        "en:litre": "litre",
     }
 
 
@@ -141,6 +163,8 @@ def test_get_units_api_returns_correct_data(mock_units_taxonomy):
     assert {unit["id"]: unit["label"] for unit in data["units"]} == {
         "en:cup": "cup",
         "en:gram": "gram",
+        "en:kilogram": "kilogram",
+        "en:litre": "litre",
     }
 
 
@@ -154,6 +178,8 @@ def test_get_units_api_returns_standard_unit(mock_units_taxonomy):
     }
     assert standard_unit_by_id["en:cup"] == "ml"
     assert standard_unit_by_id["en:gram"] == "g"
+    assert standard_unit_by_id["en:kilogram"] == "g"
+    assert standard_unit_by_id["en:litre"] == "ml"
 
 
 def test_get_units_api_excludes_non_g_ml_units(mock_units_taxonomy):
@@ -220,4 +246,303 @@ def test_get_units_api_returns_synonyms_when_requested(mock_units_taxonomy):
 def test_get_units_api_invalid_language_returns_422(mock_units_taxonomy):
     """An unsupported language code (lang=zz) is rejected with HTTP 422."""
     response = client.get("/v1/units", params={"lang": "zz"})
+    assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Compatibility filtering (compatible_with_unit + ingredient_id)
+# ---------------------------------------------------------------------------
+
+
+def _mock_ingredients_taxonomy():
+    """Mock ingredients taxonomy with average_weight_per_unit variations.
+
+    * ``en:egg`` has a positive average_weight_per_unit (50 g).
+    * ``en:water`` has no average_weight_per_unit property.
+    * ``en:zero-weight`` has a zero average_weight_per_unit (must be treated
+      as absent per the "positive number" rule).
+    """
+    nodes = [
+        create_taxonomy_node(
+            id="en:egg",
+            names={"en": "egg", "xx": "egg"},
+            synonyms={"en": ["eggs"]},
+            properties={"average_weight_per_unit": {"en": "50"}},
+        ),
+        create_taxonomy_node(
+            id="en:water",
+            names={"en": "water", "xx": "water"},
+            synonyms={"en": []},
+        ),
+        create_taxonomy_node(
+            id="en:zero-weight",
+            names={"en": "zero weight", "xx": "zero weight"},
+            synonyms={"en": []},
+            properties={"average_weight_per_unit": {"en": "0"}},
+        ),
+    ]
+    return create_taxonomy(nodes)
+
+
+@pytest.fixture
+def mock_units_and_ingredients(mock_units_taxonomy):
+    """Mock both the units and ingredients taxonomies for compatibility tests.
+
+    Builds on :func:`mock_units_taxonomy` (6 units: cup/litre are ml, gram/kilogram
+    are g, kilojoule/kJ filtered out, piece/none filtered out) and patches the
+    ingredients taxonomy with the egg/water/zero-weight nodes.
+    """
+    ingredients_taxonomy = _mock_ingredients_taxonomy()
+    with patch_ingredients_taxonomy(ingredients_taxonomy):
+        yield ingredients_taxonomy
+
+
+# --- business logic: filtering by source unit ------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_units_compatible_with_g_returns_only_g_units(mock_units_and_ingredients):
+    """Source 'en:gram' (g): only g units are compatible (item not included)."""
+    result = await units.get_units("en", compatible_with_unit="en:gram")
+    ids = [unit.id for unit in result]
+    assert ids == ["en:gram", "en:kilogram"]
+    # item must not appear (no ingredient provided, source is not 'item')
+    assert types.ITEM_UNIT not in ids
+
+
+@pytest.mark.asyncio
+async def test_get_units_compatible_with_ml_returns_g_and_ml_units(
+    mock_units_and_ingredients,
+):
+    """Source 'en:cup' (ml): g units (always) + ml units (same standard_unit)."""
+    result = await units.get_units("en", compatible_with_unit="en:cup")
+    ids = [unit.id for unit in result]
+    assert ids == ["en:cup", "en:gram", "en:kilogram", "en:litre"]
+
+
+@pytest.mark.asyncio
+async def test_get_units_compatible_with_item_returns_g_units_and_item(
+    mock_units_and_ingredients,
+):
+    """Source 'item': all g units + the synthetic item unit."""
+    result = await units.get_units("en", compatible_with_unit=types.ITEM_UNIT)
+    ids = [unit.id for unit in result]
+    assert ids == ["en:gram", "en:kilogram", "item"]
+
+
+@pytest.mark.asyncio
+async def test_get_units_compatible_with_source_as_name(mock_units_and_ingredients):
+    """Source given as a localized name ('g') is resolved and filters correctly."""
+    result = await units.get_units("en", compatible_with_unit="g")
+    ids = [unit.id for unit in result]
+    assert ids == ["en:gram", "en:kilogram"]
+
+
+# --- business logic: item target with ingredient ---------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_compatible_with_ingredient_avg_weight(
+    mock_units_and_ingredients,
+):
+    """Source 'g' + ingredient with positive average_weight_per_unit: item is added."""
+    result = await units.get_units(
+        "en", compatible_with_unit="en:gram", ingredient_id="en:egg"
+    )
+    ids = [unit.id for unit in result]
+    assert "item" in ids
+    assert "en:gram" in ids
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_not_compatible_without_ingredient(
+    mock_units_and_ingredients,
+):
+    """Source 'ml' without ingredient: no item in results."""
+    result = await units.get_units("en", compatible_with_unit="en:cup")
+    assert types.ITEM_UNIT not in [unit.id for unit in result]
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_not_compatible_ingredient_without_avg_weight(
+    mock_units_and_ingredients,
+):
+    """Ingredient without average_weight_per_unit: item is not compatible."""
+    result = await units.get_units(
+        "en", compatible_with_unit="en:gram", ingredient_id="en:water"
+    )
+    assert types.ITEM_UNIT not in [unit.id for unit in result]
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_not_compatible_ingredient_zero_avg_weight(
+    mock_units_and_ingredients,
+):
+    """Ingredient with zero average_weight_per_unit: item is not compatible."""
+    result = await units.get_units(
+        "en", compatible_with_unit="en:gram", ingredient_id="en:zero-weight"
+    )
+    assert types.ITEM_UNIT not in [unit.id for unit in result]
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_compatible_source_item_and_ingredient(
+    mock_units_and_ingredients,
+):
+    """Source 'item' + ingredient: item is compatible (source rule takes over)."""
+    result = await units.get_units(
+        "en", compatible_with_unit=types.ITEM_UNIT, ingredient_id="en:water"
+    )
+    ids = [unit.id for unit in result]
+    assert "item" in ids
+    assert "en:gram" in ids
+
+
+# --- business logic: synthetic item unit properties ------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_unit_has_no_standard_unit(mock_units_and_ingredients):
+    """The synthetic item unit has standard_unit=None (omitted from JSON)."""
+    result = await units.get_units("en", compatible_with_unit=types.ITEM_UNIT)
+    item_unit = next(unit for unit in result if unit.id == types.ITEM_UNIT)
+    assert item_unit.standard_unit is None
+    assert item_unit.label == types.ITEM_UNIT
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_unit_synonyms_empty_when_requested(
+    mock_units_and_ingredients,
+):
+    """When include_synonyms=true, the item unit gets an empty synonyms list."""
+    result = await units.get_units(
+        "en", include_synonyms=True, compatible_with_unit=types.ITEM_UNIT
+    )
+    item_unit = next(unit for unit in result if unit.id == types.ITEM_UNIT)
+    assert item_unit.synonyms == []
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_unit_no_synonyms_when_not_requested(
+    mock_units_and_ingredients,
+):
+    """When include_synonyms=false, the item unit has synonyms=None."""
+    result = await units.get_units("en", compatible_with_unit=types.ITEM_UNIT)
+    item_unit = next(unit for unit in result if unit.id == types.ITEM_UNIT)
+    assert item_unit.synonyms is None
+
+
+@pytest.mark.asyncio
+async def test_get_units_item_sorted_alphabetically(mock_units_and_ingredients):
+    """The synthetic item unit is sorted alphabetically by id."""
+    result = await units.get_units("en", compatible_with_unit=types.ITEM_UNIT)
+    ids = [unit.id for unit in result]
+    assert ids == sorted(ids)
+    # 'item' sorts after 'en:...' ids ('e' < 'i')
+    assert ids[-1] == "item"
+
+
+# --- business logic: no filtering ------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_units_no_filtering_returns_all_g_ml_units(mock_units_taxonomy):
+    """When compatible_with_unit is omitted, the full g/ml list is returned."""
+    result = await units.get_units("en")
+    ids = [unit.id for unit in result]
+    # today's behavior: only g/ml taxonomy units, no item
+    assert ids == ["en:cup", "en:gram", "en:kilogram", "en:litre"]
+    assert types.ITEM_UNIT not in ids
+
+
+# --- error handling ---------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_units_unknown_source_unit_raises(mock_units_and_ingredients):
+    """An unresolvable source unit raises UnknownUnitError."""
+    with pytest.raises(exceptions.UnknownUnitError):
+        await units.get_units("en", compatible_with_unit="en:nonexistent")
+
+
+@pytest.mark.asyncio
+async def test_get_units_non_g_ml_source_unit_raises(mock_units_and_ingredients):
+    """A source unit with a non g/ml standard_unit raises UnknownUnitError."""
+    with pytest.raises(exceptions.UnknownUnitError):
+        await units.get_units("en", compatible_with_unit="en:kilojoule")
+
+
+@pytest.mark.asyncio
+async def test_get_units_unknown_ingredient_raises(mock_units_and_ingredients):
+    """An unknown ingredient id raises UnknownIngredientError."""
+    with pytest.raises(exceptions.UnknownIngredientError):
+        await units.get_units(
+            "en", compatible_with_unit="en:gram", ingredient_id="en:nonexistent"
+        )
+
+
+# --- API endpoint -----------------------------------------------------------
+
+
+def test_get_units_api_compatible_with_g(mock_units_and_ingredients):
+    """The /v1/units endpoint filters by compatible_with_unit."""
+    response = client.get(
+        "/v1/units", params={"lang": "en", "compatible_with_unit": "en:gram"}
+    )
+    assert response.status_code == 200
+    ids = [unit["id"] for unit in response.json()["units"]]
+    assert ids == ["en:gram", "en:kilogram"]
+
+
+def test_get_units_api_compatible_with_item(mock_units_and_ingredients):
+    """The /v1/units endpoint includes the synthetic item unit."""
+    response = client.get(
+        "/v1/units", params={"lang": "en", "compatible_with_unit": "item"}
+    )
+    assert response.status_code == 200
+    ids = [unit["id"] for unit in response.json()["units"]]
+    assert ids == ["en:gram", "en:kilogram", "item"]
+
+
+def test_get_units_api_compatible_with_ingredient(mock_units_and_ingredients):
+    """The /v1/units endpoint adds item when ingredient has avg_weight_per_unit."""
+    response = client.get(
+        "/v1/units",
+        params={
+            "lang": "en",
+            "compatible_with_unit": "en:gram",
+            "ingredient_id": "en:egg",
+        },
+    )
+    assert response.status_code == 200
+    ids = [unit["id"] for unit in response.json()["units"]]
+    assert "item" in ids
+
+
+def test_get_units_api_unknown_source_returns_422(mock_units_and_ingredients):
+    """An unresolvable source unit returns HTTP 422."""
+    response = client.get(
+        "/v1/units", params={"lang": "en", "compatible_with_unit": "en:nonexistent"}
+    )
+    assert response.status_code == 422
+
+
+def test_get_units_api_unknown_ingredient_returns_422(mock_units_and_ingredients):
+    """An unknown ingredient id returns HTTP 422."""
+    response = client.get(
+        "/v1/units",
+        params={
+            "lang": "en",
+            "compatible_with_unit": "en:gram",
+            "ingredient_id": "en:nonexistent",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_get_units_api_ingredient_without_source_returns_422(mock_units_and_ingredients):
+    """Providing ingredient_id without compatible_with_unit returns HTTP 422."""
+    response = client.get(
+        "/v1/units", params={"lang": "en", "ingredient_id": "en:egg"}
+    )
     assert response.status_code == 422

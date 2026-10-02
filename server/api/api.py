@@ -161,9 +161,23 @@ async def get_units(
 ) -> types.UnitsResponse:
     """Get the list of units available in the Open Food Facts units taxonomy
 
-    Note: as the list is not too big, we let clients handle suggestions to users
+    Note: as the list is not too big, we let clients handle suggestions to users.
+
+    When ``compatible_with_unit`` is provided, only the units compatible with
+    that source unit are returned (plus the synthetic ``item`` unit when
+    applicable).
     """
-    unit_list = await units.get_units(filter_query.lang, filter_query.include_synonyms)
+    try:
+        unit_list = await units.get_units(
+            filter_query.lang,
+            filter_query.include_synonyms,
+            filter_query.compatible_with_unit,
+            filter_query.ingredient_id,
+        )
+    except exceptions.UnknownUnitError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except exceptions.UnknownIngredientError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     response.headers["Cache-Control"] = "max-age=86400"
     return types.UnitsResponse(units=unit_list)
 

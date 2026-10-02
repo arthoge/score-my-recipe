@@ -444,9 +444,49 @@ class Unit(SuggestedTaxonomyItem):
 
 class UnitsRequest(TaxonomyRequest):
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{"lang": "en", "include_synonyms": False}]}
+        json_schema_extra={
+            "examples": [
+                {"lang": "en", "include_synonyms": False},
+                {
+                    "lang": "en",
+                    "include_synonyms": False,
+                    "compatible_with_unit": "ml",
+                    "ingredient_id": "en:egg",
+                },
+            ]
+        }
     )
-    pass
+
+    compatible_with_unit: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description="If provided, only return the units compatible with this "
+            "source unit (a unit id, a localized unit name, or the 'item' sentinel).",
+        ),
+    ] = None
+    ingredient_id: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            description="Taxonomy id of an ingredient, used together with "
+            "compatible_with_unit to determine if the 'item' unit is a compatible "
+            "target (when the ingredient defines a positive average_weight_per_unit).",
+        ),
+    ] = None
+
+    @model_validator(mode="after")
+    def _enforce_ingredient_requires_source(self) -> "UnitsRequest":
+        """An ingredient_id is only meaningful together with a source unit.
+
+        Without compatible_with_unit there is no compatibility filtering to
+        apply, so providing an ingredient alone is a client error.
+        """
+        if self.ingredient_id is not None and self.compatible_with_unit is None:
+            raise ValueError(
+                "ingredient_id can only be provided together with compatible_with_unit."
+            )
+        return self
 
 
 class UnitsResponse(BaseModel):

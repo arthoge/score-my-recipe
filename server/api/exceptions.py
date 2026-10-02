@@ -7,6 +7,10 @@ class UnknownUnitError(Exception):
     """Raised when a unit is neither the ``item`` sentinel nor a known taxonomy unit."""
 
 
+class UnknownIngredientError(Exception):
+    """Raised when an ingredient taxonomy id is not found in the ingredients taxonomy."""
+
+
 class UnitConversionNotSupportedError(Exception):
     """Raised when the requested unit change cannot be computed yet.
 
