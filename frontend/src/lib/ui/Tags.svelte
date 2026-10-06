@@ -28,6 +28,7 @@
 	import type { TaxonomyItem } from '$lib/types/ingredient';
 
 	import IconMdiClose from '@iconify-svelte/mdi/close';
+	import { _ } from '$lib/i18n';
 
 	type Props = {
 		id?: string;
@@ -40,6 +41,12 @@
 		// When true, the widget border turns red to signal an invalid/unresolved
 		// value (e.g. an ingredient missing from the green-score computation).
 		invalid?: boolean;
+		/** Accessible name for the widget's editable inputs. */
+		ariaLabel?: string;
+		/** Keep suggestions in the row flow inside a scrollable ingredient table. */
+		inlineSuggestions?: boolean;
+		/** Render a single value as a borderless editor that fills a table cell. */
+		cell?: boolean;
 	};
 
 	type Suggestion = {
@@ -53,7 +60,10 @@
 		single = false,
 		onChange,
 		suggestionIcon,
-		invalid = false
+		invalid = false,
+		ariaLabel,
+		inlineSuggestions = false,
+		cell = false
 	}: Props = $props();
 
 	// Border treatment mirrors the focus state: red when invalid, otherwise the
@@ -375,7 +385,8 @@
 {#snippet autocompleteDropdown()}
 	{#if currentSuggestions.length > 0}
 		<div
-			class="dropdown-content bg-base-100 z-100 mt-1 w-full rounded-md shadow-lg focus:outline-none"
+			class="bg-base-100 z-100 mt-1 w-full rounded-md shadow-lg focus:outline-none"
+			class:dropdown-content={!inlineSuggestions}
 		>
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<ul tabindex="0" class="divide-base-200 divide-y">
@@ -408,18 +419,29 @@
 <!-- Tag widget -->
 <div
 	{id}
-	class="bg-base-100 {borderClass} flex h-auto min-h-12 w-full flex-wrap gap-x-1.5 gap-y-1 rounded-md"
+	class={cell
+		? 'flex min-h-10 w-full flex-wrap items-center'
+		: `bg-base-100 ${borderClass} flex h-auto min-h-12 w-full flex-wrap gap-x-1.5 gap-y-1 rounded-md`}
+	class:text-error={cell && invalid}
 >
 	<!-- each value of the tag (multi valued) -->
 	{#each tags as tag, index (tag)}
-		<div class="badge badge-ghost flex h-min items-center py-2" transition:fade={{ duration: 100 }}>
+		<div
+			class={cell
+				? 'group flex min-h-10 w-full items-center'
+				: 'badge badge-ghost flex h-min items-center py-2'}
+			transition:fade={{ duration: 100 }}
+		>
 			{#if editingIndex === index}
 				<!-- Existing tag editing input with autocomplete dropdown -->
-				<div class="dropdown">
+				<div class={cell ? 'dropdown min-w-0 grow' : 'dropdown'}>
 					<input
 						type="text"
-						class="input w-full min-w-0 border bg-transparent outline-none"
+						class={cell
+							? 'block min-h-10 w-full min-w-0 bg-transparent px-3 py-2 text-sm focus:outline-none'
+							: 'input w-full min-w-0 border bg-transparent outline-none'}
 						bind:value={editingValue}
+						aria-label={ariaLabel}
 						onkeydown={(e) => handleEditKeydown(e, index)}
 						onblur={() => {
 							setTimeout(() => {
@@ -433,9 +455,18 @@
 			{:else}
 				<!-- Tag already added, visible as a label -->
 				<span
-					class="cursor-pointer truncate"
-					ondblclick={() => startEditing(index, tag)}
-					title="Double-click to edit"
+					class={cell
+						? 'flex min-h-10 min-w-0 grow cursor-text items-center px-3 py-2 text-sm'
+						: 'cursor-pointer truncate'}
+					onclick={() => {
+						if (cell) startEditing(index, tag);
+					}}
+					ondblclick={() => {
+						if (!cell) startEditing(index, tag);
+					}}
+					title={$_(cell ? 'recipe.edit_ingredient_hint' : 'recipe.edit_tag_hint', {
+						default: cell ? 'Click to edit' : 'Double-click to edit'
+					})}
 					role="button"
 					tabindex="0"
 					onkeydown={(e) => {
@@ -450,7 +481,9 @@
 			{/if}
 			<!-- Remove tag button -->
 			<button
-				class="hover:bg-base-300 ml-1 cursor-pointer p-1 leading-0"
+				class={cell
+					? 'hover:bg-base-300 mr-2 cursor-pointer p-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus:opacity-100'
+					: 'hover:bg-base-300 ml-1 cursor-pointer p-1 leading-0'}
 				onclick={() => removeTag(index)}
 				aria-label={`Remove tag "${tag.label}"`}
 			>
@@ -464,10 +497,16 @@
 		<div class="dropdown grow">
 			<input
 				type="text"
-				class="input input-bordered w-full bg-transparent outline-hidden"
+				class={cell
+					? 'block min-h-10 w-full bg-transparent px-3 py-2 text-sm focus:outline-none'
+					: 'input input-bordered w-full bg-transparent outline-hidden'}
+				placeholder={cell
+					? $_('recipe.add_ingredient_placeholder', { default: 'Add an ingredient…' })
+					: undefined}
 				onkeydown={inputHandler}
 				onblur={inputBlurHandler}
 				bind:value={newValue}
+				aria-label={ariaLabel}
 			/>
 			{@render autocompleteDropdown()}
 		</div>

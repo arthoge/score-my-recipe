@@ -69,6 +69,15 @@ export interface Ingredient {
 	isInSeason: boolean;
 	/** Origin countries/regions */
 	origin: Origin | null;
+	/** Preparation and nutrition draft fields, ready for the planned analysis API. */
+	state?: 'raw' | 'cooked' | 'drained' | null;
+	ciqualCode?: string;
+	barcode?: string;
+	nutritionReferenceConfirmed?: boolean;
+	preparationProfile?: string;
+	measuredPreparedWeightG?: number | null;
+	/** Only populated by a documented backend preparation estimate. */
+	estimatedPreparedWeightG?: number | null;
 }
 
 /**
@@ -109,7 +118,13 @@ export function isIngredientEmpty(ingredient: Ingredient): boolean {
 		ingredient.weight === null &&
 		ingredient.codifiedIngredient === null &&
 		ingredient.labels.length === 0 &&
-		ingredient.origin === null
+		ingredient.origin === null &&
+		!ingredient.state &&
+		!ingredient.ciqualCode?.trim() &&
+		!ingredient.barcode?.trim() &&
+		!ingredient.nutritionReferenceConfirmed &&
+		!ingredient.preparationProfile?.trim() &&
+		ingredient.measuredPreparedWeightG == null
 	);
 }
 

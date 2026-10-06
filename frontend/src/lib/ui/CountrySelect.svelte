@@ -24,9 +24,11 @@
 
 	type Props = {
 		value?: string | null;
+		/** Unique field ID when several recipe editors are displayed. */
+		id?: string;
 	};
 
-	let { value = $bindable(null) }: Props = $props();
+	let { value = $bindable(null), id = 'country-select' }: Props = $props();
 
 	let countries = $state<Country[]>([]);
 	let isLoading = $state(true);
@@ -52,8 +54,8 @@
 	});
 </script>
 
-<div class="flex flex-col">
-	<label class="label py-1" for="country-select">
+<div class="fieldset">
+	<label class="label" for={id}>
 		<span class="flex items-center gap-1.5">
 			<span class="label-text text-xs">{$_('recipe.country', { default: 'Country' })}</span>
 			<HelperTooltip
@@ -70,8 +72,8 @@
 		<!-- Inline error: the select is disabled so no stale selection can be sent -->
 		<div class="flex items-center gap-2" role="alert" aria-live="polite">
 			<select
-				id="country-select"
-				class="select select-bordered w-48"
+				{id}
+				class="select select-sm w-48"
 				disabled
 				aria-label={$_('recipe.country_load_error', {
 					default: 'Could not load countries'
@@ -82,7 +84,7 @@
 			</span>
 		</div>
 	{:else}
-		<select id="country-select" class="select select-bordered w-48" bind:value disabled={isLoading}>
+		<select {id} class="select select-sm w-48" bind:value disabled={isLoading}>
 			<option value={null}>
 				{$_('recipe.country_placeholder', { default: 'Select your country' })}
 			</option>

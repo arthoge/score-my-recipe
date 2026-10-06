@@ -46,9 +46,9 @@
 </script>
 
 <div class="bg-base-200 rounded-lg p-4">
-	<h2 class="text-lg font-semibold">
+	<h3 class="text-lg font-semibold">
 		{$_('recipe.green_score', { default: 'Green Score' })}
-	</h2>
+	</h3>
 
 	{#if isLoading}
 		<div class="flex items-center gap-3 py-4">
@@ -81,7 +81,7 @@
 	{:else}
 		<p class="text-base-content/70 mt-2 text-sm">
 			{$_('recipe.no_score', {
-				default: 'No score available. Add ingredients with weights to compute the score.'
+				default: 'Scores update automatically once the required cells are complete.'
 			})}
 		</p>
 	{/if}

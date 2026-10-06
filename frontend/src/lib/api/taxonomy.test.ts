@@ -114,6 +114,7 @@ describe('getMatchingTags (known tagtypes)', () => {
 		const { suggestions } = await getMatchingTags('labels', 'bio');
 		expect(suggestions.map((s) => s.id)).toContain('en:organic');
 		expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/v1/labels'));
+		expect(fetch).toHaveBeenCalledTimes(1);
 	});
 });
 

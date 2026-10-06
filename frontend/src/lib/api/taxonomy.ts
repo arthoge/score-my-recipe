@@ -36,14 +36,14 @@ export async function getMatchingTags(
 	query: string,
 	limit = 30
 ): Promise<TaxonomySuggestionResponse> {
-	// temporary simulation
+	// Load only the requested taxonomy; unrelated services must not block a cell editor.
 	const values = {
-		ingredients: getIngredientsTaxonomy(),
-		labels: getLabelsTaxonomy(),
-		countries: getCountriesTaxonomy()
+		ingredients: getIngredientsTaxonomy,
+		labels: getLabelsTaxonomy,
+		countries: getCountriesTaxonomy
 	};
 	if (Object.hasOwn(values, tagtype)) {
-		const list = await values[tagtype as keyof typeof values];
+		const list = await values[tagtype as keyof typeof values]();
 		const fuse = new Fuse(list, {
 			// search both the canonical label and the synonyms so that
 			// alternative names also yield a match
