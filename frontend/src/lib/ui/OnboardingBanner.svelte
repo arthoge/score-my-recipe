@@ -126,12 +126,5 @@
 				</p>
 			</div>
 		</div>
-
-		<!-- Footer actions -->
-		<div class="mt-4 flex items-center justify-end">
-			<button type="button" class="btn btn-primary btn-sm font-semibold" onclick={dismiss}>
-				{$_('onboarding.dismiss', { default: 'Got it!' })}
-			</button>
-		</div>
 	</div>
 {/if}

@@ -1,0 +1,3 @@
+recipe_id;recipe_name;portions;ingredient;quantity_g;state;ciqual_code;barcode;preparation_profile;final_weight_g
+salad-01;Tomato salad;4;Tomatoes;400;raw;;;;
+salad-01;Tomato salad;4;Olive oil;20;raw;;;;

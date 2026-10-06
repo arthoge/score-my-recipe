@@ -107,7 +107,44 @@
 		"table_taxonomy": "In taxonomy",
 		"table_quantity": "Quantity (g)",
 		"yes": "Yes",
-		"no": "No"
+		"no": "No",
+		"csv_import": {
+			"title": "Import a CSV",
+			"description": "Import your recipes from a spreadsheet, with one ingredient per row and quantities in grams.",
+			"download_template": "Download CSV template",
+			"file_label": "Pick a file",
+			"max_size": "Max size 2MB",
+			"close": "Close",
+			"import_button": "Import",
+			"format": {
+				"title": "CSV format: required and optional columns",
+				"description": "Repeat the same recipe ID, name and portions for each ingredient in a recipe. Optional cells can be left blank.",
+				"field": "Field",
+				"requirement": "Requirement",
+				"example": "Example",
+				"required": "Required",
+				"optional": "Optional",
+				"fields": {
+					"recipe_id": "Recipe ID",
+					"recipe_name": "Recipe title",
+					"portions": "Number of portions",
+					"ingredient": "Ingredient",
+					"quantity_g": "Quantity (grams)",
+					"state": "Ingredient state",
+					"ciqual_code": "Nutrition reference",
+					"barcode": "Product barcode",
+					"preparation_profile": "Preparation profile",
+					"final_weight_g": "Final dish weight (grams)"
+				},
+				"examples": {
+					"recipe_name": "Tomato salad",
+					"ingredient": "Tomatoes",
+					"ciqual_code": "CIQUAL code",
+					"barcode": "Product barcode",
+					"preparation_profile": "Profile ID"
+				}
+			}
+		}
 	},
 	"onboarding": {
 		"title": "How to score your recipe",

@@ -5,10 +5,12 @@
 	import OnboardingBanner from '$lib/ui/OnboardingBanner.svelte';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
 	import RecipeExamples from '$lib/ui/RecipeExamples.svelte';
+	import CsvImportDialog from '$lib/ui/CsvImportDialog.svelte';
 
 	let recipeText = $state('');
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	let csvImportDialog = $state<ReturnType<typeof CsvImportDialog> | null>(null);
 
 	let onboardingRef = $state<ReturnType<typeof OnboardingBanner> | null>(null);
 	let isOnboardingDismissed = $state(true);
@@ -80,7 +82,7 @@
 	<form onsubmit={handleSubmit} class="space-y-6">
 		<div class="form-control w-full space-y-2">
 			<!-- Field label -->
-			<div class="flex items-center justify-between">
+			<div class="flex flex-wrap items-center justify-between gap-2">
 				<label class="label justify-start p-0" for="recipe-text">
 					<span class="flex items-center gap-2 text-sm font-medium sm:text-base">
 						<span>{$_('add.recipe_label', { default: 'Votre recette' })}</span>
@@ -93,6 +95,14 @@
 						/>
 					</span>
 				</label>
+				<button
+					type="button"
+					class="btn btn-primary btn-sm ml-auto"
+					aria-haspopup="dialog"
+					onclick={() => csvImportDialog?.open()}
+				>
+					{$_('add.csv_import.title', { default: 'Import a CSV' })}
+				</button>
 			</div>
 
 			<!-- Example recipe shortcuts (honors UI language) -->
@@ -139,3 +149,5 @@
 		</div>
 	{/if}
 </div>
+
+<CsvImportDialog bind:this={csvImportDialog} />
