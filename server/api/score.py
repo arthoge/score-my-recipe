@@ -51,6 +51,10 @@ async def match_ingredients_to_agribalyse(
             node = ingredients_taxonomy[taxonomy_id]
 
         code, source, row = agribalyse.find_agribalyse_row(node)
+        if ingredient.agribalyse_code:
+            row = agribalyse.get_row_by_code(ingredient.agribalyse_code)
+            code = ingredient.agribalyse_code
+            source = "manual_agribalyse_code"
         results[ingredient.id] = types.IngredientAgribalyse(
             id=ingredient.id,
             name=ingredient.name,

@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 
 import api.logging_config as logging_config
 import api.recipes as recipes
+import api.references as references
 import api.exceptions as exceptions
 import api.score as score
 import api.types as types
@@ -184,6 +185,41 @@ async def suggest_scored_ingredient(
     )
     response.headers["Cache-Control"] = "max-age=86400"
     return types.SuggestScoredIngredientResponse(ingredients=ingredients)
+
+
+@app.get("/v1/ingredient-references")
+async def ingredient_references(
+    taxonomy_id: str, lang: str = "en"
+) -> references.IngredientReferencesResponse:
+    """Return proposed Agribalyse and linked CIQUAL correspondences for a taxonomy ingredient."""
+    return await references.ingredient_references(taxonomy_id, lang)
+
+
+@app.get("/v1/agribalyse/foods")
+async def agribalyse_foods(
+    q: str = "", limit: int = Query(default=8, ge=1, le=30)
+) -> references.FoodReferencesResponse:
+    """Search the existing environmental food catalog."""
+    return await asyncio.to_thread(references.search_foods, q, limit)
+
+
+@app.get("/v1/nutrition/foods")
+async def ciqual_foods(
+    q: str = "", limit: int = Query(default=8, ge=1, le=30), lang: str = "en"
+) -> references.FoodReferencesResponse:
+    """Search actual food records in the bundled ANSES CIQUAL 2025 catalog."""
+    return await asyncio.to_thread(references.search_foods, q, limit, True, lang)
+
+
+@app.get("/v1/nutrition/products")
+async def off_products(
+    q: str = "", lang: str = "en", limit: int = Query(default=8, ge=1, le=30)
+) -> references.FoodReferencesResponse:
+    """Search real OFF products through the backend, including cache and timeout handling."""
+    try:
+        return await references.product_references(q, lang, limit)
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=502, detail="Open Food Facts search unavailable") from error
 
 
 @app.post("/v1/green-score")

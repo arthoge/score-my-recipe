@@ -72,7 +72,16 @@ export interface Ingredient {
 	/** Preparation and nutrition draft fields, ready for the planned analysis API. */
 	state?: 'raw' | 'cooked' | 'drained' | null;
 	ciqualCode?: string;
+	/** Visible food search text; a code is stored only after selecting a result. */
+	ciqualName?: string;
+	/** Actual environmental food row, separate from the OFF ingredient taxonomy. */
+	agribalyseCode?: string;
+	agribalyseName?: string;
+	/** Mapping provenance may describe an inherited or proxy correspondence. */
+	referenceSource?: string;
 	barcode?: string;
+	/** Visible product name and brand, separate from the internally stored barcode. */
+	productName?: string;
 	nutritionReferenceConfirmed?: boolean;
 	preparationProfile?: string;
 	measuredPreparedWeightG?: number | null;
@@ -121,7 +130,11 @@ export function isIngredientEmpty(ingredient: Ingredient): boolean {
 		ingredient.origin === null &&
 		!ingredient.state &&
 		!ingredient.ciqualCode?.trim() &&
+		!ingredient.ciqualName?.trim() &&
+		!ingredient.agribalyseName?.trim() &&
+		!ingredient.agribalyseCode &&
 		!ingredient.barcode?.trim() &&
+		!ingredient.productName?.trim() &&
 		!ingredient.nutritionReferenceConfirmed &&
 		!ingredient.preparationProfile?.trim() &&
 		ingredient.measuredPreparedWeightG == null

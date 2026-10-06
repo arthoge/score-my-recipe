@@ -186,6 +186,86 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/v1/ingredient-references': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Ingredient References
+		 * @description Return proposed Agribalyse and linked CIQUAL correspondences for a taxonomy ingredient.
+		 */
+		get: operations['ingredient_references_v1_ingredient_references_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/agribalyse/foods': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Agribalyse Foods
+		 * @description Search the existing environmental food catalog.
+		 */
+		get: operations['agribalyse_foods_v1_agribalyse_foods_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/nutrition/foods': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Ciqual Foods
+		 * @description Search actual food records in the bundled ANSES CIQUAL 2025 catalog.
+		 */
+		get: operations['ciqual_foods_v1_nutrition_foods_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/nutrition/products': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Off Products
+		 * @description Search real OFF products through the backend, including cache and timeout handling.
+		 */
+		get: operations['off_products_v1_nutrition_products_get'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/v1/green-score': {
 		parameters: {
 			query?: never;
@@ -301,6 +381,26 @@ export interface components {
 			 * @description ISO 3166-1 alpha-2 country code
 			 */
 			country_code?: string | null;
+		};
+		/**
+		 * FoodReference
+		 * @description Readable catalog food with its internal identifiers.
+		 */
+		FoodReference: {
+			/** Code */
+			code: string;
+			/** Name */
+			name: string;
+			/** Ciqual Code */
+			ciqual_code?: string | null;
+		};
+		/**
+		 * FoodReferencesResponse
+		 * @description Named search results from a food reference database.
+		 */
+		FoodReferencesResponse: {
+			/** Foods */
+			foods: components['schemas']['FoodReference'][];
 		};
 		/**
 		 * GreenScoreRequest
@@ -426,6 +526,16 @@ export interface components {
 		HTTPValidationError: {
 			/** Detail */
 			detail?: components['schemas']['ValidationError'][];
+		};
+		/**
+		 * IngredientReferencesResponse
+		 * @description Proposed correspondences from the taxonomy mapping, including proxy provenance.
+		 */
+		IngredientReferencesResponse: {
+			agribalyse?: components['schemas']['FoodReference'] | null;
+			ciqual?: components['schemas']['FoodReference'] | null;
+			/** Source */
+			source?: string | null;
 		};
 		/**
 		 * IngredientsResponse
@@ -662,6 +772,11 @@ export interface components {
 			 * @description Weight in grams
 			 */
 			weight: number;
+			/**
+			 * Agribalysecode
+			 * @description Explicit Agribalyse reference overriding taxonomy matching
+			 */
+			agribalyseCode?: string | null;
 			/** @description Codified ingredient */
 			codifiedIngredient: components['schemas']['TaxonomyItem'];
 			/**
@@ -1268,6 +1383,136 @@ export interface operations {
 				};
 				content: {
 					'application/json': components['schemas']['SuggestScoredIngredientResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	ingredient_references_v1_ingredient_references_get: {
+		parameters: {
+			query: {
+				taxonomy_id: string;
+				lang?: string;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['IngredientReferencesResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	agribalyse_foods_v1_agribalyse_foods_get: {
+		parameters: {
+			query?: {
+				q?: string;
+				limit?: number;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['FoodReferencesResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	ciqual_foods_v1_nutrition_foods_get: {
+		parameters: {
+			query?: {
+				q?: string;
+				limit?: number;
+				lang?: string;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['FoodReferencesResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	off_products_v1_nutrition_products_get: {
+		parameters: {
+			query?: {
+				q?: string;
+				lang?: string;
+				limit?: number;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['FoodReferencesResponse'];
 				};
 			};
 			/** @description Validation Error */

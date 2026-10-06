@@ -15,11 +15,13 @@ export function ingredientCellErrors(ingredient: Ingredient) {
 		weight: populated && !isPositiveAmount(ingredient.weight),
 		environmentalReference:
 			populated &&
-			!(
-				reference?.id &&
-				reference.isInTaxonomy &&
-				!('hasEfScore' in reference && reference.hasEfScore === false)
-			),
+			!ingredient.agribalyseCode &&
+			(ingredient.referenceSource === 'manual' ||
+				!(
+					reference?.id &&
+					reference.isInTaxonomy &&
+					!('hasEfScore' in reference && reference.hasEfScore === false)
+				)),
 		measuredPreparedWeightG:
 			ingredient.measuredPreparedWeightG != null &&
 			!isPositiveAmount(ingredient.measuredPreparedWeightG)

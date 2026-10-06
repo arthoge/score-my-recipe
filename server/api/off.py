@@ -2,6 +2,9 @@
 
 from typing import Iterable, Optional
 import asyncio
+import json
+import urllib.parse
+import urllib.request
 
 from async_lru import alru_cache as async_cache
 import openfoodfacts
@@ -11,6 +14,33 @@ from api.types import OFFIngredient
 from api.settings import OpenFoodFactsEnvironments, get_settings
 
 USER_AGENT = "Score-my-recipe - openfoodfacts"
+
+
+@async_cache(maxsize=128, ttl=300)
+async def search_products(query: str, lang: str, limit: int = 8) -> list[dict]:
+    """Proxy and cache real OFF full-text results so browser CORS cannot block matches."""
+    params = urllib.parse.urlencode(
+        {
+            "q": query,
+            "langs": lang,
+            "page_size": limit,
+            "fields": f"code,product_name,product_name_{lang},brands",
+        }
+    )
+    request = urllib.request.Request(
+        "https://search.openfoodfacts.org/search?" + params,
+        headers={"User-Agent": USER_AGENT},
+    )
+
+    def fetch_results() -> list[dict]:
+        """Bound external request duration and validate the expected search response."""
+        with urllib.request.urlopen(request, timeout=10) as response:
+            data = json.load(response)
+        if not isinstance(data, dict) or not isinstance(data.get("hits"), list):
+            raise ValueError("OFF search returned no result list")
+        return [hit for hit in data["hits"] if isinstance(hit, dict)]
+
+    return await asyncio.to_thread(fetch_results)
 
 
 def off_env_setting(off_env: OpenFoodFactsEnvironments) -> openfoodfacts.Environment:

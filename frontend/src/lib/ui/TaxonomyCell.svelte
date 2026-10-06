@@ -1,29 +1,53 @@
 <!-- A fixed-height cell editor with autocomplete in the browser's top layer. -->
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import { _ } from '$lib/i18n';
 	import { getMatchingTags } from '$lib/api/taxonomy';
 	import { findMatchingSuggestion } from '$lib/utils/taxonomyMatch';
 	import type { TaxonomyItem } from '$lib/types/ingredient';
 
 	type Props = {
 		id: string;
-		tagtype: string;
+		tagtype?: string;
+		/** Optional reference provider for food or product searches. */
+		getSuggestions?: (
+			query: string,
+			limit: number,
+			signal?: AbortSignal
+		) => Promise<TaxonomyItem[]>;
 		tags: TaxonomyItem[];
 		label: string;
 		multiple?: boolean;
 		invalid?: boolean;
+		/** Background suggestions can be shown even before this cell has been edited. */
+		initialSuggestions?: TaxonomyItem[];
+		searchTerm?: string;
 		onchange: (tags: TaxonomyItem[]) => void;
 	};
-	let { id, tagtype, tags, label, multiple = false, invalid = false, onchange }: Props = $props();
+	let {
+		id,
+		tagtype = 'ingredients',
+		getSuggestions,
+		tags,
+		label,
+		multiple = false,
+		invalid = false,
+		initialSuggestions = [],
+		searchTerm = '',
+		onchange
+	}: Props = $props();
 	let input = $state<HTMLInputElement>();
 	let menu = $state<HTMLDivElement>();
 	let focused = $state(false);
 	let dismissed = $state(false);
 	let value = $state('');
 	let suggestions = $state<TaxonomyItem[]>([]);
+	let loading = $state(false);
+	let searchFailed = $state(false);
+	let searched = $state(false);
 	let activeIndex = $state(-1);
 	let position = $state({ left: 0, top: 0, width: 0, height: 240 });
-	let query = $derived((multiple ? (value.split(',').at(-1) ?? '') : value).trim());
+	let query = $derived((multiple ? (value.split(',').at(-1) ?? '') : value || searchTerm).trim());
 
 	$effect(() => {
 		// Keep imported references visible without overwriting an in-progress edit.
@@ -59,28 +83,46 @@
 	$effect(() => {
 		const search = query;
 		const enabled = focused && !dismissed && search.length >= 3;
-		suggestions = [];
+		const provider = getSuggestions;
+		const preloaded = query === searchTerm.trim() ? initialSuggestions : [];
+		suggestions = preloaded;
+		loading = enabled && preloaded.length === 0;
+		searchFailed = false;
+		searched = false;
 		activeIndex = -1;
 		let cancelled = false;
-		const timer = enabled
-			? setTimeout(async () => {
-					try {
-						const result = await getMatchingTags(tagtype, search, 8);
-						if (!cancelled) suggestions = result.suggestions;
-					} catch {
-						// Leave the typed draft intact when the reference service is unavailable.
-						if (!cancelled) suggestions = [];
-					}
-				}, 250)
-			: undefined;
+		const controller = new AbortController();
+		const timer =
+			enabled && preloaded.length === 0
+				? setTimeout(async () => {
+						try {
+							const result = provider
+								? await provider(search, 8, controller.signal)
+								: (await getMatchingTags(tagtype, search, 8)).suggestions;
+							if (!cancelled) suggestions = result;
+						} catch {
+							// Leave the typed draft intact when the reference service is unavailable.
+							if (!cancelled) searchFailed = true;
+						} finally {
+							if (!cancelled) {
+								loading = false;
+								searched = true;
+							}
+						}
+					}, 250)
+				: undefined;
 		return () => {
 			cancelled = true;
+			controller.abort();
 			clearTimeout(timer);
 		};
 	});
 
 	$effect(() => {
-		const open = focused && !dismissed && suggestions.length > 0;
+		const open =
+			focused &&
+			!dismissed &&
+			(suggestions.length > 0 || (getSuggestions && (loading || searched)));
 		untrack(() => {
 			if (!menu) return;
 			if (open) {
@@ -151,11 +193,19 @@
 	type="text"
 	class="cell-input"
 	{value}
+	placeholder={initialSuggestions.length && !value
+		? $_('recipe.reference_suggestions', {
+				default: '{count} suggestions',
+				values: { count: initialSuggestions.length }
+			})
+		: undefined}
 	aria-label={label}
 	aria-invalid={invalid}
 	role="combobox"
 	aria-autocomplete="list"
-	aria-expanded={focused && !dismissed && suggestions.length > 0}
+	aria-expanded={focused &&
+		!dismissed &&
+		(suggestions.length > 0 || (!!getSuggestions && (loading || searched)))}
 	aria-controls="{id}-options"
 	aria-activedescendant={activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
 	autocomplete="off"
@@ -199,4 +249,13 @@
 			</button>
 		{/each}
 	</div>
+	{#if getSuggestions && suggestions.length === 0}
+		<p class="text-base-content/70 px-3 py-2 text-sm" role="status">
+			{loading
+				? $_('recipe.search_loading', { default: 'Searching…' })
+				: searchFailed
+					? $_('recipe.search_failed', { default: 'Search unavailable. Try again.' })
+					: $_('recipe.search_empty', { default: 'No matching foods or products.' })}
+		</p>
+	{/if}
 </div>

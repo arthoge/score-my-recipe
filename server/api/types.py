@@ -561,6 +561,10 @@ class RecipeIngredientInput(CamelModel):
     id: Annotated[str, Field(description="Unique identifier for the ingredient")]
     name: Annotated[str, Field(description="Display name of the ingredient")]
     weight: Annotated[float, Field(description="Weight in grams")]
+    agribalyse_code: Annotated[
+        Optional[str],
+        Field(description="Explicit Agribalyse reference overriding taxonomy matching"),
+    ] = None
     codified_ingredient: Annotated[
         TaxonomyItem,
         Field(description="Codified ingredient"),

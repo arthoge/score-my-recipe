@@ -119,6 +119,7 @@ export function ingredientToGreenScoreInput(
 		name: ingredient.name,
 		weight: ingredient.weight ?? 0,
 		codifiedIngredient,
+		...(ingredient.agribalyseCode ? { agribalyseCode: ingredient.agribalyseCode } : {}),
 		labels: ingredient.labels,
 		isFreshPlant: ingredient.isFreshPlant,
 		isInSeason: ingredient.isInSeason,

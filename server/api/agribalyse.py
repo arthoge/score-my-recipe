@@ -258,6 +258,18 @@ def _column_for_property(prop: str) -> str:
     raise ValueError(f"Unknown code property prefix: {prop!r}")
 
 
+def get_row_by_code(code: str) -> Optional[dict[str, Any]]:
+    """Resolve an explicitly chosen environmental reference by its Agribalyse code."""
+    by_code, _ = _load_agribalyse()
+    return by_code.get(code)
+
+
+def get_reference_rows() -> list[dict[str, Any]]:
+    """Return the existing catalog for food-reference searches."""
+    by_code, _ = _load_agribalyse()
+    return list(by_code.values())
+
+
 def find_agribalyse_row(
     node: Optional[taxonomy.TaxonomyNode],
     search_parents: bool = True,

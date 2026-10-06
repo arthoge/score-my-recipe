@@ -1,9 +1,24 @@
 <!-- Fixed-height ingredient cells; all environmental and preparation fields stay visible. -->
 <script lang="ts">
 	import { _ } from '$lib/i18n';
+	import { untrack } from 'svelte';
+	import {
+		searchCiqualFoods,
+		searchOffProducts,
+		searchAgribalyseFoods,
+		getIngredientReferences
+	} from '$lib/api/nutrition';
+	import { syncNutritionSearches, suggestOffProduct } from './nutritionSearch';
+	import { getMatchingTags } from '$lib/api/taxonomy';
+	import { findMatchingSuggestion } from '$lib/utils/taxonomyMatch';
 	import TaxonomyCell from './TaxonomyCell.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
-	import { isIngredientEmpty, isIngredientNotEmpty, type Ingredient } from '$lib/types/ingredient';
+	import {
+		isIngredientEmpty,
+		isIngredientNotEmpty,
+		type Ingredient,
+		type TaxonomyItem
+	} from '$lib/types/ingredient';
 	import { ingredientCellErrors } from './ingredientEditor';
 
 	type Props = {
@@ -27,6 +42,74 @@
 	let referenceInvalid = $derived(
 		errors.environmentalReference || missingIngredientIds.includes(ingredient.id)
 	);
+	let previousName: string | undefined;
+	let productSuggestions = $state<TaxonomyItem[]>([]);
+
+	$effect(() => {
+		const name = ingredient.name;
+		untrack(() => syncNutritionSearches(ingredient, previousName));
+		previousName = name;
+	});
+
+	$effect(() => {
+		const name = ingredient.name.trim();
+		const taxonomyId = ingredient.codifiedIngredient?.id;
+		productSuggestions = [];
+		const controller = new AbortController();
+		let cancelled = false;
+		const timer =
+			name.length >= 3
+				? setTimeout(() => {
+						if (!taxonomyId)
+							getMatchingTags('ingredients', name, 8)
+								.then((result) => {
+									if (cancelled) return;
+									const exact = findMatchingSuggestion(name, result.suggestions);
+									if (exact?.isInTaxonomy) ingredient.codifiedIngredient = exact;
+								})
+								.catch(() => {
+									/* Leave ambiguous names for the chef to select. */
+								});
+						if (taxonomyId)
+							getIngredientReferences(taxonomyId, controller.signal)
+								.then((result) => {
+									if (cancelled) return;
+									if (
+										!ingredient.agribalyseCode &&
+										!ingredient.agribalyseName &&
+										result.agribalyse
+									) {
+										ingredient.agribalyseCode = result.agribalyse.code;
+										ingredient.agribalyseName = result.agribalyse.name;
+										ingredient.referenceSource = result.source ?? undefined;
+									}
+									if (!ingredient.ciqualCode && !ingredient.ciqualName && result.ciqual) {
+										ingredient.ciqualCode = result.ciqual.code;
+										ingredient.ciqualName = result.ciqual.name;
+										ingredient.nutritionReferenceConfirmed = false;
+									}
+								})
+								.catch(() => {
+									/* Manual search remains available if matching fails. */
+								});
+						searchOffProducts(name, 8, controller.signal)
+							.then((results) => {
+								if (!cancelled) {
+									productSuggestions = results;
+									suggestOffProduct(ingredient, results);
+								}
+							})
+							.catch(() => {
+								/* A service failure must not select an invented product. */
+							});
+					}, 400)
+				: undefined;
+		return () => {
+			cancelled = true;
+			controller.abort();
+			clearTimeout(timer);
+		};
+	});
 
 	$effect(() => {
 		if (isLastItem && isIngredientNotEmpty(ingredient)) onNotEmpty?.();
@@ -56,6 +139,78 @@
 			}}
 		/>
 	</td>
+	<td>
+		<TaxonomyCell
+			id="ingredient-ciqual-{rowId}"
+			getSuggestions={searchCiqualFoods}
+			searchTerm={ingredient.name}
+			label={$_('recipe.ciqual_food', { default: 'CIQUAL food' })}
+			tags={ingredient.ciqualName
+				? [
+						{
+							id: ingredient.ciqualCode ?? null,
+							label: ingredient.ciqualName,
+							isInTaxonomy: !!ingredient.ciqualCode
+						}
+					]
+				: []}
+			onchange={(tags) => {
+				const selected = tags[0];
+				const code = selected?.isInTaxonomy ? (selected.id ?? undefined) : undefined;
+				if (code !== ingredient.ciqualCode) ingredient.nutritionReferenceConfirmed = false;
+				ingredient.ciqualName = selected?.label ?? '';
+				ingredient.ciqualCode = code;
+			}}
+		/>
+	</td>
+	<td data-invalid={referenceInvalid}>
+		<TaxonomyCell
+			id="ingredient-reference-{rowId}"
+			getSuggestions={searchAgribalyseFoods}
+			searchTerm={ingredient.name}
+			label={$_('recipe.agribalyse_food', { default: 'Agribalyse correspondence' })}
+			tags={ingredient.agribalyseName
+				? [
+						{
+							id: ingredient.agribalyseCode ?? null,
+							label: ingredient.agribalyseName,
+							isInTaxonomy: !!ingredient.agribalyseCode
+						}
+					]
+				: []}
+			invalid={referenceInvalid}
+			onchange={(tags) => {
+				ingredient.agribalyseName = tags[0]?.label ?? '';
+				ingredient.agribalyseCode = tags[0]?.isInTaxonomy ? (tags[0].id ?? undefined) : undefined;
+				ingredient.referenceSource = 'manual';
+			}}
+		/>
+	</td>
+	<td>
+		<TaxonomyCell
+			id="ingredient-product-{rowId}"
+			getSuggestions={searchOffProducts}
+			searchTerm={ingredient.name}
+			initialSuggestions={productSuggestions}
+			label={$_('recipe.off_product', { default: 'Open Food Facts product' })}
+			tags={ingredient.productName
+				? [
+						{
+							id: ingredient.barcode ?? null,
+							label: ingredient.productName,
+							isInTaxonomy: !!ingredient.barcode
+						}
+					]
+				: []}
+			onchange={(tags) => {
+				const selected = tags[0];
+				const code = selected?.isInTaxonomy ? (selected.id ?? undefined) : undefined;
+				if (code !== ingredient.barcode) ingredient.nutritionReferenceConfirmed = false;
+				ingredient.productName = selected?.label ?? '';
+				ingredient.barcode = code;
+			}}
+		/>
+	</td>
 	<td data-invalid={errors.weight}>
 		<input
 			id="ingredient-weight-{rowId}"
@@ -70,19 +225,6 @@
 			aria-invalid={errors.weight}
 		/>
 	</td>
-	<td data-invalid={referenceInvalid}>
-		<TaxonomyCell
-			id="ingredient-reference-{rowId}"
-			tagtype="ingredients"
-			label={$_('recipe.environmental_reference', { default: 'Environmental reference' })}
-			tags={ingredient.codifiedIngredient ? [ingredient.codifiedIngredient] : []}
-			invalid={referenceInvalid}
-			onchange={(tags) => {
-				ingredient.codifiedIngredient = tags[0] ?? null;
-				if (!ingredient.name.trim() && tags[0]?.isInTaxonomy) ingredient.name = tags[0].label;
-			}}
-		/>
-	</td>
 	<td>
 		<select
 			class="cell-input"
@@ -94,26 +236,6 @@
 			<option value="cooked">{$_('recipe.states.cooked', { default: 'Cooked' })}</option>
 			<option value="drained">{$_('recipe.states.drained', { default: 'Drained' })}</option>
 		</select>
-	</td>
-	<td>
-		<input
-			class="cell-input"
-			type="text"
-			bind:value={ingredient.ciqualCode}
-			inputmode="numeric"
-			oninput={() => (ingredient.nutritionReferenceConfirmed = false)}
-			aria-label={$_('recipe.ciqual_code', { default: 'CIQUAL nutrition code' })}
-		/>
-	</td>
-	<td>
-		<input
-			class="cell-input"
-			type="text"
-			bind:value={ingredient.barcode}
-			inputmode="numeric"
-			oninput={() => (ingredient.nutritionReferenceConfirmed = false)}
-			aria-label={$_('recipe.barcode', { default: 'Product barcode' })}
-		/>
 	</td>
 	<td>
 		<select

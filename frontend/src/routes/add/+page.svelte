@@ -1,22 +1,34 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { _, getLocale } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { parseRecipeText, apiIngredientsToIngredients } from '$lib/api/recipe';
 	import OnboardingBanner from '$lib/ui/OnboardingBanner.svelte';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
 	import RecipeExamples from '$lib/ui/RecipeExamples.svelte';
-	import CsvImportDialog from '$lib/ui/CsvImportDialog.svelte';
+	import type { RecipeDraft } from '$lib/types/recipeDraft';
 
-	let recipeText = $state('');
+	let recipeInputs = $state([{ id: 0, text: '' }]);
+	let nextRecipeId = 1;
+	const nonEmptyRecipes = $derived(recipeInputs.filter((recipe) => recipe.text.trim()));
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
-	let csvImportDialog = $state<ReturnType<typeof CsvImportDialog> | null>(null);
 
 	let onboardingRef = $state<ReturnType<typeof OnboardingBanner> | null>(null);
 	let isOnboardingDismissed = $state(true);
 
+	/** Add an independent recipe input and focus it once it is rendered. */
+	async function addRecipe() {
+		const id = nextRecipeId++;
+		recipeInputs.push({ id, text: '' });
+		await tick();
+		document.getElementById(`recipe-text-${id}`)?.focus();
+	}
+
+	/** Parse each non-empty input into its own recipe editor, preserving input order. */
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
+		if (isLoading || !nonEmptyRecipes.length) return;
 		isLoading = true;
 		error = null;
 
@@ -24,9 +36,17 @@
 			// the recipe text is most likely written in the language of the
 			// interface, the API expects a 2-letter language code (eg. "fr")
 			const lang = getLocale().split('-')[0];
-			const result = await parseRecipeText(recipeText, lang);
-			const ingredients = apiIngredientsToIngredients(result.ingredients);
-			await goto('/score', { state: { ingredients } });
+			const recipes: RecipeDraft[] = await Promise.all(
+				nonEmptyRecipes.map(async (recipe) => {
+					const result = await parseRecipeText(recipe.text, lang);
+					return {
+						id: `recipe-${recipe.id}`,
+						name: '',
+						ingredients: apiIngredientsToIngredients(result.ingredients)
+					};
+				})
+			);
+			await goto('/score', { state: { recipes } });
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Une erreur est survenue';
 			isLoading = false;
@@ -82,49 +102,98 @@
 	<form onsubmit={handleSubmit} class="space-y-6">
 		<div class="form-control w-full space-y-2">
 			<!-- Field label -->
-			<div class="flex flex-wrap items-center justify-between gap-2">
-				<label class="label justify-start p-0" for="recipe-text">
-					<span class="flex items-center gap-2 text-sm font-medium sm:text-base">
-						<span>{$_('add.recipe_label', { default: 'Votre recette' })}</span>
-						<HelperTooltip
-							tip={$_('helpers.recipe_text', {
-								default:
-									'Enter each ingredient on a new line with its quantity (e.g. 200g flour, 3 eggs, 100g sugar).'
-							})}
-							ariaLabel={$_('helpers.more_info', { default: 'More information' })}
-						/>
-					</span>
-				</label>
-				<button
-					type="button"
-					class="btn btn-primary btn-sm ml-auto"
-					aria-haspopup="dialog"
-					onclick={() => csvImportDialog?.open()}
-				>
-					{$_('add.csv_import.title', { default: 'Import a CSV' })}
-				</button>
-			</div>
+			<label class="label justify-start p-0" for="recipe-text-0">
+				<span class="flex items-center gap-2 text-sm font-medium sm:text-base">
+					<span>{$_('add.recipe_label', { default: 'Votre recette' })}</span>
+					<HelperTooltip
+						tip={$_('helpers.recipe_text', {
+							default:
+								'Enter each ingredient on a new line with its quantity (e.g. 200g flour, 3 eggs, 100g sugar).'
+						})}
+						ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+					/>
+				</span>
+			</label>
 
 			<!-- Example recipe shortcuts (honors UI language) -->
-			<RecipeExamples onselect={(text) => (recipeText = text)} />
+			<RecipeExamples onselect={(text) => (recipeInputs[0].text = text)} />
 
-			<textarea
-				id="recipe-text"
-				bind:value={recipeText}
-				class="textarea textarea-bordered min-h-64 w-full text-base"
-				placeholder={$_('add.recipe_placeholder', {
-					default: 'Entrez votre recette ici...\n\nExemple:\n200g de farine\n3 œufs\n100g de sucre'
-				})}
-				required
-			></textarea>
+			{#each recipeInputs as recipe, index (recipe.id)}
+				<div class="relative">
+					<textarea
+						id={`recipe-text-${recipe.id}`}
+						bind:value={recipe.text}
+						class="textarea textarea-bordered block min-h-64 w-full text-base"
+						class:pr-12={index > 0}
+						aria-label={$_('recipe.untitled', {
+							default: 'Recipe {number}',
+							values: { number: index + 1 }
+						})}
+						placeholder={$_('add.recipe_placeholder', {
+							default:
+								'Entrez votre recette ici...\n\nExemple:\n200g de farine\n3 œufs\n100g de sucre'
+						})}
+						disabled={isLoading}
+					></textarea>
+					{#if index > 0}
+						<button
+							type="button"
+							class="btn btn-ghost btn-square btn-sm text-base-content/50 hover:text-error absolute top-2 right-2"
+							aria-label={$_('add.remove_recipe', {
+								default: 'Remove recipe {number}',
+								values: { number: index + 1 }
+							})}
+							disabled={isLoading}
+							onclick={() =>
+								(recipeInputs = recipeInputs.filter((input) => input.id !== recipe.id))}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								class="h-5 w-5"
+								aria-hidden="true"
+							>
+								<path stroke-linecap="round" d="m6 6 12 12M6 18 18 6" />
+							</svg>
+						</button>
+					{/if}
+				</div>
+			{/each}
+
+			<button
+				type="button"
+				class="btn btn-outline border-base-content/30 text-base-content/60 hover:border-primary hover:bg-base-200 hover:text-primary w-full border-dashed"
+				aria-label={$_('add.add_recipe', { default: 'Add another recipe' })}
+				disabled={isLoading}
+				onclick={addRecipe}
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					class="h-6 w-6"
+					aria-hidden="true"
+				>
+					<path stroke-linecap="round" d="M12 5v14M5 12h14" />
+				</svg>
+			</button>
 		</div>
 
-		<button type="submit" class="btn btn-primary btn-lg" disabled={isLoading}>
+		<button
+			type="submit"
+			class="btn btn-primary btn-lg"
+			disabled={isLoading || !nonEmptyRecipes.length}
+		>
 			{#if isLoading}
 				<span class="loading loading-spinner"></span>
 				{$_('add.loading', { default: 'Calcul en cours...' })}
 			{:else}
-				{$_('add.score_button', { default: 'Score recipe' })}
+				{$_('add.score_button', { default: 'Score' })}
 			{/if}
 		</button>
 	</form>
@@ -149,5 +218,3 @@
 		</div>
 	{/if}
 </div>
-
-<CsvImportDialog bind:this={csvImportDialog} />

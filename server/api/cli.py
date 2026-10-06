@@ -14,6 +14,14 @@ def ping():
 
 
 @cli.command()
+def fetch_ciqual():
+    """Regenerate the bundled food catalog from the pinned ANSES CIQUAL 2025 release."""
+    from api.ciqual import fetch_catalog
+
+    fetch_catalog()
+
+
+@cli.command()
 def export_openapi(
     target_path: Path = typer.Argument(
         exists=False,

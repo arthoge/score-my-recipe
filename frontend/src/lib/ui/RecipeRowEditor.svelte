@@ -41,15 +41,11 @@
 	// Data columns share a width; the icon-only action column stays compact.
 	const columns = [
 		{ key: 'ingredient_name', label: 'Ingredient name' },
+		{ key: 'ciqual_food', label: 'CIQUAL food' },
+		{ key: 'agribalyse_food', label: 'Agribalyse correspondence' },
+		{ key: 'off_product', label: 'Open Food Facts product' },
 		{ key: 'quantity_grams', label: 'Quantity (grams)' },
-		{
-			key: 'environmental_reference',
-			label: 'Environmental reference',
-			hint: 'Ingredient selected in the environmental impact database. Nutrition references are separate.'
-		},
 		{ key: 'state', label: 'Ingredient state' },
-		{ key: 'ciqual_code', label: 'CIQUAL nutrition code' },
-		{ key: 'barcode', label: 'Product barcode' },
 		{ key: 'nutrition_confirmed', label: 'Nutrition reference confirmed' },
 		{ key: 'preparation_profile', label: 'Preparation profile' },
 		{ key: 'measured_prepared_weight', label: 'Measured prepared weight (grams)' },
@@ -81,13 +77,7 @@
 			<thead>
 				<tr>
 					{#each columns as column (column.key)}
-						<th
-							class:action-column={column.key === 'action'}
-							scope="col"
-							title={column.hint
-								? $_(`recipe.${column.key}_hint`, { default: column.hint })
-								: undefined}
-						>
+						<th class:action-column={column.key === 'action'} scope="col">
 							{$_(`recipe.${column.key}`, { default: column.label })}
 						</th>
 					{/each}

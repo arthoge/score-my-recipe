@@ -420,6 +420,235 @@
         }
       }
     },
+    "/v1/ingredient-references": {
+      "get": {
+        "summary": "Ingredient References",
+        "description": "Return proposed Agribalyse and linked CIQUAL correspondences for a taxonomy ingredient.",
+        "operationId": "ingredient_references_v1_ingredient_references_get",
+        "parameters": [
+          {
+            "name": "taxonomy_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Taxonomy Id"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "en",
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngredientReferencesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/agribalyse/foods": {
+      "get": {
+        "summary": "Agribalyse Foods",
+        "description": "Search the existing environmental food catalog.",
+        "operationId": "agribalyse_foods_v1_agribalyse_foods_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "default": 8,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodReferencesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nutrition/foods": {
+      "get": {
+        "summary": "Ciqual Foods",
+        "description": "Search actual food records in the bundled ANSES CIQUAL 2025 catalog.",
+        "operationId": "ciqual_foods_v1_nutrition_foods_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "default": 8,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "en",
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodReferencesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nutrition/products": {
+      "get": {
+        "summary": "Off Products",
+        "description": "Search real OFF products through the backend, including cache and timeout handling.",
+        "operationId": "off_products_v1_nutrition_products_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "en",
+              "title": "Lang"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "default": 8,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodReferencesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/green-score": {
       "post": {
         "summary": "Green Score",
@@ -597,6 +826,53 @@
             ]
           }
         ]
+      },
+      "FoodReference": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ciqual_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciqual Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "FoodReference",
+        "description": "Readable catalog food with its internal identifiers."
+      },
+      "FoodReferencesResponse": {
+        "properties": {
+          "foods": {
+            "items": {
+              "$ref": "#/components/schemas/FoodReference"
+            },
+            "type": "array",
+            "title": "Foods"
+          }
+        },
+        "type": "object",
+        "required": [
+          "foods"
+        ],
+        "title": "FoodReferencesResponse",
+        "description": "Named search results from a food reference database."
       },
       "GreenScoreRequest": {
         "properties": {
@@ -817,6 +1093,44 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "IngredientReferencesResponse": {
+        "properties": {
+          "agribalyse": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FoodReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ciqual": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FoodReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "title": "IngredientReferencesResponse",
+        "description": "Proposed correspondences from the taxonomy mapping, including proxy provenance."
       },
       "IngredientsResponse": {
         "properties": {
@@ -1157,6 +1471,18 @@
             "type": "number",
             "title": "Weight",
             "description": "Weight in grams"
+          },
+          "agribalyseCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agribalysecode",
+            "description": "Explicit Agribalyse reference overriding taxonomy matching"
           },
           "codifiedIngredient": {
             "$ref": "#/components/schemas/TaxonomyItem",
