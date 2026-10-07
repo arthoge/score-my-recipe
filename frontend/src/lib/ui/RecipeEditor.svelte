@@ -390,7 +390,6 @@
 				{#if isCheckingImprovements}
 					<span class="loading loading-spinner loading-md"></span>
 				{:else}
-					<span aria-hidden="true" class="text-2xl">✨</span>
 				{/if}
 				<span>{$_('make_it_better.button', { default: 'Check for improvements' })}</span>
 			</div>
