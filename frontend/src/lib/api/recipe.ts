@@ -109,11 +109,15 @@ export function apiIngredientsToIngredients(apiIngredients: RecipeIngredient[]):
 export function ingredientToGreenScoreInput(
 	ingredient: Ingredient
 ): components['schemas']['RecipeIngredientInput'] {
-	const codifiedIngredient: IngredientType = ingredient.codifiedIngredient ?? {
-		id: ingredient.name,
-		label: ingredient.name,
-		isInTaxonomy: false
-	};
+	// A manually cleared or unresolved correspondence must not fall back to the taxonomy mapping.
+	const codifiedIngredient: IngredientType =
+		ingredient.referenceSource === 'manual' && !ingredient.agribalyseCode
+			? { id: null, label: ingredient.name, isInTaxonomy: false }
+			: (ingredient.codifiedIngredient ?? {
+					id: ingredient.name,
+					label: ingredient.name,
+					isInTaxonomy: false
+				});
 	return {
 		id: ingredient.id,
 		name: ingredient.name,

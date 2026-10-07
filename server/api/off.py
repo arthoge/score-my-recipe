@@ -3,6 +3,7 @@
 from typing import Iterable, Optional
 import asyncio
 import json
+import math
 import urllib.parse
 import urllib.request
 
@@ -16,15 +17,89 @@ from api.settings import OpenFoodFactsEnvironments, get_settings
 USER_AGENT = "Score-my-recipe - openfoodfacts"
 
 
+# Search contains misclassified household products, even with product_type="food".
+# Require a food family or nutrition facts rather than trusting absent metadata.
+FOOD_CATEGORIES = frozenset(
+    {
+        "en:foods",
+        "en:plant-based-foods-and-beverages",
+        "en:beverages",
+        "en:meats-and-their-products",
+        "en:seafood",
+        "en:dairies",
+        "en:eggs",
+        "en:meals",
+        "en:snacks",
+        "en:desserts",
+        "en:condiments",
+        "en:fats",
+        "en:sweeteners",
+        "en:food-additives",
+        "en:baby-foods",
+    }
+)
+NON_FOOD_CATEGORIES = frozenset(
+    {
+        "en:non-food-products",
+        "en:cosmetics",
+        "en:beauty-products",
+        "en:hygiene-products",
+        "en:cleaning-products",
+        "en:pet-food",
+        "en:pet-foods",
+    }
+)
+FOOD_NUTRIENTS = (
+    "energy_100g",
+    "energy-kj_100g",
+    "energy-kcal_100g",
+    "fat_100g",
+    "saturated-fat_100g",
+    "carbohydrates_100g",
+    "sugars_100g",
+    "proteins_100g",
+    "fiber_100g",
+    "salt_100g",
+)
+
+
+def is_food_product(product: dict) -> bool:
+    """Require positive food evidence, including for records incorrectly labelled as food."""
+    if product.get("product_type") not in (None, "food"):
+        return False
+    categories = product.get("categories_tags")
+    categories = (
+        {tag for tag in categories if isinstance(tag, str)}
+        if isinstance(categories, list)
+        else set()
+    )
+    if categories & NON_FOOD_CATEGORIES:
+        return False
+    if categories & FOOD_CATEGORIES:
+        return True
+    nutrients = product.get("nutriments")
+    if not isinstance(nutrients, dict):
+        return False
+    return any(
+        isinstance(value := nutrients.get(key), (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value >= 0
+        for key in FOOD_NUTRIENTS
+    )
+
+
 @async_cache(maxsize=128, ttl=300)
 async def search_products(query: str, lang: str, limit: int = 8) -> list[dict]:
-    """Proxy and cache real OFF full-text results so browser CORS cannot block matches."""
+    """Proxy and cache food-only OFF full-text results for recipe ingredients."""
     params = urllib.parse.urlencode(
         {
+            # Select the food index; product_type is not indexed by Search-a-licious.
+            "index_id": "off",
             "q": query,
             "langs": lang,
-            "page_size": limit,
-            "fields": f"code,product_name,product_name_{lang},brands",
+            "page_size": min(limit * 3, 100),
+            "fields": f"code,product_name,product_name_{lang},brands,product_type,categories_tags,nutriments",
         }
     )
     request = urllib.request.Request(
@@ -38,7 +113,10 @@ async def search_products(query: str, lang: str, limit: int = 8) -> list[dict]:
             data = json.load(response)
         if not isinstance(data, dict) or not isinstance(data.get("hits"), list):
             raise ValueError("OFF search returned no result list")
-        return [hit for hit in data["hits"] if isinstance(hit, dict)]
+        # Overfetch so discarded non-food hits do not hide later food matches.
+        return [hit for hit in data["hits"] if isinstance(hit, dict) and is_food_product(hit)][
+            :limit
+        ]
 
     return await asyncio.to_thread(fetch_results)
 

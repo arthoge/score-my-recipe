@@ -24,6 +24,7 @@ import api.types as types
 import api.units as units
 import api.preparation as preparation
 import api.nutrition as nutrition
+import api.pdf_export as pdf_export
 from api.settings import get_settings
 from api.warmup import warmup as warmup_caches
 
@@ -280,3 +281,23 @@ async def recompute_quantity(
 async def analyze_nutrition(request: nutrition.NutritionRequest) -> nutrition.NutritionResponse:
     """Analyze one served recipe component with independent algorithm-2023 availability."""
     return await nutrition.analyze(request)
+
+
+@app.post(
+    "/v1/recipes/export",
+    response_class=Response,
+    responses={
+        200: {"content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}}
+    },
+)
+async def export_recipes(request: pdf_export.ExportRequest) -> Response:
+    """Download a printable report computed from the selected recipe inputs."""
+    document = await pdf_export.export_pdf(request)
+    return Response(
+        document,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": 'attachment; filename="recipes.pdf"',
+            "Cache-Control": "no-store",
+        },
+    )

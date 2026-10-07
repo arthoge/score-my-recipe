@@ -19,9 +19,11 @@
 </script>
 
 <div class="bg-base-200 w-96 max-w-full rounded-lg p-4" aria-live="polite" aria-busy={isLoading}>
-	<h3 class="text-lg font-semibold">
-		{$_('recipe.green_score', { default: 'Green Score' })}
-	</h3>
+	<div class="flex min-h-8 items-center gap-2">
+		<h3 class="text-lg font-semibold">
+			{$_('recipe.green_score', { default: 'Green Score' })}
+		</h3>
+	</div>
 
 	{#if isLoading}
 		<div class="flex items-center gap-2 py-2">

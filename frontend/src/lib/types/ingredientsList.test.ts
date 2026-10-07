@@ -39,12 +39,8 @@ describe('removeIngredientFromList', () => {
 		expect(removeIngredientFromList(list, 'missing').map((i) => i.id)).toEqual(['i1', 'i2']);
 	});
 
-	it('replaces an emptied list with a single fresh empty ingredient', () => {
-		const result = removeIngredientFromList([named('i1', 'apple')], 'i1');
-		expect(result).toHaveLength(1);
-		expect(isIngredientNotEmpty(result[0])).toBe(false);
-		// The new line is fresh: it does not reuse the removed id.
-		expect(result[0].id).not.toBe('i1');
+	it('leaves the list empty when the last ingredient is removed', () => {
+		expect(removeIngredientFromList([named('i1', 'apple')], 'i1')).toEqual([]);
 	});
 });
 

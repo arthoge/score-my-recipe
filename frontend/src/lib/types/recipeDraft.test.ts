@@ -58,12 +58,12 @@ describe('getEditorRecipes', () => {
 		expect(ingredients[0].preparationProfile).toBeUndefined();
 	});
 
-	it('provides an empty editable row for direct entry and empty imported recipes', () => {
-		expect(getEditorRecipes({})[0].ingredients).toHaveLength(1);
-		expect(getEditorRecipes({ recipes: [] })[0].ingredients).toHaveLength(1);
+	it('keeps direct entry and empty imported recipes free of blank ingredient rows', () => {
+		expect(getEditorRecipes({})[0].ingredients).toHaveLength(0);
+		expect(getEditorRecipes({ recipes: [] })[0].ingredients).toHaveLength(0);
 		expect(
 			getEditorRecipes({ recipes: [{ id: 'empty', name: 'Empty', ingredients: [] }] })[0]
 				.ingredients
-		).toHaveLength(1);
+		).toHaveLength(0);
 	});
 });

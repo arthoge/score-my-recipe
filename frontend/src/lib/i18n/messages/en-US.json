@@ -75,6 +75,16 @@
 		"nutri_score": "Nutri-Score",
 		"edit_ingredient_hint": "Click to edit",
 		"add_ingredient": "Add an ingredient",
+		"add_ingredients": "Add ingredients",
+		"add_recipe": "Add a recipe",
+		"add_recipe_failed": "Could not add the recipe. Please try again.",
+		"delete_recipe": "Delete recipe {name}",
+		"no_ingredients": "No ingredients",
+		"ingredients_label": "Your ingredients",
+		"ingredients_placeholder": "Enter your ingredients here...\n\nExample:\n200g flour\n3 eggs\n100g sugar",
+		"adding_ingredients": "Adding ingredients...",
+		"add_ingredients_failed": "Could not add ingredients. Please try again.",
+		"no_parsed_ingredients": "No ingredients found. Enter each ingredient with its quantity.",
 		"add": "Add",
 		"review_description": "Review your ingredients and quantities before calculating each recipe’s score.",
 		"untitled": "Recipe {number}",
@@ -94,6 +104,8 @@
 		"green_score": "Green Score",
 		"computing": "Calculating...",
 		"numeric_score": "Score",
+		"green_score_help": "Higher scores mean lower environmental impact.",
+		"nutri_score_help": "Lower scores mean better nutritional quality.",
 		"no_score": "Score updates automatically once the required cells are complete.",
 		"country": "Country",
 		"country_placeholder": "Select your country",
@@ -138,7 +150,9 @@
 		"action": "Action",
 		"export": "Export",
 		"export_recipes": "Export recipes",
-		"select_all_recipes": "Select all recipes"
+		"select_all_recipes": "Select all recipes",
+		"export_failed": "Could not export recipes. Check quantities and portions, then try again.",
+		"exporting": "Exporting..."
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",
@@ -208,7 +222,7 @@
 	},
 	"nutrition": {
 		"details": "Nutrition details",
-		"per_100g": "Per 100 grams",
+		"per_100g": "Per 100 g",
 		"per_portion": "Per portion",
 		"nutrients": {
 			"energy_kj": "Energy",

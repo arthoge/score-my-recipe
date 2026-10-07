@@ -16,8 +16,8 @@
 	import { _, getLocale } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { getCountries, getLabelsTaxonomy } from '$lib/api/taxonomy';
-	import { createEmptyIngredient, type TaxonomyItem } from '$lib/types/ingredient';
-	import IconMdiPlus from '@iconify-svelte/mdi/plus';
+	import { type TaxonomyItem } from '$lib/types/ingredient';
+	import AddIngredientsDialog from './AddIngredientsDialog.svelte';
 	import { removeIngredientFromList } from '$lib/types/ingredientsList';
 	import type { NutritionDiagnostic } from '$lib/api/nutritionAnalysis';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
@@ -80,11 +80,6 @@
 	/** Handle delete of an ingredient by id. */
 	function handleIngredientDelete(id: string) {
 		ingredients = removeIngredientFromList(ingredients, id);
-	}
-
-	/** Add one editable ingredient row only when the user requests it. */
-	function addIngredientLine() {
-		ingredients = [...ingredients, createEmptyIngredient()];
 	}
 
 	// Column widths allow room for names, numeric values and concise select choices.
@@ -163,7 +158,7 @@
 </script>
 
 <div class="w-full min-w-0">
-	<!-- Let all rows, including the add footer, flow naturally; only scroll horizontally. -->
+	<!-- Let ingredient rows flow naturally; only scroll horizontally. -->
 	<!-- Keyboard focus lets users scroll the wide table with arrow keys. -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
@@ -211,7 +206,6 @@
 					<IngredientLine
 						recipeId={id}
 						bind:ingredient={ingredients[index]}
-						isOnlyItem={ingredients.length === 1}
 						onDelete={handleIngredientDelete}
 						{missingIngredientIds}
 						{nutritionDiagnostics}
@@ -221,70 +215,32 @@
 						{originsStatus}
 						{labelsStatus}
 					/>
+				{:else}
+					<tr>
+						<td colspan={columns.length}>
+							<span class="empty-ingredients text-base-content/60 text-sm">
+								{$_('recipe.no_ingredients', { default: 'No ingredients' })}
+							</span>
+						</td>
+					</tr>
 				{/each}
 			</tbody>
-			<tfoot>
-				<tr>
-					<td colspan={columns.length}>
-						<button
-							type="button"
-							class="add-ingredient-button block h-11 w-full border-0 p-0"
-							onclick={addIngredientLine}
-							aria-label={$_('recipe.add_ingredient', { default: 'Add an ingredient' })}
-						>
-							<span class="add-ingredient-content gap-1 text-sm">
-								<IconMdiPlus class="h-5 w-5" aria-hidden="true" />
-								<span>{$_('recipe.add', { default: 'Add' })}</span>
-							</span>
-						</button>
-					</td>
-				</tr>
-			</tfoot>
 		</table>
 	</div>
+	<AddIngredientsDialog onadd={(added) => (ingredients = [...ingredients, ...added])} />
 </div>
 
 <style>
 	.table-container {
 		container-type: inline-size;
 	}
-	/* Keep the add icon centered in the visible table, including after horizontal scrolling. */
-	.add-ingredient-content {
+	/* Center the empty message in the visible area of the horizontally scrolling table. */
+	.empty-ingredients {
 		position: sticky;
 		left: 0;
-		display: flex;
+		display: block;
 		width: 100cqw;
-		height: 100%;
-		align-items: center;
-		justify-content: center;
-	}
-	.ingredient-table tfoot td {
-		border-right: 0;
-	}
-	.ingredient-table tfoot td:focus-within {
-		box-shadow: none;
-		background: var(--color-base-100);
-	}
-	.ingredient-table tfoot td:hover {
-		background: var(--color-base-200);
-	}
-	.add-ingredient-button {
-		cursor: pointer;
-		color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
-		background: transparent;
-		outline: none;
-		transition:
-			color 150ms,
-			background-color 150ms;
-	}
-	.add-ingredient-button:focus-visible {
-		outline: 1px solid var(--color-primary);
-		outline-offset: -2px;
-	}
-	.add-ingredient-button:hover,
-	.add-ingredient-button:active {
-		background: var(--color-base-200);
-		color: var(--color-base-content);
+		text-align: center;
 	}
 	.ingredient-table th.action-column {
 		padding-inline: 4px;

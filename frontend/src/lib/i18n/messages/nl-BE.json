@@ -138,7 +138,9 @@
 		"action": "Actie",
 		"export": "Exporteren",
 		"export_recipes": "Recepten exporteren",
-		"select_all_recipes": "Alle recepten selecteren"
+		"select_all_recipes": "Alle recepten selecteren",
+		"export_failed": "Could not export recipes. Check quantities and portions, then try again.",
+		"exporting": "Exporting..."
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",
@@ -208,7 +210,7 @@
 	},
 	"nutrition": {
 		"details": "Voedingsdetails",
-		"per_100g": "Per 100 gram",
+		"per_100g": "Per 100 g",
 		"per_portion": "Per portie",
 		"nutrients": {
 			"energy_kj": "Energie",

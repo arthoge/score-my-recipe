@@ -33,11 +33,16 @@ export function ingredientCellErrors(ingredient: Ingredient) {
 	};
 }
 
-/** Allow incomplete drafts to be excluded while at least one positive quantity remains. */
+/** Allow incomplete drafts to be excluded while at least one usable environmental row remains. */
 export function canAutoScore(ingredients: Ingredient[], portions?: number | null): boolean {
 	const rows = ingredients.filter(isIngredientNotEmpty);
 	return (
-		rows.some((row) => isPositiveAmount(row.weight)) &&
+		rows.some(
+			(row) =>
+				isPositiveAmount(row.weight) &&
+				!ingredientCellErrors(row).name &&
+				!ingredientCellErrors(row).environmentalReference
+		) &&
 		(portions == null || (isPositiveAmount(portions) && Number.isInteger(portions))) &&
 		rows.every(
 			(ingredient) =>

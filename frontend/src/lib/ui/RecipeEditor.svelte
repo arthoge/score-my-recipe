@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { _ } from '$lib/i18n';
 	import { untrack } from 'svelte';
+	import IconMdiDelete from '@iconify-svelte/mdi/delete';
 	import RecipeRowEditor from '$lib/ui/RecipeRowEditor.svelte';
 	import RecipeNameEditor from '$lib/ui/RecipeNameEditor.svelte';
 	import ScoreDisplay from '$lib/ui/ScoreDisplay.svelte';
@@ -30,6 +31,9 @@
 		fallbackTitle: string;
 		ingredients: IngredientsList;
 		portions?: number | null;
+		country?: string | null;
+		ondelete?: () => void;
+		deleteDisabled?: boolean;
 	};
 
 	let {
@@ -37,7 +41,10 @@
 		name = $bindable(),
 		fallbackTitle,
 		ingredients = $bindable(),
-		portions = $bindable(1)
+		portions = $bindable(1),
+		country = $bindable(null),
+		ondelete,
+		deleteDisabled = false
 	}: Props = $props();
 	let title = $derived(name || fallbackTitle);
 
@@ -96,7 +103,6 @@
 
 	// Country the recipe is being cooked in (ISO 3166-1 alpha-2 code, or null).
 	// Used to compute the distance modifier in the green-score.
-	let country = $state<string | null>(null);
 
 	// --- Green-score state -------------------------------------------------
 	// The latest computed score response, retained while valid inputs recalculate.
@@ -251,12 +257,26 @@
 	<div class="mb-4 flex items-center gap-2">
 		<h2 id="recipe-heading-{id}" class="min-w-0 text-xl font-bold wrap-anywhere">{title}</h2>
 		<RecipeNameEditor {id} bind:name {title} />
+		{#if ondelete && !deleteDisabled}
+			<button
+				type="button"
+				class="btn btn-ghost btn-sm btn-square text-base-content/40 hover:text-error shrink-0 print:hidden"
+				aria-label={$_('recipe.delete_recipe', {
+					default: 'Delete recipe {name}',
+					values: { name: title }
+				})}
+				disabled={deleteDisabled}
+				onclick={ondelete}
+			>
+				<IconMdiDelete class="h-5 w-5" aria-hidden="true" />
+			</button>
+		{/if}
 	</div>
 	<div class="mb-4 flex flex-wrap items-end gap-4">
 		<CountrySelect bind:value={country} id="country-select-{id}" />
 
 		<label class="fieldset w-max">
-			<span class="label whitespace-nowrap"
+			<span class="label h-6 items-center whitespace-nowrap"
 				>{$_('recipe.portions', { default: 'Number of portions' })}</span
 			>
 			<input
@@ -270,7 +290,7 @@
 			/>
 		</label>
 		<label class="fieldset w-max" for="prepared-weight-total-{id}">
-			<span class="label flex items-center gap-1.5 whitespace-nowrap">
+			<span class="label flex h-6 items-center gap-1.5 whitespace-nowrap">
 				<span
 					>{$_('recipe.final_prepared_weight_grams', {
 						default: 'Prepared weight'

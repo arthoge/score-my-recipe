@@ -804,6 +804,46 @@
           }
         }
       }
+    },
+    "/v1/recipes/export": {
+      "post": {
+        "summary": "Export Recipes",
+        "description": "Download a printable report computed from the selected recipe inputs.",
+        "operationId": "export_recipes_v1_recipes_export_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -971,6 +1011,219 @@
         ],
         "title": "ExcludedIngredient",
         "description": "Recipe ingredient excluded from the grade because its composition is incomplete."
+      },
+      "ExportIngredient": {
+        "properties": {
+          "quantity_g": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity G"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "raw",
+              "cooked",
+              "drained"
+            ],
+            "title": "State",
+            "default": "raw"
+          },
+          "preparation": {
+            "type": "string",
+            "enum": [
+              "none",
+              "boiled",
+              "steamed",
+              "baked_roasted",
+              "grilled",
+              "pan_fried",
+              "deep_fried"
+            ],
+            "title": "Preparation",
+            "default": "none"
+          },
+          "ciqual_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciqual Code"
+          },
+          "barcode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Barcode"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "prepared_weight_g": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared Weight G"
+          },
+          "codified_ingredient": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxonomyItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agribalyse_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agribalyse Code"
+          },
+          "labels": {
+            "items": {
+              "$ref": "#/components/schemas/TaxonomyItem"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaxonomyItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_fresh_plant": {
+            "type": "boolean",
+            "title": "Is Fresh Plant",
+            "default": false
+          },
+          "is_in_season": {
+            "type": "boolean",
+            "title": "Is In Season",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ExportIngredient",
+        "description": "One canonical ingredient input for both score calculations and the printed list."
+      },
+      "ExportRecipe": {
+        "properties": {
+          "ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/ExportIngredient"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Ingredients"
+          },
+          "portions": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Portions",
+            "default": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "en:meals",
+              "en:beverages",
+              "en:cheeses",
+              "en:fats"
+            ],
+            "title": "Category",
+            "default": "en:meals"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ingredients",
+          "name"
+        ],
+        "title": "ExportRecipe",
+        "description": "Recipe inputs only; browser-supplied scores are rejected."
+      },
+      "ExportRequest": {
+        "properties": {
+          "recipes": {
+            "items": {
+              "$ref": "#/components/schemas/ExportRecipe"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Recipes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipes"
+        ],
+        "title": "ExportRequest",
+        "description": "A bounded selection of recipe drafts to export together."
       },
       "FoodReference": {
         "properties": {

@@ -7,6 +7,8 @@
 		position?: 'top' | 'bottom' | 'left' | 'right';
 		/** Render a hover and focus bubble above scrolling containers. */
 		floating?: boolean;
+		/** Match the surrounding text color until the trigger is hovered. */
+		inheritColor?: boolean;
 		/** Use an existing cell as the hover/focus trigger instead of rendering an icon. */
 		trigger?: HTMLElement;
 		// Optional custom trigger icon rendered in place of the default info
@@ -20,6 +22,7 @@
 		ariaLabel = 'More information',
 		position = 'top',
 		floating = false,
+		inheritColor = false,
 		trigger,
 		icon
 	}: Props = $props();
@@ -71,16 +74,20 @@
 
 <svelte:window onscrollcapture={closeBubble} onresize={closeBubble} />
 
+<!-- CSS pseudo-element styles belong only to inline tooltips; floating bubbles must not add cell height. -->
 <div
-	class="{floating
-		? 'shrink-0'
-		: 'tooltip'} {positionClass} tooltip-primary z-50 [&:before]:max-w-[160px] [&:before]:p-1.5 [&:before]:text-[0.65rem] [&:before]:leading-tight [&:before]:break-words [&:before]:whitespace-pre-wrap sm:[&:before]:max-w-[180px] sm:[&:before]:p-2 sm:[&:before]:text-xs"
+	class={floating
+		? trigger
+			? 'contents'
+			: 'inline-flex shrink-0 items-center'
+		: `tooltip ${positionClass} tooltip-primary z-50 [&:before]:max-w-[160px] [&:before]:p-1.5 [&:before]:text-[0.65rem] [&:before]:leading-tight [&:before]:break-words [&:before]:whitespace-pre-wrap sm:[&:before]:max-w-[180px] sm:[&:before]:p-2 sm:[&:before]:text-xs`}
 	data-tip={floating ? undefined : tip}
 >
 	{#if !trigger}
 		<button
 			type="button"
-			class="btn btn-ghost btn-xs hover:bg-primary/10 h-5 min-h-0 w-5 rounded-full p-0 transition-colors duration-200"
+			class="btn btn-ghost btn-xs group hover:bg-primary/10 h-5 min-h-0 w-5 rounded-full p-0 transition-colors duration-200"
+			class:text-inherit={inheritColor}
 			aria-label={ariaLabel}
 			aria-describedby={tipId}
 			popovertarget={floating ? tipId : undefined}
@@ -98,7 +105,9 @@
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"
-					class="text-primary hover:text-primary/70 h-4 w-4 transition-colors duration-200"
+					class="{inheritColor
+						? 'group-hover:text-primary text-inherit'
+						: 'text-primary group-hover:text-primary/70'} h-4 w-4 transition-colors duration-200"
 					fill="currentColor"
 				>
 					<path

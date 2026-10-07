@@ -356,6 +356,26 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/v1/recipes/export': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Export Recipes
+		 * @description Download a printable report computed from the selected recipe inputs.
+		 */
+		post: operations['export_recipes_v1_recipes_export_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -447,6 +467,93 @@ export interface components {
 			ingredient_name: string;
 			/** Prepared Weight G */
 			prepared_weight_g: number;
+		};
+		/**
+		 * ExportIngredient
+		 * @description One canonical ingredient input for both score calculations and the printed list.
+		 */
+		ExportIngredient: {
+			/** Quantity G */
+			quantity_g?: number | null;
+			/**
+			 * State
+			 * @default raw
+			 * @enum {string}
+			 */
+			state: 'raw' | 'cooked' | 'drained';
+			/**
+			 * Preparation
+			 * @default none
+			 * @enum {string}
+			 */
+			preparation:
+				| 'none'
+				| 'boiled'
+				| 'steamed'
+				| 'baked_roasted'
+				| 'grilled'
+				| 'pan_fried'
+				| 'deep_fried';
+			/** Ciqual Code */
+			ciqual_code?: string | null;
+			/** Barcode */
+			barcode?: string | null;
+			/** Id */
+			id: string;
+			/**
+			 * Name
+			 * @default
+			 */
+			name: string;
+			/** Prepared Weight G */
+			prepared_weight_g?: number | null;
+			codified_ingredient?: components['schemas']['TaxonomyItem'] | null;
+			/** Agribalyse Code */
+			agribalyse_code?: string | null;
+			/** Labels */
+			labels?: components['schemas']['TaxonomyItem'][];
+			origin?: components['schemas']['TaxonomyItem'] | null;
+			/**
+			 * Is Fresh Plant
+			 * @default false
+			 */
+			is_fresh_plant: boolean;
+			/**
+			 * Is In Season
+			 * @default false
+			 */
+			is_in_season: boolean;
+		};
+		/**
+		 * ExportRecipe
+		 * @description Recipe inputs only; browser-supplied scores are rejected.
+		 */
+		ExportRecipe: {
+			/** Ingredients */
+			ingredients: components['schemas']['ExportIngredient'][];
+			/**
+			 * Portions
+			 * @default 1
+			 */
+			portions: number;
+			/**
+			 * Category
+			 * @default en:meals
+			 * @enum {string}
+			 */
+			category: 'en:meals' | 'en:beverages' | 'en:cheeses' | 'en:fats';
+			/** Name */
+			name: string;
+			/** Country */
+			country?: string | null;
+		};
+		/**
+		 * ExportRequest
+		 * @description A bounded selection of recipe drafts to export together.
+		 */
+		ExportRequest: {
+			/** Recipes */
+			recipes: components['schemas']['ExportRecipe'][];
 		};
 		/**
 		 * FoodReference
@@ -1960,6 +2067,39 @@ export interface operations {
 				};
 				content: {
 					'application/json': components['schemas']['NutritionResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	export_recipes_v1_recipes_export_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['ExportRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/pdf': string;
 				};
 			};
 			/** @description Validation Error */

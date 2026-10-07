@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
 	import { _ } from '$lib/i18n';
+	import HelperTooltip from './HelperTooltip.svelte';
 
 	type Props = {
 		letterGrade?: string | null;
@@ -52,10 +53,21 @@
 </script>
 
 <div class="flex flex-col items-start gap-2">
-	<img src={scoreLogoUrl} alt={letterGrade ?? 'unknown'} class="h-16 w-auto" />
-	{#if numericScore !== null}
-		<span class="text-base-content/70 text-sm">
-			{$_('recipe.numeric_score', { default: 'Score' })}: {numericScore.toFixed(1)}/100
-		</span>
-	{/if}
+	<img src={scoreLogoUrl} alt={letterGrade ?? 'unknown'} class="h-16 w-auto max-w-none shrink-0" />
+	<div class="text-base-content/70 flex min-h-5 items-center gap-1 text-sm">
+		{#if numericScore !== null}
+			<span
+				><span class="font-medium">{$_('recipe.numeric_score', { default: 'Score' })}:</span>
+				{numericScore.toFixed(1)}/100</span
+			>
+			<HelperTooltip
+				floating
+				inheritColor
+				tip={$_('recipe.green_score_help', {
+					default: 'Higher scores mean lower environmental impact.'
+				})}
+				ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+			/>
+		{/if}
+	</div>
 </div>

@@ -378,3 +378,19 @@ describe('getOrigins', () => {
 		await expect(getOrigins('en')).rejects.toThrow('Error 503: Service Unavailable');
 	});
 });
+
+it('does not reuse taxonomy environmental data after a manual correspondence is cleared', () => {
+	const ingredient = {
+		...createEmptyIngredient(),
+		name: 'Tomatoes',
+		weight: 100,
+		codifiedIngredient: { id: 'en:tomato', label: 'Tomatoes', isInTaxonomy: true },
+		referenceSource: 'manual'
+	};
+	expect(ingredientToGreenScoreInput(ingredient).codifiedIngredient).toEqual({
+		id: null,
+		label: 'Tomatoes',
+		isInTaxonomy: false
+	});
+	expect(ingredientToGreenScoreInput(ingredient)).not.toHaveProperty('agribalyseCode');
+});

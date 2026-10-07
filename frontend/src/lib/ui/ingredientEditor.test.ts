@@ -13,9 +13,9 @@ function validIngredient(): Ingredient {
 }
 
 describe('automatic score form validation', () => {
-	it('allows the backend to exclude a reference lacking environmental impact data', () => {
+	it('does not score when the only reference lacks environmental impact data', () => {
 		const reference = { id: 'en:unknown', label: 'Unknown', isInTaxonomy: true, hasEfScore: false };
-		expect(canAutoScore([{ ...validIngredient(), codifiedIngredient: reference }])).toBe(true);
+		expect(canAutoScore([{ ...validIngredient(), codifiedIngredient: reference }])).toBe(false);
 	});
 	it('scores valid recipes without treating the trailing insertion row as an error', () => {
 		expect(canAutoScore([validIngredient(), createEmptyIngredient()])).toBe(true);
@@ -42,7 +42,17 @@ describe('automatic score form validation', () => {
 					codifiedIngredient: { id: null, label: 'Unknown', isInTaxonomy: false }
 				}
 			])
-		).toBe(true);
+		).toBe(false);
+	});
+
+	it('does not score cleared manual correspondences unless another usable row remains', () => {
+		const cleared = { ...validIngredient(), referenceSource: 'manual' };
+		expect(canAutoScore([cleared])).toBe(false);
+		expect(canAutoScore([{ ...validIngredient(), name: '' }])).toBe(false);
+		expect(canAutoScore([{ ...validIngredient(), codifiedIngredient: null }])).toBe(false);
+		expect(canAutoScore([cleared, validIngredient()])).toBe(true);
+		expect(canAutoScore([{ ...cleared, agribalyseCode: '123' }])).toBe(true);
+		expect(canAutoScore([])).toBe(false);
 	});
 
 	it('keeps preparation fields optional and validates portions', () => {

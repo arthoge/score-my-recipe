@@ -55,7 +55,7 @@
 </script>
 
 <div class="fieldset w-max max-w-full">
-	<label class="label whitespace-nowrap" for={id}>
+	<label class="label h-6 items-center whitespace-nowrap" for={id}>
 		<span class="flex items-center gap-1.5">
 			<span class="label-text text-xs">{$_('recipe.country', { default: 'Country' })}</span>
 			<HelperTooltip

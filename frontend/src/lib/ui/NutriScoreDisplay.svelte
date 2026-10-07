@@ -40,7 +40,7 @@
 </script>
 
 <div class="bg-base-200 w-96 max-w-full rounded-lg p-4" aria-live="polite" aria-busy={loading}>
-	<div class="flex items-center justify-between gap-2">
+	<div class="flex min-h-8 items-center justify-between gap-2">
 		<h3 class="text-lg font-semibold">{$_('recipe.nutri_score', { default: 'Nutri-Score' })}</h3>
 		<button
 			type="button"
@@ -111,7 +111,7 @@
 			<table class="table-xs table">
 				<thead class="bg-base-200"
 					><tr
-						><th></th><th>{$_('nutrition.per_100g', { default: 'Per 100 grams' })}</th><th
+						><th></th><th>{$_('nutrition.per_100g', { default: 'Per 100 g' })}</th><th
 							>{$_('nutrition.per_portion', { default: 'Per portion' })}{#if portionWeightG != null}
 								{` (${Number(portionWeightG.toFixed(2))} g)`}
 							{/if}</th

@@ -10,20 +10,13 @@ export type IngredientsList = Ingredient[];
  * Remove an ingredient from a list by ID
  * @param ingredients - The current list of ingredients
  * @param id - The ID of the ingredient to remove
- * @returns A new list with the ingredient removed, ensuring at least one empty ingredient remains
+ * @returns A new list with the ingredient removed, which may be empty
  */
 export function removeIngredientFromList(
 	ingredients: IngredientsList,
 	id: string
 ): IngredientsList {
-	const newIngredients = ingredients.filter((ing) => ing.id !== id);
-
-	// Ensure there's always at least one empty line
-	if (newIngredients.length === 0) {
-		return [createEmptyIngredient()];
-	}
-
-	return newIngredients;
+	return ingredients.filter((ingredient) => ingredient.id !== id);
 }
 
 /**

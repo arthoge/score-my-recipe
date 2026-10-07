@@ -1,6 +1,7 @@
 <!-- Official algorithm-2023 illustration and numeric score, matching GreenScore layout. -->
 <script lang="ts">
 	import { _ } from '$lib/i18n';
+	import HelperTooltip from './HelperTooltip.svelte';
 	let { grade, score }: { grade: string; score: number } = $props();
 	const logos = import.meta.glob<string>('$lib/assets/nutri-score/nutri-score-*.svg', {
 		eager: true,
@@ -19,9 +20,20 @@
 	<img
 		src={logoUrl}
 		alt={$_('nutrition.logo_alt', { default: 'Nutri-Score {grade}', values: { grade } })}
-		class="h-16 w-auto"
+		class="h-16 w-auto max-w-none shrink-0"
 	/>
-	<span class="text-base-content/70 text-sm">
-		{$_('recipe.numeric_score', { default: 'Score' })}: {score}
-	</span>
+	<div class="text-base-content/70 flex min-h-5 items-center gap-1 text-sm">
+		<span
+			><span class="font-medium">{$_('recipe.numeric_score', { default: 'Score' })}:</span>
+			{score}</span
+		>
+		<HelperTooltip
+			floating
+			inheritColor
+			tip={$_('recipe.nutri_score_help', {
+				default: 'Lower scores mean better nutritional quality.'
+			})}
+			ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+		/>
+	</div>
 </div>

@@ -1,9 +1,12 @@
-<!-- Select recipe drafts for export; file generation will be connected later. -->
+<!-- Select recipe drafts and download a report calculated by the backend. -->
 <script lang="ts">
 	import { _ } from '$lib/i18n';
 	import type { RecipeDraft } from '$lib/types/recipeDraft';
+	import { exportRecipes } from '$lib/api/recipeExport';
 
-	let { recipes }: { recipes: Pick<RecipeDraft, 'id' | 'name'>[] } = $props();
+	let { recipes }: { recipes: RecipeDraft[] } = $props();
+	let exporting = $state(false);
+	let exportError = $state(false);
 	let dialog: HTMLDialogElement;
 	const dialogId = $props.id();
 	let selectedIds = $state<string[]>([]);
@@ -15,6 +18,7 @@
 	/** Start each export dialog with all current recipes selected. */
 	function openDialog() {
 		selectedIds = recipes.map((recipe) => recipe.id);
+		exportError = false;
 		dialog.showModal();
 	}
 
@@ -22,9 +26,40 @@
 	function selectAll(selected: boolean) {
 		selectedIds = selected ? recipes.map((recipe) => recipe.id) : [];
 	}
+
+	/** Snapshot the selection so edits cannot change a report already being generated. */
+	async function downloadPdf() {
+		if (exporting || !selectedIds.length) return;
+		exporting = true;
+		exportError = false;
+		try {
+			const selection = structuredClone($state.snapshot(recipes))
+				.map((recipe, index) => ({
+					...recipe,
+					name:
+						recipe.name ||
+						$_('recipe.untitled', { default: 'Recipe {number}', values: { number: index + 1 } })
+				}))
+				.filter((recipe) => selectedIds.includes(recipe.id));
+			const blob = await exportRecipes(selection);
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = 'recipes.pdf';
+			document.body.append(link);
+			link.click();
+			link.remove();
+			setTimeout(() => URL.revokeObjectURL(url), 1000);
+			dialog.close();
+		} catch {
+			exportError = true;
+		} finally {
+			exporting = false;
+		}
+	}
 </script>
 
-<button type="button" class="btn btn-outline shrink-0" aria-haspopup="dialog" onclick={openDialog}>
+<button type="button" class="btn btn-primary shrink-0" aria-haspopup="dialog" onclick={openDialog}>
 	{$_('recipe.export_recipes', { default: 'Export recipes' })}
 </button>
 
@@ -41,6 +76,7 @@
 							<input
 								type="checkbox"
 								class="checkbox checkbox-sm"
+								disabled={exporting}
 								checked={allSelected}
 								indeterminate={someSelected && !allSelected}
 								aria-label={$_('recipe.select_all_recipes', { default: 'Select all recipes' })}
@@ -60,6 +96,7 @@
 								<input
 									type="checkbox"
 									class="checkbox checkbox-sm"
+									disabled={exporting}
 									value={recipe.id}
 									bind:group={selectedIds}
 									aria-label={title}
@@ -71,11 +108,26 @@
 				</tbody>
 			</table>
 		</div>
+		{#if exportError}
+			<p class="text-error mt-3 text-sm" role="alert">
+				{$_('recipe.export_failed', {
+					default: 'Could not export recipes. Check quantities and portions, then try again.'
+				})}
+			</p>
+		{/if}
 		<div class="modal-action">
 			<button type="button" class="btn btn-outline" onclick={() => dialog.close()}>
 				{$_('recipe.cancel', { default: 'Cancel' })}
 			</button>
-			<button type="button" class="btn btn-primary">
+			<button
+				type="button"
+				class="btn btn-primary"
+				disabled={exporting || !selectedIds.length}
+				onclick={downloadPdf}
+			>
+				{#if exporting}
+					<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+				{/if}
 				{$_('recipe.export', { default: 'Export' })}
 			</button>
 		</div>
