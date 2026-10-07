@@ -554,6 +554,7 @@ export interface components {
 		ExportRequest: {
 			/** Recipes */
 			recipes: components['schemas']['ExportRecipe'][];
+			translations?: components['schemas']['ReportTranslations'];
 		};
 		/**
 		 * FoodReference
@@ -1295,6 +1296,107 @@ export interface components {
 			 * @description New unit, echoed from the request (unit name, taxonomy id or 'item')
 			 */
 			unit: string;
+		};
+		/**
+		 * ReportTranslations
+		 * @description Bounded presentation text from the website locale; API clients default to English.
+		 */
+		ReportTranslations: {
+			/**
+			 * Title
+			 * @default Recipes
+			 */
+			title: string;
+			/**
+			 * Subtitle
+			 * @default Based on available ingredient and product data. Information may be missing or inaccurate.
+			 */
+			subtitle: string;
+			/**
+			 * Ingredients
+			 * @default Ingredients
+			 */
+			ingredients: string;
+			/**
+			 * Unnamed Ingredient
+			 * @default Unnamed ingredient
+			 */
+			unnamed_ingredient: string;
+			/**
+			 * Exclusions
+			 * @default {count} ingredient(s) excluded ({percent}% of recipe weight).
+			 */
+			exclusions: string;
+			/**
+			 * Nutrition
+			 * @default Nutrition
+			 */
+			nutrition: string;
+			/**
+			 * Per 100G
+			 * @default Per 100 g
+			 */
+			per_100g: string;
+			/**
+			 * Per Portion
+			 * @default Per portion
+			 */
+			per_portion: string;
+			/**
+			 * Additives
+			 * @default Additives
+			 */
+			additives: string;
+			/**
+			 * Allergens
+			 * @default Allergens
+			 */
+			allergens: string;
+			/**
+			 * No Information
+			 * @default No information available
+			 */
+			no_information: string;
+			/**
+			 * Energy Kj
+			 * @default Energy
+			 */
+			energy_kj: string;
+			/**
+			 * Fat
+			 * @default Fat
+			 */
+			fat: string;
+			/**
+			 * Saturated Fat
+			 * @default Saturated fat
+			 */
+			saturated_fat: string;
+			/**
+			 * Carbohydrates
+			 * @default Carbohydrates
+			 */
+			carbohydrates: string;
+			/**
+			 * Sugars
+			 * @default Sugars
+			 */
+			sugars: string;
+			/**
+			 * Fiber
+			 * @default Fibre
+			 */
+			fiber: string;
+			/**
+			 * Proteins
+			 * @default Proteins
+			 */
+			proteins: string;
+			/**
+			 * Salt
+			 * @default Salt
+			 */
+			salt: string;
 		};
 		/**
 		 * ScoreComponent

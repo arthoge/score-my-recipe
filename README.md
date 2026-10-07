@@ -25,12 +25,14 @@ included subset. See [scoring limitations](docs/scoring-limitations.md) and
 On `/score`, use **Export recipes** to select recipes and download a compact A4 PDF.
 `POST /v1/recipes/export` accepts recipe inputs and recalculates both scores on
 the backend; it does not accept browser-supplied scores. Reports include ingredient
-quantities, available scores and exclusion summaries, nutrition, additives,
+names and labels, available scores and exclusion summaries, nutrition, additives,
 allergens and a data-quality disclaimer. Missing data remains unavailable.
 
 ReportLab and svglib are installed with the backend's normal `uv sync` command.
 Images and fonts are bundled in `server/api/resources/pdf`, with attribution there.
-Reports currently use English headings and support up to 20 recipes per request,
+Reports use the website’s selected language and English fallbacks for missing
+translations. API clients can provide optional `translations` presentation text;
+omitting it uses English. Reports support up to 20 recipes per request,
 with 100 ingredients per recipe. Printing is enabled and PDF editing permissions
 are restricted; these permissions do not guarantee protection against alterations.
 

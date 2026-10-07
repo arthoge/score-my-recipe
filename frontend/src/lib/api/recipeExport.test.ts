@@ -1,5 +1,6 @@
 /** Export input contracts keep environmental and nutritional data aligned. */
 import { afterEach, expect, it, vi } from 'vitest';
+import { locale, waitLocale } from '$lib/i18n';
 import { createEmptyIngredient } from '$lib/types/ingredient';
 import { recipeExportInputs, exportRecipes } from './recipeExport';
 
@@ -23,7 +24,11 @@ const recipes = [
 		]
 	}
 ];
-afterEach(() => vi.unstubAllGlobals());
+afterEach(async () => {
+	vi.unstubAllGlobals();
+	locale.set('en-US');
+	await waitLocale();
+});
 
 it('exports current inputs without browser scores and insertion rows', () => {
 	const payload = recipeExportInputs(recipes);
@@ -52,4 +57,28 @@ it('accepts PDF downloads and rejects validation errors or non-PDF responses', a
 	await expect(exportRecipes(recipes)).rejects.toThrow('422');
 	fetch.mockResolvedValue(new Response('<html>error</html>'));
 	await expect(exportRecipes(recipes)).rejects.toThrow();
+});
+
+it('exports the selected website language and follows later selector changes', async () => {
+	const fetch = vi
+		.fn()
+		.mockImplementation(
+			async () => new Response('%PDF-test', { headers: { 'Content-Type': 'application/pdf' } })
+		);
+	vi.stubGlobal('fetch', fetch);
+	await waitLocale('fr-FR');
+	locale.set('fr-FR');
+	await exportRecipes(recipes);
+	const french = JSON.parse(fetch.mock.calls[0][1].body).translations;
+	expect(french).toMatchObject({
+		ingredients: 'Ingrédients',
+		nutrition: 'Valeurs nutritionnelles',
+		per_100g: 'Pour 100 g',
+		fat: 'Matières grasses'
+	});
+	expect(french.exclusions).toContain('{count}');
+	expect(french.exclusions).toContain('{percent}');
+	locale.set('en-US');
+	await exportRecipes(recipes);
+	expect(JSON.parse(fetch.mock.calls[1][1].body).translations.ingredients).toBe('Ingredients');
 });

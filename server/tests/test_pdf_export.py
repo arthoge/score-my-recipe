@@ -407,3 +407,76 @@ def test_ingredient_labels_in_printed_list(monkeypatch, labels, expected):
     )
     assert paragraph.getPlainText() == expected
     assert all(fragment.fontName == "RecipeSans" for fragment in paragraph.frags[1:])
+
+
+def test_localized_report_text_and_safe_placeholders(monkeypatch):
+    """Selected-locale text is escaped and exclusion tokens use server results."""
+    captured = []
+    monkeypatch.setattr(
+        pdf_export.SimpleDocTemplate, "build", lambda self, story, **kwargs: captured.extend(story)
+    )
+    labels = pdf_export.ReportTranslations(
+        title="Recettes",
+        subtitle="Données <b> & informations disponibles.",
+        ingredients="Ingrédients",
+        nutrition="Valeurs nutritionnelles",
+        per_100g="Pour 100 g",
+        per_portion="Par portion",
+        additives="Additifs",
+        allergens="Allergènes",
+        no_information="Aucune information disponible",
+        energy_kj="Énergie",
+        exclusions="{count} ingrédient(s) exclu(s) ({percent}% du poids).",
+    )
+    green = types.GreenScoreResponse(
+        numeric_score=90, letter_grade="A", missing_ingredient_ids=["rice"]
+    )
+    item = recipe(
+        ingredients=[{"id": "rice", "name": "Rice", "quantity_g": 100, "prepared_weight_g": 200}]
+    )
+    pdf_export.render_pdf([(item, green, None)], labels)
+    flows = report_flowables(captured)
+    plain = [flow.getPlainText() for flow in flows if isinstance(flow, pdf_export.Paragraph)]
+    assert "Données <b> & informations disponibles." in plain
+    assert "Ingrédients: Rice" in plain
+    assert "Additifs: Aucune information disponible" in plain
+    assert "Allergènes: Aucune information disponible" in plain
+    tables = [flow for flow in flows if isinstance(flow, pdf_export.Table)]
+    assert tables[0]._cellvalues[1][0].getPlainText() == "1 ingrédient(s) exclu(s) (100% du poids)."
+    assert [cell.getPlainText() for cell in tables[1]._cellvalues[0]] == [
+        "Valeurs nutritionnelles",
+        "Pour 100 g",
+        "Par portion (100 g)",
+    ]
+    assert tables[1]._cellvalues[1][0].getPlainText() == "Énergie"
+
+
+@pytest.mark.asyncio
+async def test_export_passes_translations_to_renderer(monkeypatch):
+    """Translations survive asynchronous calculation; omitted entries default to English."""
+    monkeypatch.setattr(
+        pdf_export, "calculate_report", AsyncMock(return_value=(recipe(), None, None))
+    )
+    rendered = []
+
+    def render(reports, translations):
+        """Capture the exact presentation text used by the renderer."""
+        rendered.append(translations)
+        return b"%PDF-test"
+
+    monkeypatch.setattr(pdf_export, "render_pdf", render)
+    request = pdf_export.ExportRequest(
+        recipes=[recipe()], translations={"ingredients": "Ingrédients"}
+    )
+    assert await pdf_export.export_pdf(request) == b"%PDF-test"
+    assert rendered[0].ingredients == "Ingrédients"
+    assert rendered[0].per_100g == "Per 100 g"
+
+
+@pytest.mark.parametrize(
+    "translations", [{"ingredients": "x" * 501}, {"ingredients": ""}, {"other": "x"}]
+)
+def test_report_translation_bounds(translations):
+    """Bound presentation text and reject unsupported fields."""
+    with pytest.raises(ValidationError):
+        pdf_export.ReportTranslations.model_validate(translations)

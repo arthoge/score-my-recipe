@@ -75,6 +75,15 @@
 		"nutri_score": "Nutri-Score",
 		"edit_ingredient_hint": "Zum Bearbeiten klicken",
 		"add_ingredient": "Zutat hinzufügen",
+		"add_ingredients": "Add ingredients",
+		"add_recipe": "Add a recipe",
+		"add_recipe_failed": "Could not add the recipe. Please try again.",
+		"delete_recipe": "Delete recipe {name}",
+		"no_ingredients": "No ingredients",
+		"ingredients_label": "Your ingredients",
+		"ingredients_placeholder": "Enter your ingredients here...\n\nExample:\n200g flour\n3 eggs\n100g sugar",
+		"add_ingredients_failed": "Could not add ingredients. Please try again.",
+		"no_parsed_ingredients": "No ingredients found. Enter each ingredient with its quantity.",
 		"add": "Hinzufügen",
 		"review_description": "Zutaten und Mengen vor der Bewertung jeder Rezeptur prüfen.",
 		"untitled": "Rezept {number}",
@@ -94,6 +103,8 @@
 		"green_score": "Green-Score",
 		"computing": "Wird berechnet…",
 		"numeric_score": "Score",
+		"green_score_help": "Higher scores mean lower environmental impact.",
+		"nutri_score_help": "Lower scores mean better nutritional quality.",
 		"no_score": "Die Bewertung aktualisiert sich automatisch, sobald die erforderlichen Felder ausgefüllt sind.",
 		"country": "Land",
 		"country_placeholder": "Wähle dein Land",
@@ -139,8 +150,7 @@
 		"export": "Exportieren",
 		"export_recipes": "Rezepte exportieren",
 		"select_all_recipes": "Alle Rezepte auswählen",
-		"export_failed": "Could not export recipes. Check quantities and portions, then try again.",
-		"exporting": "Exporting..."
+		"export_failed": "Could not export recipes. Check quantities and portions, then try again."
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",
@@ -231,5 +241,12 @@
 		"additives": "Additives",
 		"allergens": "Allergens",
 		"no_product_information": "No information available"
+	},
+	"pdf": {
+		"title": "Recipes",
+		"subtitle": "Based on available ingredient and product data. Information may be missing or inaccurate.",
+		"ingredients": "Ingredients",
+		"unnamed_ingredient": "Unnamed ingredient",
+		"nutrition": "Nutrition"
 	}
 }

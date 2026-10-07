@@ -55,10 +55,45 @@ class ExportRecipe(nutrition.NutritionRequest):
         return self
 
 
+class ReportTranslations(BaseModel):
+    """Bounded presentation text from the website locale; API clients default to English."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(default="Recipes", min_length=1, max_length=500)
+    subtitle: str = Field(
+        default="Based on available ingredient and product data. Information may be missing or inaccurate.",
+        min_length=1,
+        max_length=500,
+    )
+    ingredients: str = Field(default="Ingredients", min_length=1, max_length=500)
+    unnamed_ingredient: str = Field(default="Unnamed ingredient", min_length=1, max_length=500)
+    exclusions: str = Field(
+        default="{count} ingredient(s) excluded ({percent}% of recipe weight).",
+        min_length=1,
+        max_length=500,
+    )
+    nutrition: str = Field(default="Nutrition", min_length=1, max_length=500)
+    per_100g: str = Field(default="Per 100 g", min_length=1, max_length=500)
+    per_portion: str = Field(default="Per portion", min_length=1, max_length=500)
+    additives: str = Field(default="Additives", min_length=1, max_length=500)
+    allergens: str = Field(default="Allergens", min_length=1, max_length=500)
+    no_information: str = Field(default="No information available", min_length=1, max_length=500)
+    energy_kj: str = Field(default="Energy", min_length=1, max_length=500)
+    fat: str = Field(default="Fat", min_length=1, max_length=500)
+    saturated_fat: str = Field(default="Saturated fat", min_length=1, max_length=500)
+    carbohydrates: str = Field(default="Carbohydrates", min_length=1, max_length=500)
+    sugars: str = Field(default="Sugars", min_length=1, max_length=500)
+    fiber: str = Field(default="Fibre", min_length=1, max_length=500)
+    proteins: str = Field(default="Proteins", min_length=1, max_length=500)
+    salt: str = Field(default="Salt", min_length=1, max_length=500)
+
+
 class ExportRequest(BaseModel):
     """A bounded selection of recipe drafts to export together."""
 
     recipes: list[ExportRecipe] = Field(min_length=1, max_length=20)
+    translations: ReportTranslations = Field(default_factory=ReportTranslations)
 
 
 async def calculate_report(recipe: ExportRecipe):
@@ -125,15 +160,18 @@ def prepared_mass(recipe: ExportRecipe) -> float:
     )
 
 
-def ingredient_description(ingredient: ExportIngredient) -> str:
+def ingredient_description(
+    ingredient: ExportIngredient, unnamed: str = "Unnamed ingredient"
+) -> str:
     """Append readable ingredient labels in parentheses, preserving their display order."""
-    name = ingredient.name or "Unnamed ingredient"
+    name = ingredient.name or unnamed
     labels = [label.label.strip() for label in ingredient.labels if label.label.strip()]
     return f"{name} ({', '.join(labels)})" if labels else name
 
 
-def render_pdf(reports) -> bytes:
+def render_pdf(reports, translations: ReportTranslations | None = None) -> bytes:
     """Flow compact recipes across A4 pages with print permission and editing restrictions."""
+    labels = translations or ReportTranslations()
     output = BytesIO()
     doc = SimpleDocTemplate(
         output,
@@ -142,7 +180,7 @@ def render_pdf(reports) -> bytes:
         leftMargin=12 * mm,
         topMargin=10 * mm,
         bottomMargin=12 * mm,
-        title="Recipes",
+        title=labels.title,
         author="Open Food Facts",
         encrypt=StandardEncryption(
             "",
@@ -199,7 +237,10 @@ def render_pdf(reports) -> bytes:
 
     def exclusions(count, percent):
         """Match the website's partial-result disclosure."""
-        return text(f"{count} ingredient(s) excluded ({percent:.0f}% of recipe weight).", small)
+        return text(
+            labels.exclusions.replace("{count}", str(count)).replace("{percent}", f"{percent:.0f}"),
+            small,
+        )
 
     story = [illustration("open-food-facts.svg", 110), Spacer(1, 12)]
     for recipe, green, nutritional in reports:
@@ -208,12 +249,14 @@ def render_pdf(reports) -> bytes:
         intro = [
             text(recipe.name, heading),
             text(
-                "Based on available ingredient and product data. Information may be missing or inaccurate.",
+                labels.subtitle,
                 small,
             ),
         ]
-        ingredients = [ingredient_description(row) for row in recipe.ingredients]
-        intro.append(labelled_text("Ingredients", ", ".join(ingredients)))
+        ingredients = [
+            ingredient_description(row, labels.unnamed_ingredient) for row in recipe.ingredients
+        ]
+        intro.append(labelled_text(labels.ingredients, ", ".join(ingredients)))
         recipe_story.extend([*intro, Spacer(1, 3)])
         green_box = []
         if green and green.numeric_score is not None and green.letter_grade:
@@ -260,20 +303,20 @@ def render_pdf(reports) -> bytes:
             )
             recipe_story.extend([score_table, Spacer(1, 5)])
         nutrients = [
-            ("energy_kj", "Energy"),
-            ("fat", "Fat"),
-            ("saturated_fat", "Saturated fat"),
-            ("carbohydrates", "Carbohydrates"),
-            ("sugars", "Sugars"),
-            ("fiber", "Fibre"),
-            ("proteins", "Proteins"),
-            ("salt", "Salt"),
+            ("energy_kj", labels.energy_kj),
+            ("fat", labels.fat),
+            ("saturated_fat", labels.saturated_fat),
+            ("carbohydrates", labels.carbohydrates),
+            ("sugars", labels.sugars),
+            ("fiber", labels.fiber),
+            ("proteins", labels.proteins),
+            ("salt", labels.salt),
         ]
         rows = [
             [
-                text("Nutrition"),
-                text("Per 100 g"),
-                text(f"Per portion ({mass / recipe.portions:g} g)"),
+                text(labels.nutrition),
+                text(labels.per_100g),
+                text(f"{labels.per_portion} ({mass / recipe.portions:g} g)"),
             ]
         ]
         for key, label in nutrients:
@@ -306,8 +349,8 @@ def render_pdf(reports) -> bytes:
             ]
             recipe_story.append(
                 labelled_text(
-                    field.capitalize(),
-                    ", ".join(names) or "No information available",
+                    getattr(labels, field),
+                    ", ".join(names) or labels.no_information,
                     small,
                 )
             )
@@ -336,4 +379,4 @@ async def export_pdf(request: ExportRequest) -> bytes:
             return await calculate_report(recipe)
 
     reports = await asyncio.gather(*(calculate(recipe) for recipe in request.recipes))
-    return await asyncio.to_thread(render_pdf, reports)
+    return await asyncio.to_thread(render_pdf, reports, request.translations)

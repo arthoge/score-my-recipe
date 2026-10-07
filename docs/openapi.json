@@ -1216,6 +1216,9 @@
             "maxItems": 20,
             "minItems": 1,
             "title": "Recipes"
+          },
+          "translations": {
+            "$ref": "#/components/schemas/ReportTranslations"
           }
         },
         "type": "object",
@@ -2645,6 +2648,147 @@
             "value": 2
           }
         ]
+      },
+      "ReportTranslations": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title",
+            "default": "Recipes"
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Subtitle",
+            "default": "Based on available ingredient and product data. Information may be missing or inaccurate."
+          },
+          "ingredients": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Ingredients",
+            "default": "Ingredients"
+          },
+          "unnamed_ingredient": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Unnamed Ingredient",
+            "default": "Unnamed ingredient"
+          },
+          "exclusions": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Exclusions",
+            "default": "{count} ingredient(s) excluded ({percent}% of recipe weight)."
+          },
+          "nutrition": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Nutrition",
+            "default": "Nutrition"
+          },
+          "per_100g": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Per 100G",
+            "default": "Per 100 g"
+          },
+          "per_portion": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Per Portion",
+            "default": "Per portion"
+          },
+          "additives": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Additives",
+            "default": "Additives"
+          },
+          "allergens": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Allergens",
+            "default": "Allergens"
+          },
+          "no_information": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "No Information",
+            "default": "No information available"
+          },
+          "energy_kj": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Energy Kj",
+            "default": "Energy"
+          },
+          "fat": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Fat",
+            "default": "Fat"
+          },
+          "saturated_fat": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Saturated Fat",
+            "default": "Saturated fat"
+          },
+          "carbohydrates": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Carbohydrates",
+            "default": "Carbohydrates"
+          },
+          "sugars": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Sugars",
+            "default": "Sugars"
+          },
+          "fiber": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Fiber",
+            "default": "Fibre"
+          },
+          "proteins": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Proteins",
+            "default": "Proteins"
+          },
+          "salt": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Salt",
+            "default": "Salt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReportTranslations",
+        "description": "Bounded presentation text from the website locale; API clients default to English."
       },
       "ScoreComponent": {
         "properties": {
