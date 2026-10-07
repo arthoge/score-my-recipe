@@ -358,22 +358,7 @@
 				>
 			</output>
 		</label>
-		<button
-			type="button"
-			class="btn btn-outline btn-sm hover:btn-primary font-normal"
-			disabled={isCheckingImprovements || ingredients.length === 0}
-			onclick={openMakeItBetter}
-		>
-			{#if isCheckingImprovements}<span class="loading loading-spinner loading-xs"></span>{/if}
-			{$_('make_it_better.button', { default: 'Make it better' })}
-		</button>
 	</div>
-
-	{#if improvementError}
-		<div class="alert alert-info mb-4" role="status">
-			<span>{improvementError}</span>
-		</div>
-	{/if}
 
 	<RecipeRowEditor
 		bind:ingredients
@@ -392,6 +377,21 @@
 			excludedWeightPercent={excludedGreenPercent}
 		/>
 		<NutriScoreDisplay analysis={nutrition} loading={nutritionLoading} failed={nutritionFailed} />
+		<div class="bg-base-200 w-96 max-w-full rounded-lg p-4" aria-live="polite" aria-busy={isCheckingImprovements}>
+			<h3 class="text-lg font-semibold">{$_('make_it_better.title', { default: 'Make It Better' })}</h3>
+			<p class="text-base-content/70 mt-2 text-sm">
+				{improvementError || $_('make_it_better.box_description', { default: 'Check for catalogued score improvements for your recipe ingredients.' })}
+			</p>
+			<button
+				type="button"
+				class="btn btn-outline btn-sm mt-4 w-full hover:btn-primary font-normal"
+				disabled={isCheckingImprovements || ingredients.length === 0}
+				onclick={openMakeItBetter}
+			>
+				{#if isCheckingImprovements}<span class="loading loading-spinner loading-xs"></span>{/if}
+				{$_('make_it_better.button', { default: 'Check for improvements' })}
+			</button>
+		</div>
 	</div>
 </section>
 
