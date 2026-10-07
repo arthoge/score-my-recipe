@@ -56,14 +56,6 @@
 					})}
 				</p>
 			</div>
-			<button
-				type="button"
-				class="btn btn-ghost btn-sm btn-square"
-				aria-label={$_('make_it_better.close', { default: 'Close' })}
-				onclick={dismiss}
-			>
-				×
-			</button>
 		</div>
 
 		<div class="mt-6 space-y-4">
@@ -97,8 +89,8 @@
 		</div>
 
 		<div class="modal-action flex-col-reverse sm:flex-row mt-6">
-			<button type="button" class="btn btn-ghost min-h-11" onclick={dismiss}>
-				{$_('make_it_better.no', { default: 'No' })}
+			<button type="button" class="btn btn-outline btn-ghost min-h-11" onclick={dismiss}>
+				{$_('make_it_better.no', { default: 'Cancel' })}
 			</button>
 			<button
 				type="button"
