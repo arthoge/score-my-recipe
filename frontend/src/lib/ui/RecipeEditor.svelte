@@ -382,16 +382,18 @@
 	<div class="mt-4" aria-live="polite" aria-busy={isCheckingImprovements}>
 		<button
 			type="button"
-			class="btn btn-sm sm:w-auto border-0 bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-[0_0_15px_rgba(251,191,36,0.6)] transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] font-semibold"
+			class="btn w-half md:max-w-[49rem] min-h-[4rem] border-0 bg-black hover:bg-black text-white transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] font-semibold text-xl flex items-center justify-center rounded-lg"
 			disabled={isCheckingImprovements || ingredients.length === 0}
 			onclick={openMakeItBetter}
 		>
-			{#if isCheckingImprovements}
-				<span class="loading loading-spinner loading-xs"></span>
-			{:else}
-				<span aria-hidden="true">✨</span>
-			{/if}
-			{$_('make_it_better.button', { default: 'Check for improvements' })}
+			<div class="flex items-center gap-2">
+				{#if isCheckingImprovements}
+					<span class="loading loading-spinner loading-md"></span>
+				{:else}
+					<span aria-hidden="true" class="text-2xl">✨</span>
+				{/if}
+				<span>{$_('make_it_better.button', { default: 'Check for improvements' })}</span>
+			</div>
 		</button>
 		{#if improvementError}
 			<p class="text-error mt-2 text-sm">{improvementError}</p>
