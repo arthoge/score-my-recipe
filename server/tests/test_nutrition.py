@@ -1,6 +1,7 @@
 """Nutrition contracts: missing data, cooking, reference selection and upstream isolation."""
 
 from unittest.mock import AsyncMock
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -46,7 +47,7 @@ def catalog(monkeypatch):
         "calculate",
         AsyncMock(
             return_value=nutriscore.NutriScore(
-                grade="B", score=1, components={"negative": [], "positive": []}
+                grade="B", score=1, components=nutriscore.ScoreComponents(negative=[], positive=[])
             )
         ),
     )
@@ -56,7 +57,9 @@ def catalog(monkeypatch):
 def recipe(**changes):
     """One hundred grams of dry rice with an explicit generic nutrition reference."""
     row = {"id": "rice", "name": "Rice", "quantity_g": 100, "ciqual_code": "9119", **changes}
-    return nutrition.NutritionRequest(ingredients=[row], portions=2)
+    return nutrition.NutritionRequest(
+        ingredients=[nutrition.NutritionIngredient.model_validate(row)], portions=2
+    )
 
 
 @pytest.mark.parametrize(
@@ -85,9 +88,13 @@ async def test_cooking_and_portions(catalog):
     assert result.status == "complete"
     assert result.prepared_weight_g == 298
     assert result.ingredients[0].prepared_reference == "9125"
+    assert result.nutrients_total is not None
     assert result.nutrients_total["energy_kj"] == 298
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 100
+    assert result.nutrients_per_portion is not None
     assert result.nutrients_per_portion["energy_kj"] == 149
+    assert result.ingredients[0].yield_source is not None
     assert result.ingredients[0].yield_source.version == "bognar-2002-v1"
     assert result.plant_percent == 0
     changed = recipe(preparation="boiled")
@@ -99,6 +106,7 @@ async def test_cooking_and_portions(catalog):
 async def test_measured_and_cooked(catalog):
     """A measured prepared mass scales prepared composition, not a second cooking yield."""
     result = await nutrition.analyze(recipe(preparation="boiled", prepared_weight_g=250))
+    assert result.nutrients_total is not None
     assert result.nutrients_total["energy_kj"] == 250
     result = await nutrition.analyze(
         recipe(ciqual_code="9125", state="cooked", preparation="boiled")
@@ -120,9 +128,10 @@ async def test_missing_and_unsupported(catalog):
     assert result.status == "unsupported"
     catalog["9119"]["nutrients"]["fiber"] = "-"
     result = await nutrition.analyze(recipe())
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["fiber"] is None
     assert result.status == "incomplete"
-    nutriscore.calculate.assert_not_awaited()
+    cast(AsyncMock, nutriscore.calculate).assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -136,6 +145,7 @@ async def test_mixed_recipe_plant_mass(catalog):
     )
     result = await nutrition.analyze(request)
     assert result.plant_percent == pytest.approx(273 / 571 * 100)
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == pytest.approx(100)
     catalog["20360"]["detail_group"] = "020404"
     result = await nutrition.analyze(request)
@@ -164,6 +174,7 @@ async def test_upstream_grade_failure_preserves_nutrition(catalog, monkeypatch):
     monkeypatch.setattr(nutriscore, "calculate", AsyncMock(side_effect=ValueError("old algorithm")))
     result = await nutrition.analyze(recipe())
     assert result.status == "dependency_error"
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 100
     assert result.nutri_score is None
 
@@ -243,7 +254,9 @@ async def test_off_complete_and_units(catalog, monkeypatch):
     monkeypatch.setattr(nutrition_data, "get_product", AsyncMock(return_value=product))
     result = await nutrition.analyze(recipe(barcode="123"))
     assert result.status == "complete"
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == pytest.approx(418.4)
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["salt"] == 0.25
     assert result.ingredients[0].source == "Open Food Facts"
     assert result.plant_percent == 40
@@ -251,7 +264,9 @@ async def test_off_complete_and_units(catalog, monkeypatch):
     result = await nutrition.analyze(recipe(barcode="123"))
     assert result.status == "complete"
     assert result.ingredients[0].source == "CIQUAL-2025"
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["fiber"] == 2
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 100
     assert any(issue.code == "off_ciqual_fallback" for issue in result.assumptions)
 
@@ -263,7 +278,9 @@ async def test_red_meat_and_beverage_boundaries(catalog):
     food.update(group="04", subgroup="0401", detail_group="040101", name="Beef, cooked")
     result = await nutrition.analyze(recipe())
     assert result.status == "complete"
-    assert nutriscore.calculate.await_args.args[3] == 100
+    call = cast(AsyncMock, nutriscore.calculate).await_args
+    assert call is not None
+    assert call.args[3] == 100
     payload = nutriscore.calculation_payload({"energy_kj": 100}, 0, "en:meals", 25)
     assert payload["product"]["ingredients_text_en"] == "beef (25%), other ingredients (75%)"
     request = recipe()
@@ -335,11 +352,15 @@ async def test_partial_grade_excludes_entire_missing_contributions(catalog):
     assert result.status == "partial"
     assert result.nutri_score is not None
     assert result.prepared_weight_g == 100
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["fiber"] == 2
+    assert result.nutrients_per_portion is not None
     assert result.nutrients_per_portion["energy_kj"] == 50
     assert [row.ingredient_id for row in result.excluded_ingredients] == ["incomplete", "missing"]
     assert result.excluded_weight_percent == 75
-    assert nutriscore.calculate.await_args.args[0]["energy_kj"] == 100
+    call = cast(AsyncMock, nutriscore.calculate).await_args
+    assert call is not None
+    assert call.args[0]["energy_kj"] == 100
 
 
 @pytest.mark.asyncio
@@ -385,10 +406,12 @@ async def test_all_excluded_retains_known_nutrition_without_grade(catalog):
     result = await nutrition.analyze(recipe())
     assert result.status == "incomplete"
     assert result.excluded_weight_percent == 100
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 100
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["fiber"] is None
     assert result.nutri_score is None
-    nutriscore.calculate.assert_not_awaited()
+    cast(AsyncMock, nutriscore.calculate).assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -402,6 +425,7 @@ async def test_incomplete_off_uses_complete_ciqual(catalog, monkeypatch):
     result = await nutrition.analyze(recipe(barcode="123"))
     assert result.status == "complete"
     assert result.excluded_ingredients == []
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 100
     assert result.ingredients[0].reference == "9119"
     assert [(issue.code, issue.ingredient_id) for issue in result.assumptions] == [
@@ -436,6 +460,7 @@ async def test_complete_off_still_takes_precedence(catalog, monkeypatch):
     result = await nutrition.analyze(recipe(barcode="123"))
     assert result.status == "complete"
     assert result.ingredients[0].source == "Open Food Facts"
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 200
     assert not any(issue.code == "off_ciqual_fallback" for issue in result.assumptions)
 
@@ -470,7 +495,7 @@ async def test_all_zero_has_no_calculation(catalog):
     assert result.nutri_score is None
     assert result.nutrients_per_100g is None
     assert result.excluded_weight_percent == 0
-    nutriscore.calculate.assert_not_awaited()
+    cast(AsyncMock, nutriscore.calculate).assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -485,6 +510,7 @@ async def test_missing_quantity_draft_does_not_block_existing_recipe(catalog, mo
     result = await nutrition.analyze(request)
     assert result.status == "partial"
     assert result.nutri_score is not None
+    assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 100
     assert result.prepared_weight_g == 100
     assert result.excluded_ingredients[0].ingredient_id == "draft"

@@ -22,7 +22,9 @@ def test_documented_yields(code, method, expected):
     )
     assert result.status == "estimated"
     assert result.prepared_weight_g == expected
+    assert result.source is not None
     assert result.source.version == "bognar-2002-v1"
+    assert result.source is not None
     assert result.source.table.startswith("Table ")
     assert code in ciqual.get_foods()
 

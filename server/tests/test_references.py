@@ -58,9 +58,13 @@ async def test_automatic_correspondence_and_unknown_ingredient(agribalyse_index)
     )
     with patch_ingredients_taxonomy(taxonomy):
         result = await references.ingredient_references("en:apple")
+        assert result.agribalyse is not None
         assert result.agribalyse.code == "10001"
+        assert result.ciqual is not None
         assert result.ciqual.code == "20001"
+        assert result.ciqual is not None
         assert result.ciqual.name == "Apple, raw"
+        assert result.agribalyse is not None
         assert result.agribalyse.name == "Apple"
         assert result.source == "agribalyse_food_code"
         assert (await references.ingredient_references("en:unknown")).agribalyse is None
@@ -80,6 +84,7 @@ async def test_manual_environmental_reference_affects_scoring(agribalyse_index):
     ingredient.agribalyse_code = "10002"
     with patch_ingredients_taxonomy(taxonomy):
         result = await score.match_ingredients_to_agribalyse([ingredient])
+        assert result["i1"].agribalyse is not None
         assert result["i1"].agribalyse["code"] == "10002"
         assert result["i1"].code_source == "manual_agribalyse_code"
         ingredient.agribalyse_code = "does-not-exist"
@@ -105,7 +110,9 @@ async def test_retired_ciqual_link_uses_current_catalog(agribalyse_index, monkey
     )
     with patch_ingredients_taxonomy(taxonomy):
         result = await references.ingredient_references("en:apple")
+        assert result.ciqual is not None
         assert result.ciqual.code == "90000"
+        assert result.ciqual is not None
         assert result.ciqual.name == "Apple, raw"
         monkeypatch.setattr(ciqual, "get_foods", lambda: {})
         assert (await references.ingredient_references("en:apple")).ciqual is None
