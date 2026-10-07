@@ -15,12 +15,15 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 
 DATA_DIRECTORY = Path(__file__).resolve().parent
 INGREDIENTS_FILE = DATA_DIRECTORY / "ingredients.full.json"
 LABELS_FILE = DATA_DIRECTORY / "labels.full.json"
+IMPROVEMENT_CATALOG_FILE = DATA_DIRECTORY / "make_it_better_catalog.json"
+SCORE_VALUES = {"A": 5, "B": 4, "C": 3, "D": 2, "E": 1}
 
 # This is intentionally a small, explicit rule. It only proposes an option
 # that exists in the local taxonomy; it is not an unsubstantiated eco-score.
@@ -37,6 +40,13 @@ class RecipeScanRequest(BaseModel):
 
     ingredients: list[str] = Field(min_length=1, max_length=100)
     language: str = Field(default="en", min_length=2, max_length=10)
+
+
+class MakeItBetterRequest(BaseModel):
+    """Product rows submitted by the main ingredient table."""
+
+    ingredients: list[str] = Field(min_length=1, max_length=100)
+    language: str = Field(default="es", min_length=2, max_length=10)
 
 
 def normalize(value: str) -> str:
@@ -56,6 +66,19 @@ def load_json(path: Path) -> dict[str, dict[str, Any]]:
         data = json.load(file)
     if not isinstance(data, dict):
         raise RuntimeError(f"{path.name} must contain a JSON object at its top level.")
+    return data
+
+
+def load_improvement_catalog(path: Path) -> list[dict[str, Any]]:
+    """Load product scores and the allowed suggestions for Make it better."""
+
+    with path.open(encoding="utf-8") as file:
+        data = json.load(file)
+    if not isinstance(data, list):
+        raise RuntimeError(f"{path.name} must contain a JSON array at its top level.")
+    for product in data:
+        if not isinstance(product, dict) or not isinstance(product.get("id"), str):
+            raise RuntimeError(f"{path.name} contains a product without a string id.")
     return data
 
 
@@ -92,8 +115,10 @@ class TaxonomyStore:
 
         self.ingredients = load_json(INGREDIENTS_FILE)
         self.labels = load_json(LABELS_FILE)
+        self.improvement_products = load_improvement_catalog(IMPROVEMENT_CATALOG_FILE)
         validate_relationships(self.ingredients)
         self.aliases = self._build_aliases()
+        self.product_aliases = self._build_product_aliases()
 
     def _build_aliases(self) -> dict[str, list[str]]:
         """Build a normalized alias index without silently choosing ambiguous names."""
@@ -104,6 +129,18 @@ class TaxonomyStore:
                 key = normalize(alias)
                 if key:
                     aliases.setdefault(key, []).append(ingredient_id)
+        return aliases
+
+    def _build_product_aliases(self) -> dict[str, dict[str, Any]]:
+        """Index explicit product aliases, avoiding guesses based on a food type."""
+
+        aliases: dict[str, dict[str, Any]] = {}
+        for product in self.improvement_products:
+            for alias in product.get("aliases", []):
+                key = normalize(alias)
+                if key in aliases:
+                    raise RuntimeError(f"Ambiguous product alias in {IMPROVEMENT_CATALOG_FILE.name}: {alias}")
+                aliases[key] = product
         return aliases
 
     def resolve(self, query: str) -> tuple[str | None, list[str]]:
@@ -139,13 +176,21 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+# A deliberately small visual client for trying the Make it better flow.
+# The application that owns the real recipe/PDF UI can call the same endpoint.
+app.mount("/demo", StaticFiles(directory=DATA_DIRECTORY / "frontend-demo", html=True), name="demo")
 
 
 @app.get("/health")
 def health() -> dict[str, int | str]:
     """Report that the API started and both local taxonomies were validated."""
 
-    return {"status": "ok", "ingredients": len(store.ingredients), "labels": len(store.labels)}
+    return {
+        "status": "ok",
+        "ingredients": len(store.ingredients),
+        "labels": len(store.labels),
+        "improvement_products": len(store.improvement_products),
+    }
 
 
 @app.get("/labels/search")
@@ -201,6 +246,60 @@ def scan_recipe(recipe: RecipeScanRequest) -> dict[str, Any]:
         "unresolved_ingredients": unresolved,
         "recommendations": recommendations,
         "notice": "Recommendations are taxonomy and certification hints, not verified product-level environmental scores.",
+    }
+
+
+def score_improvements(source: dict[str, Any], candidate: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return only score dimensions that improve from source to candidate."""
+
+    improvements = []
+    for field, label in (("nutri_score", "Nutri-Score"), ("green_score", "Green-Score")):
+        before = source[field]
+        after = candidate[field]
+        gain = SCORE_VALUES[after] - SCORE_VALUES[before]
+        if gain > 0:
+            improvements.append({"score": field, "label": label, "from": before, "to": after, "gain": gain})
+    return improvements
+
+
+@app.post("/make-it-better/check")
+def check_make_it_better(recipe: MakeItBetterRequest) -> dict[str, Any]:
+    """Find the strongest Nutri-Score/Green-Score upgrade for each known row."""
+
+    by_id = {product["id"]: product for product in store.improvement_products}
+    suggestions: list[dict[str, Any]] = []
+    no_improvement: list[str] = []
+    for ingredient in recipe.ingredients:
+        source = store.product_aliases.get(normalize(ingredient))
+        if source is None:
+            no_improvement.append(ingredient)
+            continue
+        options = []
+        for candidate_id in source.get("better_options", []):
+            candidate = by_id.get(candidate_id)
+            if candidate is None:
+                raise RuntimeError(f"{source['id']} references an unknown improvement option.")
+            improvements = score_improvements(source, candidate)
+            if improvements:
+                options.append((sum(item["gain"] for item in improvements), candidate, improvements))
+        if not options:
+            no_improvement.append(ingredient)
+            continue
+        # One suggestion only: choose the largest combined score gain.  The id
+        # makes ties deterministic, so the same input always gets the same UI.
+        _, candidate, improvements = max(options, key=lambda option: (option[0], option[1]["id"]))
+        suggestions.append(
+            {
+                "ingredient": ingredient,
+                "original": {"id": source["id"], "name": source["name"], "nutri_score": source["nutri_score"], "green_score": source["green_score"]},
+                "suggested": {"id": candidate["id"], "name": candidate["name"], "nutri_score": candidate["nutri_score"], "green_score": candidate["green_score"]},
+                "improvements": improvements,
+            }
+        )
+    return {
+        "suggestions": suggestions,
+        "no_improvement": no_improvement,
+        "notice": "Solo se sugieren cambios que mejoran Nutri-Score, Green-Score o ambos según el catálogo local.",
     }
 
 

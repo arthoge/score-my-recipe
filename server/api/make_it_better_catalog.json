@@ -1,0 +1,24 @@
+[
+  {
+    "id": "chocolate-yogurt",
+    "name": "Chocolate yogurt",
+    "aliases": ["chocolate yogurt", "chocolate yoghurt"],
+    "nutri_score": "D",
+    "green_score": "D",
+    "better_options": ["plain-yogurt", "organic-plain-yogurt"]
+  },
+  {
+    "id": "plain-yogurt",
+    "name": "Plain yogurt",
+    "aliases": ["plain yogurt", "natural yogurt"],
+    "nutri_score": "A",
+    "green_score": "B"
+  },
+  {
+    "id": "organic-plain-yogurt",
+    "name": "Organic plain yogurt",
+    "aliases": ["organic plain yogurt"],
+    "nutri_score": "A",
+    "green_score": "A"
+  }
+]

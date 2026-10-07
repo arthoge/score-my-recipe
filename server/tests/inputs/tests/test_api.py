@@ -9,7 +9,7 @@ from pydantic import ValidationError
 # The API lives one directory above this conventional test package.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from api import RecipeScanRequest, app, get_ingredient, health, scan_recipe, store, validate_relationships
+from api import MakeItBetterRequest, RecipeScanRequest, app, check_make_it_better, get_ingredient, health, scan_recipe, store, validate_relationships
 
 
 def test_all_fixture_relationships_resolve() -> None:
@@ -21,8 +21,10 @@ def test_all_fixture_relationships_resolve() -> None:
 def test_health_reports_loaded_taxonomies() -> None:
     """The health route exposes the counts after startup validation."""
 
-    assert health() == {"status": "ok", "ingredients": 20, "labels": 26}
-    assert "/scan-recipe" in {route.path for route in app.routes}
+    assert health() == {"status": "ok", "ingredients": 20, "labels": 26, "improvement_products": 3}
+    paths = {route.path for route in app.routes}
+    assert "/scan-recipe" in paths
+    assert "/demo" in paths
 
 
 def test_recipe_scan_matches_spanish_and_recommends_organic_wine() -> None:
@@ -56,3 +58,14 @@ def test_recipe_request_requires_at_least_one_ingredient() -> None:
     except ValidationError:
         return
     raise AssertionError("Empty ingredient lists must fail request validation.")
+
+
+def test_make_it_better_selects_the_best_score_improvement() -> None:
+    """The check chooses one candidate with the strongest combined score gain."""
+
+    payload = check_make_it_better(MakeItBetterRequest(ingredients=["yogur de chocolate", "tomate"]))
+
+    suggestion = payload["suggestions"][0]
+    assert suggestion["suggested"]["name"] == "Yogur natural ecológico"
+    assert [(item["from"], item["to"]) for item in suggestion["improvements"]] == [("D", "A"), ("D", "A")]
+    assert payload["no_improvement"] == ["tomate"]

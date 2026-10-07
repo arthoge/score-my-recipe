@@ -8,7 +8,7 @@ an HTTP demonstration script.
 
 | File | Purpose |
 | --- | --- |
-| `test_api.py` | Five automated tests covering data, scanning, and validation. |
+| `test_api.py` | Six automated tests covering data, scanning, validation, and product swaps. |
 | `payloads/scan_recipe.json` | Valid sample recipe for the demonstration. |
 | `payloads/invalid_recipe.json` | Invalid request: missing ingredients. |
 | `run_tests.sh` | Runs all automated tests. |
@@ -36,7 +36,7 @@ bash tests/run_tests.sh
 Expected result:
 
 ```text
-5 passed
+6 passed
 ```
 
 ## Starting the API

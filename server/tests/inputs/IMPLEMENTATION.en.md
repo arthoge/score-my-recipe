@@ -37,6 +37,7 @@ No files outside `server/tests/inputs` were changed.
 | `POST /scan-recipe` | Scans a recipe ingredient list. |
 | `GET /ingredients/{id}` | Returns a canonical ingredient, e.g. `en:pear`. |
 | `GET /labels/search?query=organic` | Searches local certification labels. |
+| `POST /make-it-better/check` | Selects the strongest catalogued Nutri-Score/Green-Score improvement. |
 | `GET /docs` | FastAPI's interactive interface. |
 
 ## How to test it, step by step
@@ -66,8 +67,8 @@ using **Try it out**.
 
 ## Expected output
 
-- `GET /health` returns `status: "ok"`, `ingredients: 20`, and `labels: 26`.
-- The test command ends with `4 passed`.
+- `GET /health` returns `status: "ok"`, `ingredients: 20`, `labels: 26`, and `improvement_products: 3`.
+- The test command ends with `6 passed`.
 - The scan resolves `pera` as `en:pear` and `red wine` as `en:red-wine`.
 - `mystery powder` appears in `unresolved_ingredients`; the API never claims
   to recognize an unknown input.

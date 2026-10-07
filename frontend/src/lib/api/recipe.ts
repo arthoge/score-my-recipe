@@ -30,6 +30,19 @@ export type Origin = components['schemas']['Origin'];
 /** Response schema for the `get_origins` endpoint. */
 export type OriginsResponse = components['schemas']['OriginsResponse'];
 
+/** A catalog-backed product replacement returned by the Make it better endpoint. */
+export type MakeItBetterSuggestion = {
+	ingredient: string;
+	original: { id: string; name: string; nutriScore: string; greenScore: string };
+	suggested: { id: string; name: string; nutriScore: string; greenScore: string };
+	improvements: { label: string; fromScore: string; toScore: string }[];
+};
+
+export type MakeItBetterResponse = {
+	suggestions: MakeItBetterSuggestion[];
+	noImprovement: string[];
+};
+
 /** Base URL of the Score My Recipe backend. */
 const API_BASE_URL = env.PUBLIC_RECIPE_API_URL ?? '';
 /**
@@ -53,6 +66,23 @@ export async function parseRecipeText(text: string, lang: string): Promise<Recip
 	}
 
 	return (await response.json()) as RecipeParseResponse;
+}
+
+/** Fetch catalogued score improvements for the supplied product names. */
+export async function getMakeItBetterSuggestions(
+	ingredients: string[]
+): Promise<MakeItBetterResponse> {
+	const response = await fetch(`${API_BASE_URL}/v1/make-it-better/check`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ ingredients })
+	});
+
+	if (!response.ok) {
+		throw new Error(`Error ${response.status}: ${response.statusText}`);
+	}
+
+	return (await response.json()) as MakeItBetterResponse;
 }
 
 /**

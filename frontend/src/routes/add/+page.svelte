@@ -1,14 +1,25 @@
 <script lang="ts">
 	import { _, getLocale } from '$lib/i18n';
 	import { goto } from '$app/navigation';
-	import { parseRecipeText, apiIngredientsToIngredients } from '$lib/api/recipe';
+	import {
+		parseRecipeText,
+		apiIngredientsToIngredients,
+		getMakeItBetterSuggestions,
+		type MakeItBetterSuggestion
+	} from '$lib/api/recipe';
 	import OnboardingBanner from '$lib/ui/OnboardingBanner.svelte';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
 	import RecipeExamples from '$lib/ui/RecipeExamples.svelte';
+	import MakeItBetterDialog from '$lib/ui/MakeItBetterDialog.svelte';
+	import { replaceSelectedRecipeProducts } from '$lib/ui/makeItBetter';
 
 	let recipeText = $state('');
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	let isCheckingImprovements = $state(false);
+	let improvementError = $state<string | null>(null);
+	let improvementSuggestions = $state<MakeItBetterSuggestion[]>([]);
+	let isImprovementDialogOpen = $state(false);
 
 	let onboardingRef = $state<ReturnType<typeof OnboardingBanner> | null>(null);
 	let isOnboardingDismissed = $state(true);
@@ -29,6 +40,33 @@
 			error = e instanceof Error ? e.message : 'Une erreur est survenue';
 			isLoading = false;
 		}
+	}
+
+	/** Parse the recipe first, then request only catalog-backed replacements. */
+	async function openMakeItBetter() {
+		isCheckingImprovements = true;
+		improvementError = null;
+		try {
+			const lang = getLocale().split('-')[0];
+			const parsedRecipe = await parseRecipeText(recipeText, lang);
+			const names = parsedRecipe.ingredients.map((ingredient) => ingredient.codified_ingredient);
+			const result = await getMakeItBetterSuggestions(names);
+			improvementSuggestions = result.suggestions;
+			if (result.suggestions.length === 0) {
+				improvementError = 'No catalogued improvements are available for this recipe.';
+				return;
+			}
+			isImprovementDialogOpen = true;
+		} catch (e) {
+			improvementError = e instanceof Error ? e.message : 'Could not check recipe improvements.';
+		} finally {
+			isCheckingImprovements = false;
+		}
+	}
+
+	/** Replace one occurrence per selected recommendation and preserve all other text. */
+	function applySelectedImprovements(suggestions: MakeItBetterSuggestion[]) {
+		recipeText = replaceSelectedRecipeProducts(recipeText, suggestions);
 	}
 </script>
 
@@ -96,7 +134,18 @@
 			</div>
 
 			<!-- Example recipe shortcuts (honors UI language) -->
-			<RecipeExamples onselect={(text) => (recipeText = text)} />
+			<div class="flex flex-wrap items-center gap-2 py-1">
+				<RecipeExamples onselect={(text) => (recipeText = text)} />
+				<button
+					type="button"
+					class="btn btn-outline btn-xs hover:btn-primary rounded-full font-normal"
+					disabled={isCheckingImprovements || recipeText.trim().length === 0}
+					onclick={openMakeItBetter}
+				>
+					{#if isCheckingImprovements}<span class="loading loading-spinner loading-xs"></span>{/if}
+					{$_('make_it_better.button', { default: 'Make it better' })}
+				</button>
+			</div>
 
 			<textarea
 				id="recipe-text"
@@ -138,4 +187,16 @@
 			<span>{error}</span>
 		</div>
 	{/if}
+
+	{#if improvementError}
+		<div class="alert alert-info mt-6" role="status">
+			<span>{improvementError}</span>
+		</div>
+	{/if}
 </div>
+
+<MakeItBetterDialog
+	bind:open={isImprovementDialogOpen}
+	suggestions={improvementSuggestions}
+	onapply={applySelectedImprovements}
+/>
