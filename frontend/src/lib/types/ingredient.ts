@@ -82,7 +82,7 @@ export interface Ingredient {
 	isInSeason: boolean;
 	/** Origin countries/regions */
 	origin: Origin | null;
-	/** Preparation and nutrition draft fields, ready for the planned analysis API. */
+	/** Preparation and nutrition fields used by the analysis API. */
 	state?: 'raw' | 'cooked' | 'drained' | null;
 	ciqualCode?: string;
 	/** Visible food search text; a code is stored only after selecting a result. */

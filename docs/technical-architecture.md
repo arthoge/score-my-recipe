@@ -1,6 +1,6 @@
 # Architecture notes
 
-The project's initial goal is to compute the Green-Score for recipes. In the future, it may support additional scores (Nutri-Score, NOVA groups for ultra-processed foods, etc.).
+The project's initial goal is to compute the Green-Score for recipes. It also computes Nutri-Score 2023 and recipe nutrition. NOVA is not implemented.
 
 ## A frontend and an API
 

@@ -1,4 +1,4 @@
-<!-- A named recipe table with isolated editing and Green-Score state. -->
+<!-- A named recipe table with isolated editing and environmental/nutrition scores. -->
 <script lang="ts">
 	import { _ } from '$lib/i18n';
 	import { untrack } from 'svelte';
@@ -9,8 +9,7 @@
 	import {
 		analyzeNutrition,
 		nutritionInputs,
-		type NutritionAnalysis,
-		type NutritionCategory
+		type NutritionAnalysis
 	} from '$lib/api/nutritionAnalysis';
 	import CountrySelect from '$lib/ui/CountrySelect.svelte';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
@@ -46,12 +45,11 @@
 	}: Props = $props();
 	let title = $derived(name || fallbackTitle);
 
-	let nutritionCategory = $state<NutritionCategory>('en:meals');
 	let nutrition = $state<NutritionAnalysis | null>(null);
 	let nutritionLoading = $state(false);
 	let nutritionFailed = $state(false);
 	let nutritionFeedbackRows = $state<Record<string, string>>({});
-	let nutritionPayload = $derived(nutritionInputs(ingredients, portions, nutritionCategory));
+	let nutritionPayload = $derived(nutritionInputs(ingredients, portions));
 	let nutritionSignature = $derived(JSON.stringify(nutritionPayload));
 	let nutritionReady = $derived(
 		nutritionPayload.ingredients.some((row) => isPositiveAmount(row.quantity_g)) &&
@@ -108,7 +106,7 @@
 	let country = $state<string | null>(null);
 
 	// --- Green-score state -------------------------------------------------
-	// The latest computed score response (null until computed or while loading).
+	// The latest computed score response, retained while valid inputs recalculate.
 	let greenScore = $state<GreenScoreResponse | null>(null);
 	let greenFeedbackRows = $state<Record<string, string>>({});
 	let isScoreLoading = $state(false);
@@ -299,25 +297,6 @@
 	</div>
 	<div class="mb-4 flex flex-wrap items-end gap-4">
 		<CountrySelect bind:value={country} id="country-select-{id}" />
-		<label class="fieldset w-max" for="recipe-type-{id}">
-			<span class="label whitespace-nowrap"
-				>{$_('nutrition.recipe_type', { default: 'Recipe type' })}</span
-			>
-			<select
-				id="recipe-type-{id}"
-				bind:value={nutritionCategory}
-				class="select select-sm w-32 min-w-full"
-			>
-				<option value="en:meals">{$_('nutrition.category.dish', { default: 'Dish' })}</option>
-				<option value="en:cheeses">{$_('nutrition.category.cheese', { default: 'Cheese' })}</option>
-				<option value="en:fats"
-					>{$_('nutrition.category.fats', { default: 'Fats and oils' })}</option
-				>
-				<option value="en:beverages"
-					>{$_('nutrition.category.beverage', { default: 'Beverage' })}</option
-				>
-			</select>
-		</label>
 
 		<label class="fieldset w-max">
 			<span class="label whitespace-nowrap"
