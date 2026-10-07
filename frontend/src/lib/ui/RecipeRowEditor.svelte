@@ -19,18 +19,28 @@
 	import { createEmptyIngredient, type TaxonomyItem } from '$lib/types/ingredient';
 	import IconMdiPlus from '@iconify-svelte/mdi/plus';
 	import { removeIngredientFromList } from '$lib/types/ingredientsList';
+	import type { NutritionDiagnostic } from '$lib/api/nutritionAnalysis';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
 
 	type Props = {
 		ingredients: IngredientsList;
 		/** Ingredient ids flagged as missing in the last computed green-score. */
 		missingIngredientIds?: string[];
+		nutritionDiagnostics?: NutritionDiagnostic[];
+		nutritionFallbackIds?: string[];
 		/** Recipe name used to identify the table to assistive technology. */
 		title: string;
 		id: string;
 	};
 
-	let { ingredients = $bindable(), missingIngredientIds = [], title, id }: Props = $props();
+	let {
+		ingredients = $bindable(),
+		missingIngredientIds = [],
+		nutritionDiagnostics = [],
+		nutritionFallbackIds = [],
+		title,
+		id
+	}: Props = $props();
 
 	// Load each choice list once per recipe, rather than once per ingredient row.
 	let originOptions = $state<TaxonomyItem[]>([]);
@@ -204,6 +214,8 @@
 						isOnlyItem={ingredients.length === 1}
 						onDelete={handleIngredientDelete}
 						{missingIngredientIds}
+						{nutritionDiagnostics}
+						{nutritionFallbackIds}
 						{originOptions}
 						{labelOptions}
 						{originsStatus}
@@ -332,6 +344,12 @@
 	}
 	:global(.ingredient-table td:focus-within) {
 		box-shadow: inset 0 0 0 1px var(--color-primary);
+	}
+	:global(.ingredient-table td[data-info='true']:not(:focus-within)) {
+		background: color-mix(in oklab, var(--color-info) 15%, var(--color-base-100));
+	}
+	:global(.ingredient-table td[data-warning='true']:not(:focus-within)) {
+		background: color-mix(in oklab, var(--color-warning) 15%, var(--color-base-100));
 	}
 	:global(.ingredient-table td[data-invalid='true']:not(:focus-within)) {
 		background: color-mix(in oklab, var(--color-error) 15%, var(--color-base-100));

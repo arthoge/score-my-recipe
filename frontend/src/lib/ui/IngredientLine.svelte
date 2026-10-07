@@ -1,5 +1,7 @@
 <!-- Fixed-height ingredient cells; all environmental and preparation fields stay visible. -->
 <script lang="ts">
+	import type { NutritionDiagnostic } from '$lib/api/nutritionAnalysis';
+	import CellTooltip from './CellTooltip.svelte';
 	import { _ } from '$lib/i18n';
 	import { untrack } from 'svelte';
 	import {
@@ -14,8 +16,17 @@
 	import TaxonomyCell from './TaxonomyCell.svelte';
 	import LabelsCell from './LabelsCell.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
-	import { PREPARATION_OPTIONS, type Ingredient, type TaxonomyItem } from '$lib/types/ingredient';
-	import { ingredientCellErrors, isPositiveAmount } from './ingredientEditor';
+	import {
+		isIngredientNotEmpty,
+		PREPARATION_OPTIONS,
+		type Ingredient,
+		type TaxonomyItem
+	} from '$lib/types/ingredient';
+	import {
+		ingredientCellErrors,
+		ingredientCalculationCells,
+		isPositiveAmount
+	} from './ingredientEditor';
 	import { getPreparedWeight, preparedWeightInputKey } from './preparedWeight';
 	import { estimatePreparedWeight } from '$lib/api/preparation';
 
@@ -24,6 +35,8 @@
 		recipeId: string;
 		isOnlyItem?: boolean;
 		missingIngredientIds?: string[];
+		nutritionDiagnostics?: NutritionDiagnostic[];
+		nutritionFallbackIds?: string[];
 		originOptions: TaxonomyItem[];
 		labelOptions: TaxonomyItem[];
 		originsStatus: 'loading' | 'ready' | 'failed';
@@ -35,6 +48,8 @@
 		recipeId,
 		isOnlyItem = false,
 		missingIngredientIds = [],
+		nutritionDiagnostics = [],
+		nutritionFallbackIds = [],
 		originOptions,
 		labelOptions,
 		originsStatus,
@@ -146,9 +161,27 @@
 			preparedText = preparedInput?.valueAsNumber === weight ? preparedInput.value : String(weight);
 		});
 	});
-	let referenceInvalid = $derived(
-		errors.environmentalReference || missingIngredientIds.includes(ingredient.id)
+	let rowDiagnostics = $derived(
+		nutritionDiagnostics.filter((issue) => issue.ingredient_id === ingredient.id)
 	);
+	let calculationCells = $derived(
+		ingredientCalculationCells(
+			ingredient,
+			missingIngredientIds.includes(ingredient.id),
+			rowDiagnostics,
+			nutritionFallbackIds.includes(ingredient.id)
+		)
+	);
+	let nutritionIssueTitle = $derived(
+		rowDiagnostics.length > 0
+			? $_('recipe.incomplete_nutrition_reference', {
+					default: 'This reference is missing data required for Nutri-Score.'
+				})
+			: $_('recipe.required_nutrition_reference', {
+					default: 'Choose a Ciqual food or an Open Food Facts product for nutrition calculations.'
+				})
+	);
+
 	let previousName: string | undefined;
 	let productSuggestions = $state<TaxonomyItem[]>([]);
 
@@ -158,9 +191,25 @@
 		previousName = name;
 	});
 
+	let referenceLookupKey = $derived(
+		JSON.stringify([ingredient.name.trim(), ingredient.codifiedIngredient?.id])
+	);
+	let settledReferenceKey = $state<string>();
+	let settledProductKey = $state<string>();
+	let referencesPending = $derived(
+		ingredient.name.trim().length >= 3 && settledReferenceKey !== referenceLookupKey
+	);
+	let productsPending = $derived(
+		ingredient.name.trim().length >= 3 && settledProductKey !== referenceLookupKey
+	);
+	let ciqualLoading = $derived(!ingredient.ciqualName && (referencesPending || productsPending));
+	let agribalyseLoading = $derived(!ingredient.agribalyseName && referencesPending);
+	let productLoading = $derived(!ingredient.productName && productsPending);
+
 	$effect(() => {
 		const name = ingredient.name.trim();
 		const taxonomyId = ingredient.codifiedIngredient?.id;
+		const lookupKey = referenceLookupKey;
 		productSuggestions = [];
 		const controller = new AbortController();
 		let cancelled = false;
@@ -176,6 +225,9 @@
 								})
 								.catch(() => {
 									/* Leave ambiguous names for the chef to select. */
+								})
+								.finally(() => {
+									if (!cancelled) settledReferenceKey = lookupKey;
 								});
 						if (taxonomyId)
 							getIngredientReferences(taxonomyId, controller.signal)
@@ -197,6 +249,9 @@
 								})
 								.catch(() => {
 									/* Manual search remains available if matching fails. */
+								})
+								.finally(() => {
+									if (!cancelled) settledReferenceKey = lookupKey;
 								});
 						searchOffProducts(name, 8, controller.signal)
 							.then((results) => {
@@ -207,6 +262,9 @@
 							})
 							.catch(() => {
 								/* A service failure must not select an invented product. */
+							})
+							.finally(() => {
+								if (!cancelled) settledProductKey = lookupKey;
 							});
 					}, 400)
 				: undefined;
@@ -226,6 +284,11 @@
 
 <tr>
 	<td data-invalid={errors.name}>
+		<CellTooltip
+			tip={errors.name
+				? $_('recipe.missing_ingredient_name', { default: 'Enter an ingredient name.' })
+				: undefined}
+		/>
 		<TaxonomyCell
 			id="ingredient-name-{rowId}"
 			tagtype="ingredients"
@@ -241,9 +304,14 @@
 			}}
 		/>
 	</td>
-	<td>
+	<td
+		data-invalid={!ciqualLoading && calculationCells.ciqual === 'error'}
+		data-warning={!ciqualLoading && calculationCells.ciqual === 'warning'}
+	>
 		<TaxonomyCell
+			invalid={!ciqualLoading && calculationCells.ciqual === 'error'}
 			id="ingredient-ciqual-{rowId}"
+			backgroundLoading={ciqualLoading}
 			getSuggestions={searchCiqualFoods}
 			searchTerm={ingredient.name}
 			label={$_('recipe.ciqual_food', { default: 'Ciqual food' })}
@@ -263,10 +331,18 @@
 				ingredient.ciqualCode = code;
 			}}
 		/>
+
+		<CellTooltip
+			tip={!ciqualLoading && calculationCells.ciqual ? nutritionIssueTitle : undefined}
+		/>
 	</td>
-	<td data-invalid={referenceInvalid}>
+	<td
+		data-invalid={!agribalyseLoading && calculationCells.agribalyse === 'error'}
+		data-warning={!agribalyseLoading && calculationCells.agribalyse === 'warning'}
+	>
 		<TaxonomyCell
 			id="ingredient-reference-{rowId}"
+			backgroundLoading={agribalyseLoading}
 			getSuggestions={searchAgribalyseFoods}
 			searchTerm={ingredient.name}
 			label={$_('recipe.agribalyse_food', { default: 'Agribalyse correspondence' })}
@@ -279,17 +355,31 @@
 						}
 					]
 				: []}
-			invalid={referenceInvalid}
+			invalid={!agribalyseLoading && calculationCells.agribalyse === 'error'}
 			onchange={(tags) => {
 				ingredient.agribalyseName = tags[0]?.label ?? '';
 				ingredient.agribalyseCode = tags[0]?.isInTaxonomy ? (tags[0].id ?? undefined) : undefined;
 				ingredient.referenceSource = 'manual';
 			}}
 		/>
+
+		<CellTooltip
+			tip={!agribalyseLoading && calculationCells.agribalyse
+				? $_('recipe.incomplete_environmental_reference', {
+						default: 'This reference has no usable environmental data for Green Score.'
+					})
+				: undefined}
+		/>
 	</td>
-	<td>
+	<td
+		data-invalid={!productLoading && calculationCells.product === 'error'}
+		data-warning={!productLoading && calculationCells.product === 'warning'}
+		data-info={!productLoading && calculationCells.product === 'info'}
+	>
 		<TaxonomyCell
+			invalid={!productLoading && calculationCells.product === 'error'}
 			id="ingredient-product-{rowId}"
+			backgroundLoading={productLoading}
 			getSuggestions={searchOffProducts}
 			searchTerm={ingredient.name}
 			initialSuggestions={productSuggestions}
@@ -310,8 +400,30 @@
 				ingredient.barcode = code;
 			}}
 		/>
+
+		<CellTooltip
+			tip={!productLoading && calculationCells.product === 'info'
+				? $_('recipe.off_ciqual_fallback', {
+						default: 'Open Food Facts nutrition data is incomplete. Ciqual values are used instead.'
+					})
+				: !productLoading && calculationCells.product
+					? nutritionIssueTitle
+					: undefined}
+		/>
 	</td>
-	<td data-invalid={errors.weight}>
+	<td
+		data-invalid={errors.weight}
+		data-warning={ingredient.weight === 0 && isIngredientNotEmpty(ingredient)}
+	>
+		<CellTooltip
+			tip={errors.weight
+				? $_('recipe.invalid_quantity', { default: 'Enter a valid quantity.' })
+				: ingredient.weight === 0 && isIngredientNotEmpty(ingredient)
+					? $_('recipe.zero_quantity', {
+							default: 'Excluded from the calculation because the quantity is 0 grams.'
+						})
+					: undefined}
+		/>
 		<div class="relative flex h-[43px] min-w-0 items-center">
 			<input
 				id="ingredient-weight-{rowId}"
@@ -343,7 +455,7 @@
 			</div>
 		</div>
 	</td>
-	<td>
+	<td data-warning={calculationCells.state === 'warning'}>
 		<select
 			class="cell-input"
 			bind:value={ingredient.state}
@@ -353,8 +465,16 @@
 			<option value="cooked">{$_('recipe.states.cooked', { default: 'Cooked' })}</option>
 			<option value="drained">{$_('recipe.states.drained', { default: 'Drained' })}</option>
 		</select>
+
+		<CellTooltip
+			tip={calculationCells.state
+				? $_('recipe.prepared_reference_required', {
+						default: 'Choose a nutrition reference for the ingredient in its weighed state.'
+					})
+				: undefined}
+		/>
 	</td>
-	<td>
+	<td data-warning={calculationCells.preparation === 'warning'}>
 		<select
 			class="cell-input"
 			bind:value={ingredient.preparationProfile}
@@ -366,8 +486,23 @@
 				>
 			{/each}
 		</select>
+
+		<CellTooltip
+			tip={calculationCells.preparation
+				? $_('recipe.unsupported_nutrition_preparation', {
+						default: 'Nutrition data for this preparation is unavailable.'
+					})
+				: undefined}
+		/>
 	</td>
 	<td data-invalid={errors.preparedWeight}>
+		<CellTooltip
+			tip={errors.preparedWeight
+				? $_('recipe.invalid_prepared_weight', {
+						default: 'Enter a prepared weight greater than 0.'
+					})
+				: undefined}
+		/>
 		<div class="relative flex h-[43px] min-w-0 items-center">
 			<input
 				id="ingredient-prepared-weight-{rowId}"
@@ -390,7 +525,7 @@
 				inputmode="decimal"
 				aria-label={$_('recipe.prepared_weight_with_unit', { default: 'Prepared weight (grams)' })}
 				aria-invalid={errors.preparedWeight}
-				title={preparedWeightTitle}
+				title={errors.preparedWeight ? undefined : preparedWeightTitle}
 				aria-busy={preparedEstimateLoading}
 			/>
 			<!-- The invisible number positions the unit; the full-width input keeps its native arrows. -->
@@ -422,13 +557,7 @@
 					(selected && selected === ingredient.origin?.id ? ingredient.origin : null);
 			}}
 		>
-			<option value=""
-				>{originsStatus === 'loading'
-					? $_('recipe.search_loading', { default: 'Searching…' })
-					: originsStatus === 'failed'
-						? $_('recipe.search_failed', { default: 'Search unavailable. Try again.' })
-						: $_('recipe.world', { default: 'World' })}</option
-			>
+			<option value="">{$_('recipe.world', { default: 'World' })}</option>
 			{#if ingredient.origin?.id && !originOptions.some((option) => option.id === ingredient.origin?.id)}
 				<option class="text-base-content" value={ingredient.origin.id}
 					>{ingredient.origin.label}</option

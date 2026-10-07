@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyIngredient } from './ingredient';
-import { getEditorRecipes } from './recipeDraft';
+import { getEditorRecipes, RECIPE_NAME_MAX_LENGTH } from './recipeDraft';
 
 describe('getEditorRecipes', () => {
+	it('bounds imported names for display without changing the import snapshot', () => {
+		const name = `  ${'a'.repeat(RECIPE_NAME_MAX_LENGTH + 20)}  `;
+		const imported = { id: 'long-name', name, ingredients: [] };
+		const [recipe] = getEditorRecipes({ recipes: [imported] });
+		expect(recipe.name).toBe('a'.repeat(RECIPE_NAME_MAX_LENGTH));
+		expect(imported.name).toBe(name);
+	});
+
 	it('keeps the existing single-recipe navigation working', () => {
 		const ingredient = { ...createEmptyIngredient(), name: 'Tomatoes', weight: 400 };
 		const recipes = getEditorRecipes({ ingredients: [ingredient] });

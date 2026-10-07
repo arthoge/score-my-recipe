@@ -437,6 +437,18 @@ export interface components {
 			fields?: string[];
 		};
 		/**
+		 * ExcludedIngredient
+		 * @description Recipe ingredient excluded from the grade because its composition is incomplete.
+		 */
+		ExcludedIngredient: {
+			/** Ingredient Id */
+			ingredient_id: string;
+			/** Ingredient Name */
+			ingredient_name: string;
+			/** Prepared Weight G */
+			prepared_weight_g: number;
+		};
+		/**
 		 * FoodReference
 		 * @description Readable catalog food with its internal identifiers.
 		 */
@@ -713,7 +725,7 @@ export interface components {
 		 */
 		NutritionIngredient: {
 			/** Quantity G */
-			quantity_g: number;
+			quantity_g?: number | null;
 			/**
 			 * State
 			 * @default raw
@@ -775,7 +787,7 @@ export interface components {
 			 * Status
 			 * @enum {string}
 			 */
-			status: 'complete' | 'incomplete' | 'unsupported' | 'dependency_error';
+			status: 'complete' | 'partial' | 'incomplete' | 'unsupported' | 'dependency_error';
 			nutri_score?: components['schemas']['NutriScore'] | null;
 			/** Prepared Weight G */
 			prepared_weight_g?: number | null;
@@ -799,6 +811,13 @@ export interface components {
 			diagnostics?: components['schemas']['Diagnostic'][];
 			/** Assumptions */
 			assumptions?: components['schemas']['Diagnostic'][];
+			/** Excluded Ingredients */
+			excluded_ingredients?: components['schemas']['ExcludedIngredient'][];
+			/**
+			 * Excluded Weight Percent
+			 * @default 0
+			 */
+			excluded_weight_percent: number;
 			/**
 			 * Data Version
 			 * @default CIQUAL-2025

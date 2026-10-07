@@ -58,7 +58,6 @@
 		"ciqual_food": "Ciqual",
 		"agribalyse_food": "Agribalyse",
 		"off_product": "Open Food Facts",
-		"reference_suggestions": "{count} suggestions",
 		"search_loading": "Searching…",
 		"search_failed": "Search unavailable. Try again.",
 		"search_empty": "No matching foods or products.",
@@ -90,6 +89,11 @@
 		"add_ingredient_placeholder": "Add an ingredient…",
 		"review_description": "Review your ingredients and quantities before calculating each recipe’s score.",
 		"untitled": "Recipe {number}",
+		"name": "Recipe name",
+		"edit_name": "Edit recipe name",
+		"name_character_count": "{count}/{max} characters",
+		"cancel": "Cancel",
+		"save": "Save",
 		"compute_error": "Could not compute the score. Please try again.",
 		"ingredient_name_placeholder": "e.g., Tomato",
 		"weight": "Weight (g)",
@@ -145,7 +149,17 @@
 		"more_labels": "Show {count} more labels",
 		"no_labels_available": "No labels available",
 		"world": "World",
-		"excluded_summary": "{count} ingredient(s) excluded ({percent}% of recipe weight)."
+		"excluded_summary": "{count} ingredient(s) excluded ({percent}% of recipe weight).",
+		"incomplete_nutrition_reference": "This reference is missing data required for Nutri-Score.",
+		"incomplete_environmental_reference": "This reference has no usable environmental data for Green Score.",
+		"prepared_reference_required": "Choose a nutrition reference for the ingredient in its weighed state.",
+		"unsupported_nutrition_preparation": "Nutrition data for this preparation is unavailable.",
+		"off_ciqual_fallback": "Open Food Facts nutrition data is incomplete. Ciqual values are used instead.",
+		"missing_ingredient_name": "Enter an ingredient name.",
+		"invalid_quantity": "Enter a valid quantity.",
+		"zero_quantity": "Excluded from the calculation because the quantity is 0 grams.",
+		"invalid_prepared_weight": "Enter a prepared weight greater than 0.",
+		"required_nutrition_reference": "Choose a Ciqual food or an Open Food Facts product for nutrition calculations."
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",
@@ -247,6 +261,8 @@
 			"fats": "Fats and oils",
 			"beverage": "Beverage"
 		},
-		"logo_alt": "Nutri-Score {grade}"
+		"logo_alt": "Nutri-Score {grade}",
+		"calculation_unavailable": "Nutrition calculation is temporarily unavailable. Please try again.",
+		"unsupported_type": "This recipe type is not supported yet."
 	}
 }

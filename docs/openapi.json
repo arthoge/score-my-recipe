@@ -948,6 +948,30 @@
         "title": "Diagnostic",
         "description": "Stable machine-readable problem or assumption, localized by the frontend."
       },
+      "ExcludedIngredient": {
+        "properties": {
+          "ingredient_id": {
+            "type": "string",
+            "title": "Ingredient Id"
+          },
+          "ingredient_name": {
+            "type": "string",
+            "title": "Ingredient Name"
+          },
+          "prepared_weight_g": {
+            "type": "number",
+            "title": "Prepared Weight G"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id",
+          "ingredient_name",
+          "prepared_weight_g"
+        ],
+        "title": "ExcludedIngredient",
+        "description": "Recipe ingredient excluded from the grade because its composition is incomplete."
+      },
       "FoodReference": {
         "properties": {
           "code": {
@@ -1487,8 +1511,15 @@
       "NutritionIngredient": {
         "properties": {
           "quantity_g": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Quantity G"
           },
           "state": {
@@ -1561,7 +1592,6 @@
         },
         "type": "object",
         "required": [
-          "quantity_g",
           "id"
         ],
         "title": "NutritionIngredient",
@@ -1610,6 +1640,7 @@
             "type": "string",
             "enum": [
               "complete",
+              "partial",
               "incomplete",
               "unsupported",
               "dependency_error"
@@ -1731,6 +1762,18 @@
             },
             "type": "array",
             "title": "Assumptions"
+          },
+          "excluded_ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/ExcludedIngredient"
+            },
+            "type": "array",
+            "title": "Excluded Ingredients"
+          },
+          "excluded_weight_percent": {
+            "type": "number",
+            "title": "Excluded Weight Percent",
+            "default": 0
           },
           "data_version": {
             "type": "string",

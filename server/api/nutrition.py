@@ -20,6 +20,7 @@ PREPARED_FOODS = {
 class NutritionIngredient(preparation.PreparedWeightRequest):
     """Edible ingredient quantity, selected nutrition reference and optional measured mass."""
 
+    quantity_g: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     id: str
     name: str = ""
     prepared_weight_g: float | None = Field(default=None, gt=0, allow_inf_nan=False)
@@ -57,10 +58,18 @@ class IngredientTrace(BaseModel):
     red_meat_percent: float | None = 0
 
 
+class ExcludedIngredient(BaseModel):
+    """Recipe ingredient excluded from the grade because its composition is incomplete."""
+
+    ingredient_id: str
+    ingredient_name: str
+    prepared_weight_g: float
+
+
 class NutritionResponse(BaseModel):
     """Nutrition remains available if the independent grade dependency fails."""
 
-    status: Literal["complete", "incomplete", "unsupported", "dependency_error"]
+    status: Literal["complete", "partial", "incomplete", "unsupported", "dependency_error"]
     nutri_score: nutriscore.NutriScore | None = None
     prepared_weight_g: float | None = None
     nutrients_total: dict[str, float | None] | None = None
@@ -70,6 +79,8 @@ class NutritionResponse(BaseModel):
     ingredients: list[IngredientTrace] = Field(default_factory=list)
     diagnostics: list[Diagnostic] = Field(default_factory=list)
     assumptions: list[Diagnostic] = Field(default_factory=list)
+    excluded_ingredients: list[ExcludedIngredient] = Field(default_factory=list)
+    excluded_weight_percent: float = 0
     data_version: str = "CIQUAL-2025"
 
 
@@ -149,7 +160,7 @@ def _product_values(product: dict, prepared: bool) -> tuple[dict, float | None]:
 
 
 async def analyze(request: NutritionRequest) -> NutritionResponse:
-    """Aggregate complete prepared composition; never grade a subset of a recipe."""
+    """Grade usable ingredients and explicitly report omitted rows and their weight share."""
     response = NutritionResponse(status="incomplete")
     if request.category == "en:beverages":
         # Gram quantities cannot establish per-100-ml composition or sweetener eligibility.
@@ -164,7 +175,11 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
         async with semaphore:
             return await nutrition_data.get_product(barcode)
 
-    barcodes = {row.barcode for row in request.ingredients if row.barcode}
+    barcodes = {
+        row.barcode
+        for row in request.ingredients
+        if row.barcode and row.quantity_g is not None and row.quantity_g > 0
+    }
     products = dict(
         zip(
             barcodes,
@@ -174,6 +189,7 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
         )
     )
     unsupported, dependency_error = False, False
+    masses: dict[str, float] = {}
     for row in request.ingredients:
 
         def diagnostic(code: str, fields: list[str] | None = None) -> Diagnostic:
@@ -182,11 +198,22 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
                 ingredient_id=row.id, ingredient_name=row.name, code=code, fields=fields or []
             )
 
+        if row.quantity_g is None:
+            masses[row.id] = 0
+            response.diagnostics.append(diagnostic("quantity_missing"))
+            continue
+        if row.quantity_g == 0:
+            masses[row.id] = 0
+            response.diagnostics.append(diagnostic("zero_quantity"))
+            continue
         estimate = preparation.estimate_prepared_weight(row)
         mass = row.prepared_weight_g or estimate.prepared_weight_g or row.quantity_g
+        masses[row.id] = mass
         cooking = row.state == "raw" and row.preparation != "none"
         bounded = []
         red_meat = 0
+        required = (*REQUIRED, "fat") if request.category == "en:fats" else REQUIRED
+        fallback = False
         if row.barcode:
             product = products[row.barcode]
             if isinstance(product, BaseException):
@@ -200,10 +227,6 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
                 continue
             # Raw product nutrient values cannot describe nutrients lost/absorbed during cooking.
             values, plant = _product_values(product, cooking)
-            if cooking and (estimate.status != "estimated" or values["energy_kj"] is None):
-                unsupported = True
-                response.diagnostics.append(diagnostic("unsupported_preparation"))
-                continue
             source, reference, prepared_reference = "Open Food Facts", row.barcode, row.barcode
             upstream = product.get("nutriscore", {}).get("2023", {}).get("data", {})
             # An upstream meat-product flag is not an exact recipe ingredient percentage.
@@ -211,8 +234,19 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
                 "meat" in tag or "sausage" in tag for tag in product.get("categories_tags", [])
             ):
                 red_meat = None
-                response.diagnostics.append(diagnostic("red_meat_proportion_missing"))
-        else:
+            fallback = bool(row.ciqual_code in foods) and (
+                any(values[key] is None for key in required) or plant is None or red_meat is None
+            )
+            if (
+                cooking
+                and (estimate.status != "estimated" or values["energy_kj"] is None)
+                and not fallback
+            ):
+                unsupported = True
+                response.diagnostics.append(diagnostic("unsupported_preparation"))
+                continue
+        if not row.barcode or fallback:
+            red_meat = 0
             if not row.ciqual_code:
                 response.diagnostics.append(diagnostic("nutrition_reference_missing"))
                 continue
@@ -245,18 +279,22 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
                 and food["detail_group"] not in ("040103", "040104", "040203", "040204")
             ):
                 red_meat = None
-                response.diagnostics.append(diagnostic("red_meat_proportion_missing"))
             plant = ciqual_plant_percent(food)
             source, reference, prepared_reference = "CIQUAL-2025", row.ciqual_code, counterpart
         if bounded:
             response.assumptions.append(diagnostic("conservative_nutrient_bounds", bounded))
         if cooking:
             response.assumptions.append(diagnostic("cooking_estimate"))
-        missing = [key for key in REQUIRED if values[key] is None]
+        missing = [key for key in required if values[key] is None]
         if missing:
             response.diagnostics.append(diagnostic("nutrients_missing", missing))
         if plant is None:
             response.diagnostics.append(diagnostic("plant_proportion_missing"))
+        if red_meat is None:
+            response.diagnostics.append(diagnostic("red_meat_proportion_missing"))
+        if fallback and not missing and plant is not None and red_meat is not None:
+            # Use one coherent generic composition, never fill isolated product nutrients with zeros.
+            response.assumptions.append(diagnostic("off_ciqual_fallback"))
         response.ingredients.append(
             IngredientTrace(
                 ingredient_id=row.id,
@@ -271,14 +309,29 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
                 red_meat_percent=red_meat,
             )
         )
-    if len(response.ingredients) != len(request.ingredients):
-        response.status = (
-            "dependency_error"
-            if dependency_error
-            else ("unsupported" if unsupported else "incomplete")
+    excluded_ids = {issue.ingredient_id for issue in response.diagnostics if issue.ingredient_id}
+    response.excluded_ingredients = [
+        ExcludedIngredient(
+            ingredient_id=row.id, ingredient_name=row.name, prepared_weight_g=masses[row.id]
         )
+        for row in request.ingredients
+        if row.id in excluded_ids
+    ]
+    total_mass = math.fsum(masses.values())
+    response.excluded_weight_percent = (
+        math.fsum(row.prepared_weight_g for row in response.excluded_ingredients) / total_mass * 100
+        if total_mass > 0
+        else 0
+    )
+    usable = [row for row in response.ingredients if row.ingredient_id not in excluded_ids]
+    # If no complete ingredient remains, still expose quantified nutrition where available.
+    # Those details have no grade, and missing contributions remain unknown.
+    traces = usable or response.ingredients
+    response.status = (
+        "dependency_error" if dependency_error else ("unsupported" if unsupported else "incomplete")
+    )
+    if not traces:
         return response
-    traces = response.ingredients
     mass = sum(row.prepared_weight_g for row in traces)
     # A single missing contribution keeps the whole nutrient total unknown.
     totals: dict[str, float | None] = {}
@@ -300,28 +353,26 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
     response.nutrients_per_portion = {
         key: None if value is None else value / request.portions for key, value in totals.items()
     }
-    plant_mass, red_meat_mass = 0.0, 0.0
-    for trace in traces:
-        if trace.plant_percent is None or trace.red_meat_percent is None:
-            return response
-        plant_mass += trace.plant_percent * trace.prepared_weight_g / 100
-        red_meat_mass += trace.red_meat_percent * trace.prepared_weight_g / 100
-    response.plant_percent = plant_mass * 100 / mass
-    if response.diagnostics:
+    if not usable:
         return response
+    plant_contributions, red_meat_contributions = [], []
+    for trace in usable:
+        assert trace.plant_percent is not None and trace.red_meat_percent is not None
+        plant_contributions.append(trace.plant_percent * trace.prepared_weight_g / 100)
+        red_meat_contributions.append(trace.red_meat_percent * trace.prepared_weight_g / 100)
+    plant_mass = math.fsum(plant_contributions)
+    red_meat_mass = math.fsum(red_meat_contributions)
+    response.plant_percent = plant_mass * 100 / mass
     red_meat_percent = red_meat_mass * 100 / mass
     try:
         # Optional fat/carbohydrate composition may be absent; required score inputs may not.
         nutrients = {
             key: value for key, value in response.nutrients_per_100g.items() if value is not None
         }
-        if request.category == "en:fats" and nutrients.get("fat") is None:
-            response.diagnostics.append(Diagnostic(code="nutrients_missing", fields=["fat"]))
-            return response
         response.nutri_score = await nutriscore.calculate(
             nutrients, response.plant_percent, request.category, red_meat_percent
         )
-        response.status = "complete"
+        response.status = "partial" if response.excluded_ingredients else "complete"
     except (OSError, ValueError, TimeoutError):
         response.status = "dependency_error"
         response.diagnostics.append(Diagnostic(code="calculation_unavailable"))

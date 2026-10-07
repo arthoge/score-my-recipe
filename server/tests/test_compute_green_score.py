@@ -140,3 +140,46 @@ async def test_free_text_codified_ingredient_is_missing(agribalyse_index):
     assert result.numeric_score is None
     assert result.letter_grade is None
     assert result.missing_ingredient_ids == ["i1"]
+
+
+@pytest.mark.asyncio
+async def test_zero_quantity_is_excluded_from_green_score(agribalyse_index):
+    """Zero-weight matches are excluded and do not change the score for the remaining food."""
+    taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            )
+        }
+    )
+    positive = build_ingredient_obj("positive", "apple", "en:apple")
+    zero = build_ingredient_obj("zero", "apple", "en:apple")
+    zero.weight = 0
+    with patch_ingredients_taxonomy(taxonomy):
+        complete = await score.compute_green_score([positive])
+        partial = await score.compute_green_score([positive, zero])
+        empty = await score.compute_green_score([zero])
+    assert partial.numeric_score == complete.numeric_score
+    assert partial.letter_grade == complete.letter_grade
+    assert partial.missing_ingredient_ids == ["zero"]
+    assert empty.letter_grade is None
+    assert empty.numeric_score is None
+
+
+@pytest.mark.asyncio
+async def test_missing_name_draft_is_excluded_from_green_score(agribalyse_index):
+    """A quantity-only draft cannot contribute even if a taxonomy reference is present."""
+    taxonomy = create_taxonomy(
+        {
+            "en:apple": create_taxonomy_node(
+                "en:apple", properties={"agribalyse_food_code": {"en": "10001"}}
+            )
+        }
+    )
+    positive = build_ingredient_obj("positive", "apple", "en:apple")
+    draft = build_ingredient_obj("draft", "", "en:apple")
+    with patch_ingredients_taxonomy(taxonomy):
+        complete = await score.compute_green_score([positive])
+        partial = await score.compute_green_score([positive, draft])
+    assert partial.numeric_score == complete.numeric_score
+    assert partial.missing_ingredient_ids == ["draft"]

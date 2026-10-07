@@ -30,8 +30,11 @@ from the same DOI and Open Licence 2.0 dataset above. SHA-256:
 Rebuild with `uv run typer api/cli.py run fetch-ciqual-nutrients`.
 
 `POST /v1/nutrition/analyze` aggregates complete served-component composition.
-OFF barcodes take precedence over a generic Ciqual selection, without silently
-replacing a product if lookup fails. Supported dry-food boiling profiles use
+Complete OFF product composition takes precedence over a generic Ciqual selection.
+Incomplete composition can fall back to the selected Ciqual food; the whole
+composition is replaced rather than mixing sources, and successful fallback is
+reported per ingredient as `off_ciqual_fallback` in assumptions. A failed product
+lookup remains an explicit dependency error. Supported dry-food boiling profiles use
 Ciqual counterparts 9125 (basmati rice), 9822 (dried egg pasta) and 20360 (lentils).
 Steamed potato weight estimation has no matching reviewed nutrition counterpart
 and is not automatically supported for nutrition. No retention correction is
@@ -40,7 +43,17 @@ applied a second time to prepared composition.
 Missing and unquantified trace values stay unknown. Quantified `< x` values use
 conservative bounds (x for unfavorable nutrients, zero for fiber/protein), with
 an assumption in the response. Unknown composite/concentrated plant proportions,
-unsupported cooking and incomplete nutrients prevent a grade for the whole recipe.
+unsupported cooking and incomplete nutrients exclude an ingredient from the grade.
+When at least one complete ingredient remains, the response has `partial` status
+and a score for those ingredients, normalized by their prepared weight. Excluded
+ingredient identities and their percentage of the full recipe weight are reported
+explicitly; missing contributions are never treated as zero. Zero-quantity
+ingredients are excluded with `zero_quantity` diagnostics and do not block other
+ingredients or trigger product lookups. Unfinished rows with a missing quantity
+are reported as `quantity_missing` exclusions while other ingredients remain
+calculable; an unknown quantity is not assigned a guessed weight. If no complete
+ingredient remains, quantified nutrition details can still be returned without
+a grade.
 Beverages remain unsupported without volume and sweetener inputs.
 
 The OFF adapter uses the documented non-persisting reserved

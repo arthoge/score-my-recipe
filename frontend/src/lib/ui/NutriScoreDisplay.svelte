@@ -5,10 +5,12 @@
 	import NutriScore from './NutriScore.svelte';
 	let {
 		analysis = null,
-		loading = false
+		loading = false,
+		failed = false
 	}: {
 		analysis?: NutritionAnalysis | null;
 		loading?: boolean;
+		failed?: boolean;
 	} = $props();
 
 	// Use nutrition-label order rather than the API object's property order.
@@ -23,11 +25,13 @@
 		'salt'
 	];
 	let nutrientRows = $derived(
-		Object.entries(analysis?.nutrients_per_100g ?? {}).sort(
-			([a], [b]) =>
-				(nutrientOrder.indexOf(a) === -1 ? nutrientOrder.length : nutrientOrder.indexOf(a)) -
-				(nutrientOrder.indexOf(b) === -1 ? nutrientOrder.length : nutrientOrder.indexOf(b))
-		)
+		Object.entries(analysis?.nutrients_per_100g ?? {})
+			.filter(([key, value]) => value != null || analysis?.nutrients_per_portion?.[key] != null)
+			.sort(
+				([a], [b]) =>
+					(nutrientOrder.indexOf(a) === -1 ? nutrientOrder.length : nutrientOrder.indexOf(a)) -
+					(nutrientOrder.indexOf(b) === -1 ? nutrientOrder.length : nutrientOrder.indexOf(b))
+			)
 	);
 
 	/** Both columns use grams for nutrients and kilojoules for energy. */
@@ -55,7 +59,29 @@
 				})}
 			</p>
 		{/if}
-		{#if analysis?.nutrients_per_100g}
+		{#if analysis?.nutri_score && analysis.excluded_ingredients?.length}
+			<p class="text-base-content mt-3 text-sm font-semibold" role="status">
+				{$_('recipe.excluded_summary', {
+					default: '{count} ingredient(s) excluded ({percent}% of recipe weight).',
+					values: {
+						count: analysis.excluded_ingredients.length,
+						percent: Math.round(analysis.excluded_weight_percent)
+					}
+				})}
+			</p>
+		{/if}
+		{#if failed || analysis?.status === 'dependency_error'}
+			<p class="text-base-content/70 mt-2 text-sm">
+				{$_('nutrition.calculation_unavailable', {
+					default: 'Nutrition calculation is temporarily unavailable. Please try again.'
+				})}
+			</p>
+		{:else if analysis?.status === 'unsupported' && !analysis.excluded_ingredients?.length}
+			<p class="text-base-content/70 mt-2 text-sm">
+				{$_('nutrition.unsupported_type', { default: 'This recipe type is not supported yet.' })}
+			</p>
+		{/if}
+		{#if nutrientRows.length > 0}
 			<details class="mt-3 text-sm">
 				<summary class="cursor-pointer"
 					>{$_('nutrition.details', { default: 'Nutrition details' })}</summary
@@ -75,7 +101,7 @@
 									><th>{$_(`nutrition.nutrients.${key}`, { default: key.replaceAll('_', ' ') })}</th
 									><td class="whitespace-nowrap">{formatNutrient(value, key)}</td><td
 										class="whitespace-nowrap"
-										>{formatNutrient(analysis.nutrients_per_portion?.[key], key)}</td
+										>{formatNutrient(analysis?.nutrients_per_portion?.[key], key)}</td
 									></tr
 								>
 							{/each}
