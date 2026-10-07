@@ -107,7 +107,7 @@
 		"action": "Action",
 		"summary": "Summary",
 		"green_score": "Green Score",
-		"computing": "Computing score...",
+		"computing": "Calculating...",
 		"numeric_score": "Score",
 		"no_score": "Score updates automatically once the required cells are complete.",
 		"compute_score": "Compute score",
@@ -221,5 +221,32 @@
 			"name": "Ratatouille",
 			"content": "500g tomatoes\n300g zucchini\n300g eggplant\n200g bell peppers\n100g onions\n30ml olive oil"
 		}
+	},
+	"nutrition": {
+		"details": "Nutrition details",
+		"per_100g": "Per 100 grams",
+		"per_portion": "Per portion",
+		"nutrients": {
+			"energy_kj": "Energy",
+			"proteins": "Proteins",
+			"carbohydrates": "Carbohydrates",
+			"fat": "Fat",
+			"sugars": "Sugars",
+			"fiber": "Fibre",
+			"saturated_fat": "Saturated fat",
+			"salt": "Salt",
+			"energy": "Energy",
+			"fruits_vegetables_legumes": "Fruit, vegetables and legumes",
+			"energy_from_saturated_fat": "Energy from saturated fat",
+			"saturated_fat_ratio": "Saturated fat ratio"
+		},
+		"recipe_type": "Recipe type",
+		"category": {
+			"dish": "Dish",
+			"cheese": "Cheese",
+			"fats": "Fats and oils",
+			"beverage": "Beverage"
+		},
+		"logo_alt": "Nutri-Score {grade}"
 	}
 }

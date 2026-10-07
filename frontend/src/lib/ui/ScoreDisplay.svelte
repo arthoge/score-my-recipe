@@ -1,17 +1,3 @@
-<!--
-  ScoreDisplay.svelte
-
-  Displays the computed green-score of a recipe: it wraps the `GreenScore` logo
-  component and adds the surrounding context (loading state, error, and the
-  summary of ingredients that were ignored by the backend computation).
-
-  Props:
-  - score: The full green-score response from the backend, or null.
-  - ignoredWeight: The total weight (in grams) of the ignored ingredients.
-  - totalWeight: The total weight (in grams) of all sent ingredients.
-  - isLoading: Whether the score is currently being computed.
-  - error: An error message, if the computation failed.
--->
 <script lang="ts">
 	import { _ } from '$lib/i18n';
 	import GreenScore from './GreenScore.svelte';
@@ -19,57 +5,28 @@
 
 	type Props = {
 		score?: GreenScoreResponse | null;
-		ignoredWeight?: number;
-		totalWeight?: number;
 		isLoading?: boolean;
 		error?: string | null;
 	};
 
-	let {
-		score = null,
-		ignoredWeight = 0,
-		totalWeight = 0,
-		isLoading = false,
-		error = null
-	}: Props = $props();
-
-	/** Number of ignored ingredients. */
-	let ignoredCount = $derived(score?.missingIngredientIds.length ?? 0);
-
-	/** Percentage of the total weight that the ignored ingredients represent. */
-	let ignoredWeightPercent = $derived(
-		totalWeight > 0 ? Math.round((ignoredWeight / totalWeight) * 100) : 0
-	);
+	let { score = null, isLoading = false, error = null }: Props = $props();
 </script>
 
-<div class="bg-base-200 w-96 max-w-full rounded-lg p-4">
+<div class="bg-base-200 w-96 max-w-full rounded-lg p-4" aria-live="polite" aria-busy={isLoading}>
 	<h3 class="text-lg font-semibold">
 		{$_('recipe.green_score', { default: 'Green Score' })}
 	</h3>
 
 	{#if isLoading}
 		<div class="flex items-center gap-2 py-2">
-			<span class="loading loading-spinner loading-sm"></span>
-			<span>{$_('recipe.computing', { default: 'Computing score...' })}</span>
+			<span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+			<span>{$_('recipe.computing', { default: 'Calculating...' })}</span>
 		</div>
-	{:else if error}
-		<div class="alert alert-error mt-2">
-			<span>{error}</span>
-		</div>
-	{:else if score?.letterGrade}
+	{:else if !error && score?.letterGrade && score.missingIngredientIds.length === 0}
 		<!-- Score logo + numeric score -->
 		<div class="mt-2">
 			<GreenScore letterGrade={score.letterGrade} numericScore={score.numericScore} />
 		</div>
-
-		{#if ignoredCount > 0}
-			<p class="text-warning mt-3 text-sm" role="status">
-				{$_('recipe.excluded_summary', {
-					default: '{count} ingredient(s) excluded ({percent}% of recipe weight).',
-					values: { count: ignoredCount, percent: ignoredWeightPercent }
-				})}
-			</p>
-		{/if}
 	{:else}
 		<p class="text-base-content/70 mt-2 text-sm">
 			{$_('recipe.no_score', {

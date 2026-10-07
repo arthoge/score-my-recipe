@@ -22,6 +22,14 @@ def fetch_ciqual():
 
 
 @cli.command()
+def fetch_ciqual_nutrients():
+    """Regenerate the pinned CIQUAL 2025 nutrient composition catalog."""
+    from api.nutrition_data import fetch_catalog
+
+    fetch_catalog()
+
+
+@cli.command()
 def export_openapi(
     target_path: Path = typer.Argument(
         exists=False,

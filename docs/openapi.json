@@ -688,6 +688,45 @@
         }
       }
     },
+    "/v1/prepared-weight": {
+      "post": {
+        "summary": "Prepared Weight",
+        "description": "Estimate prepared mass using a documented profile for the selected food and method.",
+        "operationId": "prepared_weight_v1_prepared_weight_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreparedWeightRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedWeightResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/recompute-quantity": {
       "post": {
         "summary": "Recompute Quantity",
@@ -710,6 +749,45 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RecomputeQuantityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/nutrition/analyze": {
+      "post": {
+        "summary": "Analyze Nutrition",
+        "description": "Analyze one served recipe component with independent algorithm-2023 availability.",
+        "operationId": "analyze_nutrition_v1_nutrition_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NutritionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NutritionResponse"
                 }
               }
             }
@@ -826,6 +904,49 @@
             ]
           }
         ]
+      },
+      "Diagnostic": {
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredient Id"
+          },
+          "ingredient_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredient Name"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "Diagnostic",
+        "description": "Stable machine-readable problem or assumption, localized by the frontend."
       },
       "FoodReference": {
         "properties": {
@@ -1132,6 +1253,100 @@
         "title": "IngredientReferencesResponse",
         "description": "Proposed correspondences from the taxonomy mapping, including proxy provenance."
       },
+      "IngredientTrace": {
+        "properties": {
+          "ingredient_id": {
+            "type": "string",
+            "title": "Ingredient Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "prepared_reference": {
+            "type": "string",
+            "title": "Prepared Reference"
+          },
+          "prepared_weight_g": {
+            "type": "number",
+            "title": "Prepared Weight G"
+          },
+          "yield_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Factor"
+          },
+          "yield_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YieldSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nutrients_per_100g": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Nutrients Per 100G"
+          },
+          "plant_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plant Percent"
+          },
+          "red_meat_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Red Meat Percent",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredient_id",
+          "source",
+          "reference",
+          "prepared_reference",
+          "prepared_weight_g",
+          "nutrients_per_100g",
+          "plant_percent"
+        ],
+        "title": "IngredientTrace",
+        "description": "Source, prepared counterpart and actual masses used for nutrient aggregation."
+      },
       "IngredientsResponse": {
         "properties": {
           "ingredients": {
@@ -1241,6 +1456,295 @@
           }
         ]
       },
+      "NutriScore": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "default": "2023"
+          },
+          "grade": {
+            "type": "string",
+            "title": "Grade"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "components": {
+            "$ref": "#/components/schemas/ScoreComponents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "grade",
+          "score",
+          "components"
+        ],
+        "title": "NutriScore",
+        "description": "Versioned algorithm result with the upstream component explanations."
+      },
+      "NutritionIngredient": {
+        "properties": {
+          "quantity_g": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity G"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "raw",
+              "cooked",
+              "drained"
+            ],
+            "title": "State",
+            "default": "raw"
+          },
+          "preparation": {
+            "type": "string",
+            "enum": [
+              "none",
+              "boiled",
+              "steamed",
+              "baked_roasted",
+              "grilled",
+              "pan_fried",
+              "deep_fried"
+            ],
+            "title": "Preparation",
+            "default": "none"
+          },
+          "ciqual_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciqual Code"
+          },
+          "barcode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Barcode"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "prepared_weight_g": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared Weight G"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantity_g",
+          "id"
+        ],
+        "title": "NutritionIngredient",
+        "description": "Edible ingredient quantity, selected nutrition reference and optional measured mass."
+      },
+      "NutritionRequest": {
+        "properties": {
+          "ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/NutritionIngredient"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Ingredients"
+          },
+          "portions": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Portions",
+            "default": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "en:meals",
+              "en:beverages",
+              "en:cheeses",
+              "en:fats"
+            ],
+            "title": "Category",
+            "default": "en:meals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ingredients"
+        ],
+        "title": "NutritionRequest",
+        "description": "One served recipe component; category defaults to a solid dish, not a beverage."
+      },
+      "NutritionResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "incomplete",
+              "unsupported",
+              "dependency_error"
+            ],
+            "title": "Status"
+          },
+          "nutri_score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NutriScore"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prepared_weight_g": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared Weight G"
+          },
+          "nutrients_total": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nutrients Total"
+          },
+          "nutrients_per_100g": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nutrients Per 100G"
+          },
+          "nutrients_per_portion": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nutrients Per Portion"
+          },
+          "plant_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plant Percent"
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/components/schemas/IngredientTrace"
+            },
+            "type": "array",
+            "title": "Ingredients"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "type": "array",
+            "title": "Diagnostics"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          },
+          "data_version": {
+            "type": "string",
+            "title": "Data Version",
+            "default": "CIQUAL-2025"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "NutritionResponse",
+        "description": "Nutrition remains available if the independent grade dependency fails."
+      },
       "Origin": {
         "properties": {
           "id": {
@@ -1322,6 +1826,129 @@
             ]
           }
         ]
+      },
+      "PreparedWeightRequest": {
+        "properties": {
+          "quantity_g": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity G"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "raw",
+              "cooked",
+              "drained"
+            ],
+            "title": "State",
+            "default": "raw"
+          },
+          "preparation": {
+            "type": "string",
+            "enum": [
+              "none",
+              "boiled",
+              "steamed",
+              "baked_roasted",
+              "grilled",
+              "pan_fried",
+              "deep_fried"
+            ],
+            "title": "Preparation",
+            "default": "none"
+          },
+          "ciqual_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciqual Code"
+          },
+          "barcode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Barcode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quantity_g"
+        ],
+        "title": "PreparedWeightRequest",
+        "description": "Edible quantity and explicit food identity before the selected preparation."
+      },
+      "PreparedWeightResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "unchanged",
+              "estimated",
+              "unsupported"
+            ],
+            "title": "Status"
+          },
+          "prepared_weight_g": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared Weight G"
+          },
+          "yield_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Factor"
+          },
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YieldSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "PreparedWeightResponse",
+        "description": "Unsupported transformations retain the entered quantity without a documented yield."
       },
       "RecipeIngredient": {
         "properties": {
@@ -1709,6 +2336,71 @@
           }
         ]
       },
+      "ScoreComponent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "default": "g"
+          },
+          "points": {
+            "type": "integer",
+            "title": "Points"
+          },
+          "points_max": {
+            "type": "integer",
+            "title": "Points Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "points",
+          "points_max"
+        ],
+        "title": "ScoreComponent",
+        "description": "One favorable or unfavorable component returned by algorithm 2023."
+      },
+      "ScoreComponents": {
+        "properties": {
+          "negative": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreComponent"
+            },
+            "type": "array",
+            "title": "Negative"
+          },
+          "positive": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreComponent"
+            },
+            "type": "array",
+            "title": "Positive"
+          }
+        },
+        "type": "object",
+        "required": [
+          "negative",
+          "positive"
+        ],
+        "title": "ScoreComponents",
+        "description": "The components actually counted by the selected algorithm."
+      },
       "ScoredIngredient": {
         "properties": {
           "id": {
@@ -2006,6 +2698,40 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "YieldSource": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "food": {
+            "type": "string",
+            "title": "Food"
+          },
+          "conditions": {
+            "type": "string",
+            "title": "Conditions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "url",
+          "table",
+          "food",
+          "conditions"
+        ],
+        "title": "YieldSource",
+        "description": "Traceable source and conditions for an estimated prepared mass."
       }
     }
   }

@@ -286,6 +286,26 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/v1/prepared-weight': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Prepared Weight
+		 * @description Estimate prepared mass using a documented profile for the selected food and method.
+		 */
+		post: operations['prepared_weight_v1_prepared_weight_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/v1/recompute-quantity': {
 		parameters: {
 			query?: never;
@@ -310,6 +330,26 @@ export interface paths {
 		 *     ``lang``) or the ``item`` sentinel for countable ingredients.
 		 */
 		post: operations['recompute_quantity_v1_recompute_quantity_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/nutrition/analyze': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Analyze Nutrition
+		 * @description Analyze one served recipe component with independent algorithm-2023 availability.
+		 */
+		post: operations['analyze_nutrition_v1_nutrition_analyze_post'];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -381,6 +421,20 @@ export interface components {
 			 * @description ISO 3166-1 alpha-2 country code
 			 */
 			country_code?: string | null;
+		};
+		/**
+		 * Diagnostic
+		 * @description Stable machine-readable problem or assumption, localized by the frontend.
+		 */
+		Diagnostic: {
+			/** Ingredient Id */
+			ingredient_id?: string | null;
+			/** Ingredient Name */
+			ingredient_name?: string | null;
+			/** Code */
+			code: string;
+			/** Fields */
+			fields?: string[];
 		};
 		/**
 		 * FoodReference
@@ -538,6 +592,36 @@ export interface components {
 			source?: string | null;
 		};
 		/**
+		 * IngredientTrace
+		 * @description Source, prepared counterpart and actual masses used for nutrient aggregation.
+		 */
+		IngredientTrace: {
+			/** Ingredient Id */
+			ingredient_id: string;
+			/** Source */
+			source: string;
+			/** Reference */
+			reference: string;
+			/** Prepared Reference */
+			prepared_reference: string;
+			/** Prepared Weight G */
+			prepared_weight_g: number;
+			/** Yield Factor */
+			yield_factor?: number | null;
+			yield_source?: components['schemas']['YieldSource'] | null;
+			/** Nutrients Per 100G */
+			nutrients_per_100g: {
+				[key: string]: number | null;
+			};
+			/** Plant Percent */
+			plant_percent: number | null;
+			/**
+			 * Red Meat Percent
+			 * @default 0
+			 */
+			red_meat_percent: number | null;
+		};
+		/**
 		 * IngredientsResponse
 		 * @description Response model for get_ingredients endpoint
 		 * @example {
@@ -608,6 +692,120 @@ export interface components {
 			labels: components['schemas']['Label'][];
 		};
 		/**
+		 * NutriScore
+		 * @description Versioned algorithm result with the upstream component explanations.
+		 */
+		NutriScore: {
+			/**
+			 * Version
+			 * @default 2023
+			 */
+			version: string;
+			/** Grade */
+			grade: string;
+			/** Score */
+			score: number;
+			components: components['schemas']['ScoreComponents'];
+		};
+		/**
+		 * NutritionIngredient
+		 * @description Edible ingredient quantity, selected nutrition reference and optional measured mass.
+		 */
+		NutritionIngredient: {
+			/** Quantity G */
+			quantity_g: number;
+			/**
+			 * State
+			 * @default raw
+			 * @enum {string}
+			 */
+			state: 'raw' | 'cooked' | 'drained';
+			/**
+			 * Preparation
+			 * @default none
+			 * @enum {string}
+			 */
+			preparation:
+				| 'none'
+				| 'boiled'
+				| 'steamed'
+				| 'baked_roasted'
+				| 'grilled'
+				| 'pan_fried'
+				| 'deep_fried';
+			/** Ciqual Code */
+			ciqual_code?: string | null;
+			/** Barcode */
+			barcode?: string | null;
+			/** Id */
+			id: string;
+			/**
+			 * Name
+			 * @default
+			 */
+			name: string;
+			/** Prepared Weight G */
+			prepared_weight_g?: number | null;
+		};
+		/**
+		 * NutritionRequest
+		 * @description One served recipe component; category defaults to a solid dish, not a beverage.
+		 */
+		NutritionRequest: {
+			/** Ingredients */
+			ingredients: components['schemas']['NutritionIngredient'][];
+			/**
+			 * Portions
+			 * @default 1
+			 */
+			portions: number;
+			/**
+			 * Category
+			 * @default en:meals
+			 * @enum {string}
+			 */
+			category: 'en:meals' | 'en:beverages' | 'en:cheeses' | 'en:fats';
+		};
+		/**
+		 * NutritionResponse
+		 * @description Nutrition remains available if the independent grade dependency fails.
+		 */
+		NutritionResponse: {
+			/**
+			 * Status
+			 * @enum {string}
+			 */
+			status: 'complete' | 'incomplete' | 'unsupported' | 'dependency_error';
+			nutri_score?: components['schemas']['NutriScore'] | null;
+			/** Prepared Weight G */
+			prepared_weight_g?: number | null;
+			/** Nutrients Total */
+			nutrients_total?: {
+				[key: string]: number | null;
+			} | null;
+			/** Nutrients Per 100G */
+			nutrients_per_100g?: {
+				[key: string]: number | null;
+			} | null;
+			/** Nutrients Per Portion */
+			nutrients_per_portion?: {
+				[key: string]: number | null;
+			} | null;
+			/** Plant Percent */
+			plant_percent?: number | null;
+			/** Ingredients */
+			ingredients?: components['schemas']['IngredientTrace'][];
+			/** Diagnostics */
+			diagnostics?: components['schemas']['Diagnostic'][];
+			/** Assumptions */
+			assumptions?: components['schemas']['Diagnostic'][];
+			/**
+			 * Data Version
+			 * @default CIQUAL-2025
+			 */
+			data_version: string;
+		};
+		/**
 		 * Origin
 		 * @description Origin model for Score My Recipe API
 		 * @example {
@@ -660,6 +858,55 @@ export interface components {
 		OriginsResponse: {
 			/** Origins */
 			origins: components['schemas']['Origin'][];
+		};
+		/**
+		 * PreparedWeightRequest
+		 * @description Edible quantity and explicit food identity before the selected preparation.
+		 */
+		PreparedWeightRequest: {
+			/** Quantity G */
+			quantity_g: number;
+			/**
+			 * State
+			 * @default raw
+			 * @enum {string}
+			 */
+			state: 'raw' | 'cooked' | 'drained';
+			/**
+			 * Preparation
+			 * @default none
+			 * @enum {string}
+			 */
+			preparation:
+				| 'none'
+				| 'boiled'
+				| 'steamed'
+				| 'baked_roasted'
+				| 'grilled'
+				| 'pan_fried'
+				| 'deep_fried';
+			/** Ciqual Code */
+			ciqual_code?: string | null;
+			/** Barcode */
+			barcode?: string | null;
+		};
+		/**
+		 * PreparedWeightResponse
+		 * @description Unsupported transformations retain the entered quantity without a documented yield.
+		 */
+		PreparedWeightResponse: {
+			/**
+			 * Status
+			 * @enum {string}
+			 */
+			status: 'unchanged' | 'estimated' | 'unsupported';
+			/** Prepared Weight G */
+			prepared_weight_g?: number | null;
+			/** Yield Factor */
+			yield_factor?: number | null;
+			/** Profile Id */
+			profile_id?: string | null;
+			source?: components['schemas']['YieldSource'] | null;
 		};
 		/**
 		 * RecipeIngredient
@@ -920,6 +1167,35 @@ export interface components {
 			unit: string;
 		};
 		/**
+		 * ScoreComponent
+		 * @description One favorable or unfavorable component returned by algorithm 2023.
+		 */
+		ScoreComponent: {
+			/** Id */
+			id: string;
+			/** Value */
+			value?: number | null;
+			/**
+			 * Unit
+			 * @default g
+			 */
+			unit: string;
+			/** Points */
+			points: number;
+			/** Points Max */
+			points_max: number;
+		};
+		/**
+		 * ScoreComponents
+		 * @description The components actually counted by the selected algorithm.
+		 */
+		ScoreComponents: {
+			/** Negative */
+			negative: components['schemas']['ScoreComponent'][];
+			/** Positive */
+			positive: components['schemas']['ScoreComponent'][];
+		};
+		/**
 		 * ScoredIngredient
 		 * @description An ingredient alternative with its matching Agribalyse row code.
 		 *
@@ -1103,6 +1379,22 @@ export interface components {
 			input?: unknown;
 			/** Context */
 			ctx?: Record<string, never>;
+		};
+		/**
+		 * YieldSource
+		 * @description Traceable source and conditions for an estimated prepared mass.
+		 */
+		YieldSource: {
+			/** Version */
+			version: string;
+			/** Url */
+			url: string;
+			/** Table */
+			table: string;
+			/** Food */
+			food: string;
+			/** Conditions */
+			conditions: string;
 		};
 	};
 	responses: never;
@@ -1559,6 +1851,39 @@ export interface operations {
 			};
 		};
 	};
+	prepared_weight_v1_prepared_weight_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['PreparedWeightRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['PreparedWeightResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
 	recompute_quantity_v1_recompute_quantity_post: {
 		parameters: {
 			query?: never;
@@ -1579,6 +1904,39 @@ export interface operations {
 				};
 				content: {
 					'application/json': components['schemas']['RecomputeQuantityResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	analyze_nutrition_v1_nutrition_analyze_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['NutritionRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['NutritionResponse'];
 				};
 			};
 			/** @description Validation Error */

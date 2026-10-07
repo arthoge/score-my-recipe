@@ -23,6 +23,7 @@ import api.score as score
 import api.types as types
 import api.units as units
 import api.preparation as preparation
+import api.nutrition as nutrition
 from api.settings import get_settings
 from api.warmup import warmup as warmup_caches
 
@@ -273,3 +274,9 @@ async def recompute_quantity(
     except exceptions.UnitConversionNotSupportedError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return types.RecomputeQuantityResponse(quantity_g=quantity_g, value=value, unit=unit)
+
+
+@app.post("/v1/nutrition/analyze")
+async def analyze_nutrition(request: nutrition.NutritionRequest) -> nutrition.NutritionResponse:
+    """Analyze one served recipe component with independent algorithm-2023 availability."""
+    return await nutrition.analyze(request)
