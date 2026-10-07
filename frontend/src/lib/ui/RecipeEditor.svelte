@@ -21,8 +21,12 @@
 	import {
 		computeGreenScore,
 		ingredientToGreenScoreInput,
+		getMakeItBetterSuggestions,
+		type MakeItBetterSuggestion,
 		type GreenScoreResponse
 	} from '$lib/api/recipe';
+	import MakeItBetterDialog from '$lib/ui/MakeItBetterDialog.svelte';
+	import { replaceSelectedRecipeProducts } from '$lib/ui/makeItBetter';
 
 	/** Each recipe owns its ingredients and an independent score request. */
 	type Props = {
@@ -250,6 +254,35 @@
 			currentScoreRequestController?.abort();
 		};
 	});
+
+	// --- Make It Better state ----------------------------------------------
+	let isCheckingImprovements = $state(false);
+	let improvementError = $state<string | null>(null);
+	let improvementSuggestions = $state<MakeItBetterSuggestion[]>([]);
+	let isImprovementDialogOpen = $state(false);
+
+	async function openMakeItBetter() {
+		isCheckingImprovements = true;
+		improvementError = null;
+		try {
+			const names = ingredients.map((i) => i.codifiedIngredient?.id || i.name).filter(Boolean);
+			const result = await getMakeItBetterSuggestions(names);
+			improvementSuggestions = result.suggestions;
+			if (result.suggestions.length === 0) {
+				improvementError = 'No catalogued improvements are available for this recipe.';
+				return;
+			}
+			isImprovementDialogOpen = true;
+		} catch (e) {
+			improvementError = e instanceof Error ? e.message : 'Could not check recipe improvements.';
+		} finally {
+			isCheckingImprovements = false;
+		}
+	}
+
+	function applySelectedImprovements(suggestions: MakeItBetterSuggestion[]) {
+		replaceSelectedRecipeProducts(ingredients, suggestions);
+	}
 </script>
 
 <section class="w-full min-w-0" aria-labelledby="recipe-heading-{id}">
@@ -318,7 +351,22 @@
 				>
 			</output>
 		</label>
+		<button
+			type="button"
+			class="btn btn-outline btn-sm hover:btn-primary font-normal"
+			disabled={isCheckingImprovements || ingredients.length === 0}
+			onclick={openMakeItBetter}
+		>
+			{#if isCheckingImprovements}<span class="loading loading-spinner loading-xs"></span>{/if}
+			{$_('make_it_better.button', { default: 'Make it better' })}
+		</button>
 	</div>
+
+	{#if improvementError}
+		<div class="alert alert-info mb-4" role="status">
+			<span>{improvementError}</span>
+		</div>
+	{/if}
 
 	<RecipeRowEditor
 		bind:ingredients
@@ -339,3 +387,9 @@
 		<NutriScoreDisplay analysis={nutrition} loading={nutritionLoading} failed={nutritionFailed} />
 	</div>
 </section>
+
+<MakeItBetterDialog
+	bind:open={isImprovementDialogOpen}
+	suggestions={improvementSuggestions}
+	onapply={applySelectedImprovements}
+/>

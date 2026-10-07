@@ -1,18 +1,27 @@
-/** Utilities that apply explicitly selected Make it better recommendations. */
-
+import type { Ingredient } from '$lib/types/ingredient';
 import type { MakeItBetterSuggestion } from '$lib/api/recipe';
 
-/**
- * Replace one occurrence of each selected product while preserving every
- * unselected product and the rest of the recipe text.
- */
 export function replaceSelectedRecipeProducts(
-	recipeText: string,
+	ingredients: Ingredient[],
 	suggestions: MakeItBetterSuggestion[]
-): string {
-	return suggestions.reduce(
-		(updatedRecipe, suggestion) =>
-			updatedRecipe.replace(suggestion.ingredient, suggestion.suggested.name),
-		recipeText
-	);
+): void {
+	for (const suggestion of suggestions) {
+		const target = ingredients.find(
+			(i) => (i.codifiedIngredient?.id || i.name) === suggestion.ingredient
+		);
+		if (target) {
+			target.name = suggestion.suggested.name;
+			if (target.codifiedIngredient) {
+				target.codifiedIngredient.id = suggestion.suggested.id;
+				target.codifiedIngredient.label = suggestion.suggested.name;
+				target.codifiedIngredient.isInTaxonomy = true;
+			} else {
+				target.codifiedIngredient = {
+					id: suggestion.suggested.id,
+					label: suggestion.suggested.name,
+					isInTaxonomy: true
+				};
+			}
+		}
+	}
 }
