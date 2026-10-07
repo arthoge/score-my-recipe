@@ -384,11 +384,15 @@
 			</p>
 			<button
 				type="button"
-				class="btn btn-outline btn-sm mt-4 w-full hover:btn-primary font-normal"
+				class="btn btn-sm mt-4 w-full border-0 bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-[0_0_15px_rgba(251,191,36,0.6)] transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] font-semibold"
 				disabled={isCheckingImprovements || ingredients.length === 0}
 				onclick={openMakeItBetter}
 			>
-				{#if isCheckingImprovements}<span class="loading loading-spinner loading-xs"></span>{/if}
+				{#if isCheckingImprovements}
+					<span class="loading loading-spinner loading-xs"></span>
+				{:else}
+					<span aria-hidden="true">✨</span>
+				{/if}
 				{$_('make_it_better.button', { default: 'Check for improvements' })}
 			</button>
 		</div>
