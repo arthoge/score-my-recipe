@@ -7,7 +7,13 @@ export function replaceSelectedRecipeProducts(
 ): void {
 	for (const suggestion of suggestions) {
 		const target = ingredients.find(
-			(i) => (i.codifiedIngredient?.id || i.name) === suggestion.ingredient
+			(i) => {
+				let matchStr = i.name;
+				if (i.codifiedIngredient?.id) {
+					matchStr = i.codifiedIngredient.id.split(':').pop()?.replace(/-/g, ' ') || i.name;
+				}
+				return matchStr === suggestion.ingredient;
+			}
 		);
 		if (target) {
 			target.name = suggestion.suggested.name;

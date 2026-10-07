@@ -265,7 +265,14 @@
 		isCheckingImprovements = true;
 		improvementError = null;
 		try {
-			const names = ingredients.map((i) => i.codifiedIngredient?.id || i.name).filter(Boolean);
+			const names = ingredients.map((i) => {
+				if (i.codifiedIngredient?.id) {
+					// Use language-agnostic ID (e.g. 'en:chocolate-yogurt' -> 'chocolate-yogurt')
+					// which converts to 'chocolate yogurt' during catalog matching.
+					return i.codifiedIngredient.id.split(':').pop()?.replace(/-/g, ' ');
+				}
+				return i.name;
+			}).filter(Boolean) as string[];
 			const result = await getMakeItBetterSuggestions(names);
 			improvementSuggestions = result.suggestions;
 			if (result.suggestions.length === 0) {
