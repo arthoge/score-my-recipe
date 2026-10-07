@@ -42,7 +42,7 @@
 	);
 </script>
 
-<div class="bg-base-200 w-80 max-w-full rounded-lg p-4">
+<div class="bg-base-200 w-96 max-w-full rounded-lg p-4">
 	<h3 class="text-lg font-semibold">
 		{$_('recipe.green_score', { default: 'Green Score' })}
 	</h3>

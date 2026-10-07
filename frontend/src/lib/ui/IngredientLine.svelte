@@ -14,20 +14,13 @@
 	import TaxonomyCell from './TaxonomyCell.svelte';
 	import LabelsCell from './LabelsCell.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
-	import {
-		PREPARATION_OPTIONS,
-		isIngredientEmpty,
-		isIngredientNotEmpty,
-		type Ingredient,
-		type TaxonomyItem
-	} from '$lib/types/ingredient';
+	import { PREPARATION_OPTIONS, type Ingredient, type TaxonomyItem } from '$lib/types/ingredient';
 	import { ingredientCellErrors } from './ingredientEditor';
 	import { getPreparedWeight } from './preparedWeight';
 
 	type Props = {
 		ingredient: Ingredient;
 		recipeId: string;
-		isLastItem?: boolean;
 		isOnlyItem?: boolean;
 		missingIngredientIds?: string[];
 		originOptions: TaxonomyItem[];
@@ -35,24 +28,40 @@
 		originsStatus: 'loading' | 'ready' | 'failed';
 		labelsStatus: 'loading' | 'ready' | 'failed';
 		onDelete?: (id: string) => void;
-		onNotEmpty?: () => void;
 	};
 	let {
 		ingredient = $bindable(),
 		recipeId,
-		isLastItem = false,
 		isOnlyItem = false,
 		missingIngredientIds = [],
 		originOptions,
 		labelOptions,
 		originsStatus,
 		labelsStatus,
-		onDelete,
-		onNotEmpty
+		onDelete
 	}: Props = $props();
 	let rowId = $derived(`${recipeId}-${ingredient.id}`);
 	let errors = $derived(ingredientCellErrors(ingredient));
 	let preparedWeight = $derived(getPreparedWeight(ingredient));
+	let quantityInput = $state<HTMLInputElement>();
+	let preparedInput = $state<HTMLInputElement>();
+	let quantityText = $state('0');
+	let preparedText = $state('0');
+
+	// Preserve the actual typed text (including leading zeros) when positioning the unit.
+	// Numeric draft values alone lose formatting such as "00" or "0.0".
+	$effect(() => {
+		const weight = ingredient.weight ?? 0;
+		untrack(() => {
+			quantityText = quantityInput?.valueAsNumber === weight ? quantityInput.value : String(weight);
+		});
+	});
+	$effect(() => {
+		const weight = preparedWeight ?? 0;
+		untrack(() => {
+			preparedText = preparedInput?.valueAsNumber === weight ? preparedInput.value : String(weight);
+		});
+	});
 	let referenceInvalid = $derived(
 		errors.environmentalReference || missingIngredientIds.includes(ingredient.id)
 	);
@@ -122,10 +131,6 @@
 			controller.abort();
 			clearTimeout(timer);
 		};
-	});
-
-	$effect(() => {
-		if (isLastItem && isIngredientNotEmpty(ingredient)) onNotEmpty?.();
 	});
 
 	/** Seasonality is meaningful only for fresh fruit and vegetables. */
@@ -226,11 +231,13 @@
 		<div class="relative flex h-[43px] min-w-0 items-center">
 			<input
 				id="ingredient-weight-{rowId}"
+				bind:this={quantityInput}
 				class="input validator cell-input min-w-0 flex-1 text-left tabular-nums"
 				type="number"
 				required
 				value={ingredient.weight ?? 0}
 				oninput={(event) => {
+					quantityText = event.currentTarget.value;
 					ingredient.weight =
 						event.currentTarget.value === '' ? null : event.currentTarget.valueAsNumber;
 				}}
@@ -245,7 +252,7 @@
 				class="pointer-events-none absolute inset-y-0 right-8 left-3 flex items-center gap-1 overflow-hidden text-sm whitespace-nowrap tabular-nums"
 				aria-hidden="true"
 			>
-				<span class="invisible shrink-0">{ingredient.weight ?? 0}</span>
+				<span class="invisible shrink-0">{quantityText}</span>
 				<span class="text-base-content/50 shrink-0 text-xs"
 					>{$_('recipe.grams', { default: 'grams' })}</span
 				>
@@ -280,10 +287,12 @@
 		<div class="relative flex h-[43px] min-w-0 items-center">
 			<input
 				id="ingredient-prepared-weight-{rowId}"
+				bind:this={preparedInput}
 				class="input validator cell-input min-w-0 flex-1 text-left tabular-nums"
 				type="number"
 				value={preparedWeight ?? 0}
 				oninput={(event) => {
+					preparedText = event.currentTarget.value;
 					ingredient.measuredPreparedWeightG =
 						event.currentTarget.value === '' ? null : event.currentTarget.valueAsNumber;
 				}}
@@ -309,7 +318,7 @@
 				class="pointer-events-none absolute inset-y-0 right-8 left-3 flex items-center gap-1 overflow-hidden text-sm whitespace-nowrap tabular-nums"
 				aria-hidden="true"
 			>
-				<span class="invisible shrink-0">{preparedWeight ?? 0}</span>
+				<span class="invisible shrink-0">{preparedText}</span>
 				<span class="text-base-content/50 shrink-0 text-xs"
 					>{$_('recipe.grams', { default: 'grams' })}</span
 				>
@@ -377,7 +386,7 @@
 		<button
 			type="button"
 			class="btn btn-ghost btn-square btn-sm text-error disabled:text-base-content/30 disabled:bg-transparent disabled:opacity-50"
-			disabled={isOnlyItem || (isLastItem && isIngredientEmpty(ingredient))}
+			disabled={isOnlyItem}
 			onclick={() => onDelete?.(ingredient.id)}
 			aria-label={$_('recipe.delete_ingredient', { default: 'Delete ingredient' })}
 		>

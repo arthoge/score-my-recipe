@@ -81,6 +81,8 @@
 		"details": "Details",
 		"edit_ingredient_hint": "Click to edit",
 		"edit_tag_hint": "Double-click to edit",
+		"add_ingredient": "Add an ingredient",
+		"add": "Add",
 		"add_ingredient_placeholder": "Add an ingredient…",
 		"review_description": "Review your ingredients and quantities before calculating each recipe’s score.",
 		"untitled": "Recipe {number}",
@@ -134,6 +136,9 @@
 		},
 		"remove_label": "Remove {label}",
 		"select_labels": "Select labels",
+		"search_labels": "Search labels",
+		"no_matching_labels": "No matching labels",
+		"more_labels": "Show {count} more labels",
 		"no_labels_available": "No labels available",
 		"world": "World",
 		"excluded_summary": "{count} ingredient(s) excluded ({percent}% of recipe weight)."

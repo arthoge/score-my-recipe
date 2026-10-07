@@ -9,7 +9,7 @@ describe('getEditorRecipes', () => {
 		expect(recipes).toHaveLength(1);
 		expect(recipes[0].portions).toBe(1);
 		expect(recipes[0].ingredients[0]).toEqual(ingredient);
-		expect(recipes[0].ingredients).toHaveLength(2);
+		expect(recipes[0].ingredients).toHaveLength(1);
 	});
 
 	it('preserves batch order and prevents edits leaking between recipes or back into imports', () => {
@@ -23,7 +23,7 @@ describe('getEditorRecipes', () => {
 		recipes[0].ingredients[0].weight = 200;
 		expect(recipes[1].ingredients[0].weight).toBeNull();
 		expect(imported[0].ingredients[0].weight).toBeNull();
-		expect(recipes[0].ingredients.at(-1)?.id).not.toBe(recipes[1].ingredients.at(-1)?.id);
+		expect(recipes[0].ingredients[0]).not.toBe(recipes[1].ingredients[0]);
 	});
 
 	it('defaults imported ingredients to raw while preserving explicit cooked and drained states', () => {
@@ -35,12 +35,7 @@ describe('getEditorRecipes', () => {
 		ingredients[1].state = 'cooked';
 		ingredients[2].state = 'drained';
 		const result = getEditorRecipes({ ingredients })[0].ingredients;
-		expect(result.map((ingredient) => ingredient.state)).toEqual([
-			'raw',
-			'cooked',
-			'drained',
-			'raw'
-		]);
+		expect(result.map((ingredient) => ingredient.state)).toEqual(['raw', 'cooked', 'drained']);
 		expect(ingredients[0].state).toBeUndefined();
 	});
 
@@ -51,11 +46,7 @@ describe('getEditorRecipes', () => {
 		ingredients[1].name = 'Rice';
 		ingredients[1].preparationProfile = 'boiled';
 		const result = getEditorRecipes({ ingredients })[0].ingredients;
-		expect(result.map((ingredient) => ingredient.preparationProfile)).toEqual([
-			'none',
-			'boiled',
-			'none'
-		]);
+		expect(result.map((ingredient) => ingredient.preparationProfile)).toEqual(['none', 'boiled']);
 		expect(ingredients[0].preparationProfile).toBeUndefined();
 	});
 

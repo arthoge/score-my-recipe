@@ -207,7 +207,7 @@
 			isLoading={isScoreLoading}
 			error={scoreError}
 		/>
-		<div class="bg-base-200 w-80 max-w-full rounded-lg p-4">
+		<div class="bg-base-200 w-96 max-w-full rounded-lg p-4">
 			<h3 class="text-lg font-semibold">{$_('recipe.nutri_score', { default: 'Nutri-Score' })}</h3>
 			<p class="text-base-content/70 mt-2 text-sm">
 				{$_('recipe.no_score', {

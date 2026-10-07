@@ -2,8 +2,7 @@
   RecipeRowEditor.svelte
 
   Handles the edition of the ingredient rows: it renders one `IngredientLine` per
-  ingredient and takes care of deleting a row or adding a new empty line when the
-  last one becomes non-empty.
+  ingredient and handles explicit addition and deletion of rows.
 
   The ingredients array is bindable so that the shared state stays in the parent
   page (which also uses it to compute the score).
@@ -17,8 +16,9 @@
 	import { _, getLocale } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { getCountries, getLabelsTaxonomy } from '$lib/api/taxonomy';
-	import type { TaxonomyItem } from '$lib/types/ingredient';
-	import { removeIngredientFromList, addEmptyIngredientIfNeeded } from '$lib/types/ingredientsList';
+	import { createEmptyIngredient, type TaxonomyItem } from '$lib/types/ingredient';
+	import IconMdiPlus from '@iconify-svelte/mdi/plus';
+	import { removeIngredientFromList } from '$lib/types/ingredientsList';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
 
 	type Props = {
@@ -72,9 +72,9 @@
 		ingredients = removeIngredientFromList(ingredients, id);
 	}
 
-	/** Ensure a new empty line exists when the last line is no longer empty. */
+	/** Add one editable ingredient row only when the user requests it. */
 	function addIngredientLine() {
-		ingredients = addEmptyIngredientIfNeeded(ingredients);
+		ingredients = [...ingredients, createEmptyIngredient()];
 	}
 
 	// Column widths allow room for names, numeric values and concise select choices.
@@ -114,7 +114,7 @@
 		},
 		{
 			key: 'preparation_profile',
-			width: 160,
+			width: 176,
 			label: 'Preparation'
 		},
 		{
@@ -125,7 +125,7 @@
 		},
 		{
 			key: 'labels',
-			width: 192,
+			width: 224,
 			label: 'Labels',
 			help: 'Certifications carried by this ingredient, such as organic or fair trade. These can affect the Green Score.'
 		},
@@ -156,7 +156,7 @@
 	<!-- Keyboard focus lets users scroll the wide table with arrow keys. -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
-		class="border-base-300 max-h-96 overflow-auto border"
+		class="table-container border-base-300 max-h-96 overflow-auto border"
 		tabindex="0"
 		role="region"
 		aria-label={title}
@@ -200,10 +200,8 @@
 					<IngredientLine
 						recipeId={id}
 						bind:ingredient={ingredients[index]}
-						isLastItem={index === ingredients.length - 1}
 						isOnlyItem={ingredients.length === 1}
 						onDelete={handleIngredientDelete}
-						onNotEmpty={addIngredientLine}
 						{missingIngredientIds}
 						{originOptions}
 						{labelOptions}
@@ -212,11 +210,69 @@
 					/>
 				{/each}
 			</tbody>
+			<tfoot>
+				<tr>
+					<td colspan={columns.length}>
+						<button
+							type="button"
+							class="add-ingredient-button block h-11 w-full border-0 p-0"
+							onclick={addIngredientLine}
+							aria-label={$_('recipe.add_ingredient', { default: 'Add an ingredient' })}
+						>
+							<span class="add-ingredient-content gap-1 text-sm">
+								<IconMdiPlus class="h-5 w-5" aria-hidden="true" />
+								<span>{$_('recipe.add', { default: 'Add' })}</span>
+							</span>
+						</button>
+					</td>
+				</tr>
+			</tfoot>
 		</table>
 	</div>
 </div>
 
 <style>
+	.table-container {
+		container-type: inline-size;
+	}
+	/* Keep the add icon centered in the visible table, including after horizontal scrolling. */
+	.add-ingredient-content {
+		position: sticky;
+		left: 0;
+		display: flex;
+		width: 100cqw;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+	}
+	.ingredient-table tfoot td {
+		border-right: 0;
+	}
+	.ingredient-table tfoot td:focus-within {
+		box-shadow: none;
+		background: var(--color-base-100);
+	}
+	.ingredient-table tfoot td:hover {
+		background: var(--color-base-200);
+	}
+	.add-ingredient-button {
+		cursor: pointer;
+		color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
+		background: transparent;
+		outline: none;
+		transition:
+			color 150ms,
+			background-color 150ms;
+	}
+	.add-ingredient-button:focus-visible {
+		outline: 1px solid var(--color-primary);
+		outline-offset: -2px;
+	}
+	.add-ingredient-button:hover,
+	.add-ingredient-button:active {
+		background: var(--color-base-200);
+		color: var(--color-base-content);
+	}
 	.ingredient-table th.action-column {
 		padding-inline: 4px;
 	}

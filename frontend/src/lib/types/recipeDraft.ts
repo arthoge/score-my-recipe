@@ -1,6 +1,5 @@
 /** Editable frontend recipes passed from an import flow to the score page. */
 import { createEmptyIngredient, type Ingredient } from './ingredient';
-import { addEmptyIngredientIfNeeded } from './ingredientsList';
 
 export type RecipeDraft = {
 	id: string;
@@ -26,14 +25,12 @@ export function getEditorRecipes(state: RecipeEditorState): RecipeDraft[] {
 		// Bindable Svelte props with defaults require explicit values during hydration.
 		portions: recipe.portions ?? 1,
 		// Copy drafts before editing: navigation state should remain an import snapshot.
-		ingredients: addEmptyIngredientIfNeeded(
-			recipe.ingredients.length
-				? structuredClone(recipe.ingredients).map((ingredient) => ({
-						...ingredient,
-						state: ingredient.state ?? 'raw',
-						preparationProfile: ingredient.preparationProfile ?? 'none'
-					}))
-				: [createEmptyIngredient()]
-		)
+		ingredients: recipe.ingredients.length
+			? structuredClone(recipe.ingredients).map((ingredient) => ({
+					...ingredient,
+					state: ingredient.state ?? 'raw',
+					preparationProfile: ingredient.preparationProfile ?? 'none'
+				}))
+			: [createEmptyIngredient()]
 	}));
 }
