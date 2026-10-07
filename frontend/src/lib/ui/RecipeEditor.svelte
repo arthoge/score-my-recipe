@@ -178,8 +178,7 @@
 				>
 				<HelperTooltip
 					tip={$_('recipe.final_prepared_weight_help', {
-						default:
-							'Total prepared weight of all ingredients. Available once every ingredient has a prepared weight.'
+						default: 'Total prepared weight of all ingredients.'
 					})}
 					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 				/>
@@ -211,7 +210,7 @@
 			<h3 class="text-lg font-semibold">{$_('recipe.nutri_score', { default: 'Nutri-Score' })}</h3>
 			<p class="text-base-content/70 mt-2 text-sm">
 				{$_('recipe.no_score', {
-					default: 'Scores update automatically once the required cells are complete.'
+					default: 'Score updates automatically once the required cells are complete.'
 				})}
 			</p>
 		</div>

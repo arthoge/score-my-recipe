@@ -15,8 +15,9 @@
 	import LabelsCell from './LabelsCell.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
 	import { PREPARATION_OPTIONS, type Ingredient, type TaxonomyItem } from '$lib/types/ingredient';
-	import { ingredientCellErrors } from './ingredientEditor';
-	import { getPreparedWeight } from './preparedWeight';
+	import { ingredientCellErrors, isPositiveAmount } from './ingredientEditor';
+	import { getPreparedWeight, preparedWeightInputKey } from './preparedWeight';
+	import { estimatePreparedWeight } from '$lib/api/preparation';
 
 	type Props = {
 		ingredient: Ingredient;
@@ -47,6 +48,89 @@
 	let preparedInput = $state<HTMLInputElement>();
 	let quantityText = $state('0');
 	let preparedText = $state('0');
+	let preparedEstimateLoading = $state(false);
+	let preparedEstimateFailed = $state(false);
+	let previousPreparedInputKey: string | undefined;
+	let preparedWeightTitle = $derived.by(() => {
+		if (ingredient.measuredPreparedWeightG != null)
+			return $_('recipe.prepared_weight_manual', {
+				default: 'Entered weight. Ingredient, quantity or preparation changes recalculate it.'
+			});
+		if (preparedEstimateLoading)
+			return $_('recipe.prepared_weight_loading', {
+				default: 'Estimating prepared weight…'
+			});
+		if (preparedEstimateFailed)
+			return $_('recipe.prepared_weight_failed', {
+				default: 'Estimate unavailable. Uses the entered quantity.'
+			});
+		const suggestion = ingredient.preparedWeightSuggestion;
+		if (suggestion?.source && suggestion.inputKey === preparedWeightInputKey(ingredient))
+			return $_('recipe.prepared_weight_estimated', {
+				default:
+					'Estimated with a documented yield (×{factor}). Source: Bognár 2002, {table}. Edit to enter a measured weight.',
+				values: { factor: suggestion.yieldFactor ?? 1, table: suggestion.source.table }
+			});
+		if (
+			(ingredient.state ?? 'raw') === 'raw' &&
+			ingredient.preparationProfile &&
+			ingredient.preparationProfile !== 'none'
+		)
+			return $_('recipe.prepared_weight_unsupported', {
+				default: 'No documented cooking yield. Uses the entered quantity.'
+			});
+		return $_('recipe.prepared_weight_auto', {
+			default: 'Automatic suggestion. Edit to enter a measured weight.'
+		});
+	});
+
+	$effect(() => {
+		const inputKey = preparedWeightInputKey(ingredient);
+		// Manual edits last until an estimation input changes, including food reference or state.
+		untrack(() => {
+			if (previousPreparedInputKey !== undefined && previousPreparedInputKey !== inputKey)
+				ingredient.measuredPreparedWeightG = null;
+			previousPreparedInputKey = inputKey;
+		});
+		const needsEstimate =
+			isPositiveAmount(ingredient.weight) &&
+			ingredient.measuredPreparedWeightG == null &&
+			(ingredient.state ?? 'raw') === 'raw' &&
+			!!ingredient.preparationProfile &&
+			ingredient.preparationProfile !== 'none';
+		const controller = new AbortController();
+		let cancelled = false;
+		preparedEstimateFailed = false;
+		preparedEstimateLoading = needsEstimate;
+		const timer = needsEstimate
+			? setTimeout(() => {
+					void estimatePreparedWeight(ingredient, controller.signal)
+						.then((result) => {
+							if (cancelled || inputKey !== preparedWeightInputKey(ingredient)) return;
+							ingredient.preparedWeightSuggestion = {
+								inputKey,
+								weightG: result.prepared_weight_g,
+								yieldFactor: result.yield_factor,
+								source: result.source
+							};
+						})
+						.catch(() => {
+							if (!cancelled) {
+								ingredient.preparedWeightSuggestion = undefined;
+								preparedEstimateFailed = true;
+							}
+						})
+						.finally(() => {
+							if (!cancelled) preparedEstimateLoading = false;
+						});
+				}, 300)
+			: undefined;
+		return () => {
+			cancelled = true;
+			clearTimeout(timer);
+			controller.abort();
+		};
+	});
 
 	// Preserve the actual typed text (including leading zeros) when positioning the unit.
 	// Numeric draft values alone lose formatting such as "00" or "0.0".
@@ -295,23 +379,19 @@
 					preparedText = event.currentTarget.value;
 					ingredient.measuredPreparedWeightG =
 						event.currentTarget.value === '' ? null : event.currentTarget.valueAsNumber;
+					if (event.currentTarget.value === '') {
+						// Restore the suggestion even when there was no manual value to clear.
+						event.currentTarget.value = String(getPreparedWeight(ingredient) ?? 0);
+						preparedText = event.currentTarget.value;
+					}
 				}}
 				min="0"
 				step="any"
 				inputmode="decimal"
 				aria-label={$_('recipe.prepared_weight_with_unit', { default: 'Prepared weight (grams)' })}
 				aria-invalid={errors.preparedWeight}
-				title={$_(
-					ingredient.measuredPreparedWeightG == null
-						? 'recipe.prepared_weight_auto'
-						: 'recipe.prepared_weight_manual',
-					{
-						default:
-							ingredient.measuredPreparedWeightG == null
-								? 'Automatic suggestion. Edit to enter a measured weight.'
-								: 'Measured weight. Clear to restore the automatic suggestion.'
-					}
-				)}
+				title={preparedWeightTitle}
+				aria-busy={preparedEstimateLoading}
 			/>
 			<!-- The invisible number positions the unit; the full-width input keeps its native arrows. -->
 			<div

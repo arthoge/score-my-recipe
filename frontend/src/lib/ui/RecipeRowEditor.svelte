@@ -121,7 +121,7 @@
 			key: 'prepared_weight_grams',
 			width: 176,
 			label: 'Prepared weight',
-			help: 'Weight of this ingredient as served. Suggestions use the entered quantity when no cooking conversion is needed; a measured weight overrides the suggestion.'
+			help: 'Weight of this ingredient as served. Uses documented cooking yields where available, otherwise the entered quantity.'
 		},
 		{
 			key: 'labels',
@@ -133,7 +133,7 @@
 			key: 'origin',
 			width: 160,
 			label: 'Origin',
-			help: 'Country where this ingredient was produced. If unspecified, conservative penalties for origin and transport are used.'
+			help: 'Country where this ingredient was produced. When World is selected, conservative penalties for origin and transport are used.'
 		},
 		{
 			key: 'fresh_plant',
@@ -153,16 +153,17 @@
 </script>
 
 <div class="w-full min-w-0">
+	<!-- Let all rows, including the add footer, flow naturally; only scroll horizontally. -->
 	<!-- Keyboard focus lets users scroll the wide table with arrow keys. -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
-		class="table-container border-base-300 max-h-96 overflow-auto border"
+		class="table-container border-base-300 overflow-x-auto border"
 		tabindex="0"
 		role="region"
 		aria-label={title}
 	>
 		<table
-			class="ingredient-table table-sm table-pin-rows table table-fixed"
+			class="ingredient-table table-sm table table-fixed"
 			style:width={`max(100%, ${tableWidth}px)`}
 		>
 			<caption class="sr-only">{title}</caption>

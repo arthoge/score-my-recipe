@@ -98,6 +98,19 @@ export interface Ingredient {
 	preparationProfile?: PreparationProfile;
 	/** User-entered prepared weight; null or absent keeps the automatic suggestion. */
 	measuredPreparedWeightG?: number | null;
+	/** Backend suggestion keyed to its inputs so stale estimates are never displayed. */
+	preparedWeightSuggestion?: {
+		inputKey: string;
+		weightG: number | null;
+		yieldFactor: number | null;
+		source: {
+			version: string;
+			url: string;
+			table: string;
+			food: string;
+			conditions: string;
+		} | null;
+	};
 }
 
 /**

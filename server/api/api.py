@@ -22,6 +22,7 @@ import api.exceptions as exceptions
 import api.score as score
 import api.types as types
 import api.units as units
+import api.preparation as preparation
 from api.settings import get_settings
 from api.warmup import warmup as warmup_caches
 
@@ -231,6 +232,14 @@ async def green_score(request: types.GreenScoreRequest) -> types.GreenScoreRespo
         accounted_weights=request.accounted_weights,
         country=request.country,
     )
+
+
+@app.post("/v1/prepared-weight")
+async def prepared_weight(
+    request: preparation.PreparedWeightRequest,
+) -> preparation.PreparedWeightResponse:
+    """Estimate prepared mass using a documented profile for the selected food and method."""
+    return preparation.estimate_prepared_weight(request)
 
 
 @app.post("/v1/recompute-quantity")
