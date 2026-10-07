@@ -32,43 +32,11 @@
       "en": "yes"
     },
     "children": [
-      "en:absinthe",
-      "en:armagnac",
-      "en:beer",
-      "en:brandy",
-      "en:calvados",
-      "en:campari",
-      "en:cava",
-      "en:champagne",
-      "en:chartreuse-liqueur",
-      "en:cider",
-      "en:cognac",
-      "en:cointreau",
-      "en:eau-de-vie",
-      "en:ethanol",
-      "en:gin",
-      "en:kirsch",
-      "en:liqueur",
-      "en:pomace-brandy",
-      "en:rakia",
-      "en:rectified-spirit",
-      "en:rice-wine",
-      "en:rum",
-      "en:sake",
-      "en:tequila",
-      "en:vermouth",
-      "en:vodka",
-      "en:whiskey",
-      "en:whiskeys",
-      "en:whisky",
-      "en:wine",
-      "fr:alcool-de-sucre-de-canne"
+      "en:wine"
     ]
   },
   "en:antioxidant": {
-    "children": [
-      "en:natural-antioxidant"
-    ],
+    "children": [],
     "wikidata": {
       "en": "Q133948"
     },
@@ -138,7 +106,8 @@
       "es": "pera conferencia",
       "xx": "Conference",
       "en": "Conference pear"
-    }
+    },
+    "children": null
   },
   "en:dry-white-wine": {
     "ciqual_food_code": {
@@ -168,7 +137,8 @@
     },
     "parents": [
       "en:white-wine"
-    ]
+    ],
+    "children": null
   },
   "en:e473a": {
     "vegetarian": {
@@ -226,7 +196,8 @@
     },
     "e_number": {
       "en": "473a"
-    }
+    },
+    "children": null
   },
   "en:e917": {
     "mandatory_additive_class": {
@@ -277,7 +248,8 @@
       "xx": [
         "E917"
       ]
-    }
+    },
+    "children": null
   },
   "en:fruit": {
     "nutriscore_fruits_vegetables_nuts": {
@@ -287,81 +259,8 @@
       "fr": "Fruit ou légume moyen importé par bateau et camion"
     },
     "children": [
-      "de:mehrfruchtsaft-aus-mehrfruchtsaftkonzentrat",
-      "en:acai-berry",
-      "en:acerola",
-      "en:arctostaphylos-uva-ursi",
-      "en:banana",
-      "en:berries",
-      "en:bitter-orange",
-      "en:boabab",
-      "en:breadfruit",
-      "en:bullocks-heart",
-      "en:cactus-fig",
-      "en:carambola",
-      "en:cashew-apples",
-      "en:citrus-fruit",
-      "en:citrus-unshiu",
-      "en:coconut",
-      "en:cranberry",
-      "en:custard-apple",
-      "en:date",
-      "en:dried-fruit",
-      "en:durian",
-      "en:exotic-fruit",
-      "en:feijoa",
-      "en:fig",
-      "en:fruit-concentrate",
-      "en:fruit-juice",
-      "en:fruit-puree",
-      "en:fruits-and-nuts",
-      "en:grape",
-      "en:guava",
-      "en:horned-melon",
-      "en:jackfruit",
-      "en:java-plum",
-      "en:jujube",
-      "en:kiwifruit",
-      "en:kumquat",
-      "en:longan",
-      "en:lukuma",
-      "en:lychee",
-      "en:malaceous-fruit",
-      "en:mamey-sapote",
-      "en:mammy-apple",
-      "en:mango",
-      "en:medlar",
-      "en:melon",
-      "en:mixed-fruit",
-      "en:must",
-      "en:nance",
-      "en:naranjilla",
-      "en:orange",
-      "en:papaya",
-      "en:passionfruit",
       "en:pear",
-      "en:persimmon",
-      "en:pineapple",
-      "en:pitanga",
-      "en:plantain-banana",
-      "en:pomegranate",
-      "en:prickly-pear",
-      "en:prunus-species-fruit",
-      "en:quince",
-      "en:rambutan",
-      "en:red-fruit",
-      "en:rose-apple",
-      "en:rose-hip",
-      "en:rowal",
-      "en:sapodilla",
-      "en:soursop",
-      "en:strawberry-guavas",
-      "en:sugar-apple",
-      "en:sweet-valencia-orange",
-      "en:tamarillo",
-      "en:ōhelo-berry",
-      "fr:pulpe-de-fruits",
-      "fr:puree-de-fruits"
+      "en:prunus-species-fruit"
     ],
     "vegetarian": {
       "en": "yes"
@@ -407,8 +306,6 @@
       "en:prunus-species-fruit"
     ],
     "children": [
-      "en:garofa-nectarine",
-      "en:nectarine-pulp",
       "en:raw-nectarine"
     ],
     "usda_ndb_proxy_code": {
@@ -466,7 +363,8 @@
         "vin rouge biologique",
         "vin biologique contient des sulfites"
       ]
-    }
+    },
+    "children": null
   },
   "en:pear": {
     "usda_ndb_proxy_name": {
@@ -491,14 +389,8 @@
       "en": "E051"
     },
     "children": [
-      "en:asian-pear",
-      "en:bosc-pear",
       "en:conference-pear",
-      "en:d-anjou-pear",
-      "en:pear-juice",
       "en:pear-nectar",
-      "en:pear-puree",
-      "en:pears-in-cubes",
       "en:raw-pear",
       "en:williams-bon-chretien-pear"
     ],
@@ -568,24 +460,15 @@
     },
     "agribalyse_food_code": {
       "en": "2054"
-    }
+    },
+    "children": null
   },
   "en:prunus-species-fruit": {
     "parents": [
       "en:fruit"
     ],
     "children": [
-      "en:apricot",
-      "en:cherry",
-      "en:chickasaw-plum",
-      "en:damson",
-      "en:greengage",
-      "en:japanese-plum",
-      "en:mirabelle-plum",
-      "en:nectarine",
-      "en:peach",
-      "en:plum",
-      "en:sloe"
+      "en:nectarine"
     ],
     "synonyms": {
       "en": [
@@ -639,7 +522,8 @@
       "en": [
         "raw nectarine pulp and skin"
       ]
-    }
+    },
+    "children": null
   },
   "en:raw-pear": {
     "synonyms": {
@@ -658,16 +542,15 @@
     },
     "parents": [
       "en:pear"
-    ]
+    ],
+    "children": null
   },
   "en:red-wine": {
     "parents": [
       "en:wine"
     ],
     "children": [
-      "en:organic-red-wine",
-      "en:red-wine-extract",
-      "en:red-wine-from-france"
+      "en:organic-red-wine"
     ],
     "agribalyse_food_code": {
       "en": "5214"
@@ -756,17 +639,7 @@
     "vegan": {
       "en": "yes"
     },
-    "children": [
-      "en:brewing-water",
-      "en:carbonated-water",
-      "en:cooking-water",
-      "en:distilled-water",
-      "en:filtered-water",
-      "en:ice",
-      "en:mineral-water",
-      "en:spring-water",
-      "en:water-like-ice-wrap"
-    ],
+    "children": [],
     "vegetarian": {
       "en": "yes"
     }
@@ -776,13 +649,7 @@
       "en:wine"
     ],
     "children": [
-      "en:dry-white-wine",
-      "en:muscadet",
-      "en:white-wine-extract",
-      "en:white-wine-from-cava",
-      "en:white-wine-from-france",
-      "fr:vin-blanc-modifie",
-      "fr:vin-blanc-reduit"
+      "en:dry-white-wine"
     ],
     "ciqual_proxy_food_name": {
       "fr": "Vin blanc -sec-"
@@ -865,10 +732,7 @@
     "parents": [
       "en:pear"
     ],
-    "children": [
-      "en:raw-bartlett-pear",
-      "en:williams-pear-puree"
-    ]
+    "children": []
   },
   "en:wine": {
     "carbon_footprint_fr_foodges_ingredient": {
@@ -878,19 +742,8 @@
       "en:alcohol"
     ],
     "children": [
-      "en:apple-wine",
-      "en:blackberry-wine",
-      "en:liqueur-wine",
-      "en:natural-sweet-wine",
-      "en:pedro-ximenez-wine",
       "en:red-wine",
-      "en:rose-wine",
-      "en:sauternes",
-      "en:sparkling-wine",
-      "en:stale-wine",
-      "en:white-wine",
-      "fr:vin-aromatise",
-      "fr:vin-de-france"
+      "en:white-wine"
     ],
     "carbon_footprint_fr_foodges_value": {
       "fr": "1.4"

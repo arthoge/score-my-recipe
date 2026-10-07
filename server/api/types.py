@@ -517,6 +517,48 @@ class SuggestScoredIngredientResponse(BaseModel):
     ingredients: list[ScoredIngredient]
 
 
+# --- Recipe improvement recommendations -------------------------------------
+
+
+class MakeItBetterRequest(BaseModel):
+    """Ingredients for which the client requests catalog-backed improvements."""
+
+    ingredients: Annotated[list[str], Field(min_length=1, max_length=100)]
+
+
+class ImprovementProduct(CamelModel):
+    """A catalog product and its Nutri-Score and Green-Score."""
+
+    id: str
+    name: str
+    nutri_score: str
+    green_score: str
+
+
+class ScoreImprovement(CamelModel):
+    """A single score dimension that improves in a proposed replacement."""
+
+    label: str
+    from_score: str
+    to_score: str
+
+
+class MakeItBetterSuggestion(CamelModel):
+    """A possible replacement for one submitted ingredient."""
+
+    ingredient: str
+    original: ImprovementProduct
+    suggested: ImprovementProduct
+    improvements: list[ScoreImprovement]
+
+
+class MakeItBetterResponse(CamelModel):
+    """Catalog recommendations plus submitted ingredients with no alternative."""
+
+    suggestions: list[MakeItBetterSuggestion]
+    no_improvement: list[str]
+
+
 # --- Green-score computation -------------------------------------------------
 #
 # The following models mirror the frontend ingredient structures
