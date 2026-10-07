@@ -1647,6 +1647,20 @@
             ],
             "title": "Status"
           },
+          "additives": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Additives"
+          },
+          "allergens": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allergens"
+          },
           "nutri_score": {
             "anyOf": [
               {

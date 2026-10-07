@@ -222,6 +222,12 @@
 		},
 		"logo_alt": "Nutri-Score {grade}",
 		"calculation_unavailable": "Voedingsberekening tijdelijk niet beschikbaar. Probeer opnieuw.",
-		"unsupported_type": "Dit recepttype wordt nog niet ondersteund."
+		"unsupported_type": "Dit recepttype wordt nog niet ondersteund.",
+		"details_button": "Details",
+		"close": "Sluiten",
+		"details_description": "Based on available product data. Information may be missing or inaccurate.",
+		"additives": "Additives",
+		"allergens": "Allergens",
+		"no_product_information": "No information available"
 	}
 }

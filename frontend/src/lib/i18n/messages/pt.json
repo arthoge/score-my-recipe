@@ -222,6 +222,12 @@
 		},
 		"logo_alt": "Nutri-Score {grade}",
 		"calculation_unavailable": "Cálculo nutricional temporariamente indisponível. Tente novamente.",
-		"unsupported_type": "Este tipo de receita ainda não é suportado."
+		"unsupported_type": "Este tipo de receita ainda não é suportado.",
+		"details_button": "Detalhes",
+		"close": "Fechar",
+		"details_description": "Based on available product data. Information may be missing or inaccurate.",
+		"additives": "Additives",
+		"allergens": "Allergens",
+		"no_product_information": "No information available"
 	}
 }
