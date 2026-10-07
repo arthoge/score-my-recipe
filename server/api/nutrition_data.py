@@ -120,7 +120,7 @@ async def get_product(barcode: str) -> dict | None:
         return None
     url = (
         f"https://world.openfoodfacts.org/api/v2/product/{barcode}.json"
-        "?fields=code,product_name,nutriments,ingredients,categories_tags,nutrition_data_per,nutriscore"
+        "?fields=code,product_name,nutriments,ingredients,categories_tags,nutrition_data_per,nutriscore,additives_tags,allergens_tags"
     )
     try:
         data = await fetch_json(urllib.request.Request(url, headers={"User-Agent": USER_AGENT}))

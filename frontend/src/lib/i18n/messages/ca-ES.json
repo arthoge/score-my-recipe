@@ -222,6 +222,12 @@
 		},
 		"logo_alt": "Nutri-Score {grade}",
 		"calculation_unavailable": "El càlcul nutricional no està disponible temporalment. Torna-ho a provar.",
-		"unsupported_type": "Aquest tipus de recepta encara no és compatible."
+		"unsupported_type": "Aquest tipus de recepta encara no és compatible.",
+		"details_button": "Detalls",
+		"close": "Tanca",
+		"details_description": "Based on available product data. Information may be missing or inaccurate.",
+		"additives": "Additives",
+		"allergens": "Allergens",
+		"no_product_information": "No information available"
 	}
 }

@@ -521,3 +521,48 @@ async def test_missing_quantity_draft_does_not_block_existing_recipe(catalog, mo
     )
     assert empty.nutri_score is None
     assert empty.nutrients_per_100g is None
+
+
+@pytest.mark.asyncio
+async def test_product_tags_survive_fallback_and_deduplicate(catalog, monkeypatch):
+    """Keep reported tags from used products even when CIQUAL supplies their nutrition."""
+    products = {
+        "123": {
+            "nutriments": {},
+            "additives_tags": ["en:e322", "en:e322"],
+            "allergens_tags": ["en:milk", "en:eggs"],
+        },
+        "456": {
+            "nutriments": {},
+            "additives_tags": ["en:e330", None],
+            "allergens_tags": ["en:milk"],
+        },
+    }
+    lookup = AsyncMock(side_effect=lambda code: products[code])
+    monkeypatch.setattr(nutrition_data, "get_product", lookup)
+    request = recipe(barcode="123")
+    request.ingredients.extend(
+        [
+            nutrition.NutritionIngredient(
+                id="second", name="Second", quantity_g=50, ciqual_code="9119", barcode="456"
+            ),
+            nutrition.NutritionIngredient(id="unused", name="Unused", quantity_g=0, barcode="789"),
+        ]
+    )
+    result = await nutrition.analyze(request)
+    assert result.additives == ["en:e322", "en:e330"]
+    assert result.allergens == ["en:eggs", "en:milk"]
+    assert all(row.source == "CIQUAL-2025" for row in result.ingredients)
+    assert lookup.await_count == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "product", [None, {}, {"additives_tags": "en:e322", "allergens_tags": None}]
+)
+async def test_missing_product_tags_are_not_invented(catalog, monkeypatch, product):
+    """Absent or malformed product composition yields no reported tags."""
+    monkeypatch.setattr(nutrition_data, "get_product", AsyncMock(return_value=product))
+    result = await nutrition.analyze(recipe(barcode="123"))
+    assert result.additives == []
+    assert result.allergens == []

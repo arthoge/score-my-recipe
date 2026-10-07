@@ -43,7 +43,6 @@
 
 	let nutrition = $state<NutritionAnalysis | null>(null);
 	let nutritionLoading = $state(false);
-	let nutritionFailed = $state(false);
 	let nutritionFeedbackRows = $state<Record<string, string>>({});
 	let nutritionPayload = $derived(nutritionInputs(ingredients, portions));
 	let nutritionSignature = $derived(JSON.stringify(nutritionPayload));
@@ -66,7 +65,6 @@
 		const controller = new AbortController();
 		let cancelled = false;
 		if (!ready) nutrition = null;
-		nutritionFailed = false;
 		nutritionLoading = ready;
 		const timer = ready
 			? setTimeout(() => {
@@ -82,7 +80,6 @@
 						.catch(() => {
 							if (!cancelled) {
 								nutrition = null;
-								nutritionFailed = true;
 							}
 						})
 						.finally(() => {
@@ -315,6 +312,12 @@
 			error={scoreError}
 			excludedWeightPercent={excludedGreenPercent}
 		/>
-		<NutriScoreDisplay analysis={nutrition} loading={nutritionLoading} failed={nutritionFailed} />
+		<NutriScoreDisplay
+			analysis={nutrition}
+			loading={nutritionLoading}
+			portionWeightG={isPositiveAmount(portions) && finalPreparedWeight != null
+				? finalPreparedWeight / portions!
+				: null}
+		/>
 	</div>
 </section>

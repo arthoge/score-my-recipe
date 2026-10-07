@@ -70,6 +70,8 @@ class NutritionResponse(BaseModel):
     """Nutrition remains available if the independent grade dependency fails."""
 
     status: Literal["complete", "partial", "incomplete", "unsupported", "dependency_error"]
+    additives: list[str] = Field(default_factory=list)
+    allergens: list[str] = Field(default_factory=list)
     nutri_score: nutriscore.NutriScore | None = None
     prepared_weight_g: float | None = None
     nutrients_total: dict[str, float | None] | None = None
@@ -188,6 +190,13 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
             ),
         )
     )
+    # Product composition still matters when its nutrients fall back to CIQUAL.
+    for field, target in (("additives_tags", "additives"), ("allergens_tags", "allergens")):
+        tags = set()
+        for product in products.values():
+            if isinstance(product, dict) and isinstance(product.get(field), list):
+                tags.update(tag for tag in product[field] if isinstance(tag, str) and tag.strip())
+        setattr(response, target, sorted(tags))
     unsupported, dependency_error = False, False
     masses: dict[str, float] = {}
     for row in request.ingredients:

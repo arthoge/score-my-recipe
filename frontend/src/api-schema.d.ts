@@ -788,6 +788,10 @@ export interface components {
 			 * @enum {string}
 			 */
 			status: 'complete' | 'partial' | 'incomplete' | 'unsupported' | 'dependency_error';
+			/** Additives */
+			additives?: string[];
+			/** Allergens */
+			allergens?: string[];
 			nutri_score?: components['schemas']['NutriScore'] | null;
 			/** Prepared Weight G */
 			prepared_weight_g?: number | null;
