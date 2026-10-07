@@ -96,6 +96,8 @@ export interface Ingredient {
 	/** Visible product name and brand, separate from the internally stored barcode. */
 	productName?: string;
 	preparationProfile?: PreparationProfile;
+	/** User-entered prepared weight; null or absent keeps the automatic suggestion. */
+	measuredPreparedWeightG?: number | null;
 }
 
 /**
@@ -145,7 +147,8 @@ export function isIngredientEmpty(ingredient: Ingredient): boolean {
 		!ingredient.agribalyseCode &&
 		!ingredient.barcode?.trim() &&
 		!ingredient.productName?.trim() &&
-		(!ingredient.preparationProfile || ingredient.preparationProfile === 'none')
+		(!ingredient.preparationProfile || ingredient.preparationProfile === 'none') &&
+		ingredient.measuredPreparedWeightG == null
 	);
 }
 

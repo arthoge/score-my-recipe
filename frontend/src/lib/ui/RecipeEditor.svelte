@@ -5,6 +5,8 @@
 	import RecipeRowEditor from '$lib/ui/RecipeRowEditor.svelte';
 	import ScoreDisplay from '$lib/ui/ScoreDisplay.svelte';
 	import CountrySelect from '$lib/ui/CountrySelect.svelte';
+	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
+	import { getFinalPreparedWeight } from './preparedWeight';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
 	import { isIngredientNotEmpty } from '$lib/types/ingredient';
 	import { canAutoScore, isPositiveAmount } from './ingredientEditor';
@@ -48,6 +50,7 @@
 	);
 
 	let scoreReady = $derived(canAutoScore(ingredients, portions));
+	let finalPreparedWeight = $derived(getFinalPreparedWeight(ingredients));
 
 	/**
 	 * Total weight (in grams) of the non-empty ingredients sent to the backend.
@@ -151,10 +154,13 @@
 		<h2 id="recipe-heading-{id}" class="text-xl font-bold">{title}</h2>
 	</div>
 	<div class="mb-4 flex flex-wrap items-end gap-4">
-		<label class="fieldset">
-			<span class="label">{$_('recipe.portions', { default: 'Number of portions' })}</span>
+		<CountrySelect bind:value={country} id="country-select-{id}" />
+		<label class="fieldset w-max">
+			<span class="label whitespace-nowrap"
+				>{$_('recipe.portions', { default: 'Number of portions' })}</span
+			>
 			<input
-				class="input input-sm w-40"
+				class="input input-sm w-28 min-w-full"
 				class:input-error={portions != null &&
 					(!isPositiveAmount(portions) || !Number.isInteger(portions))}
 				type="number"
@@ -163,7 +169,32 @@
 				bind:value={portions}
 			/>
 		</label>
-		<CountrySelect bind:value={country} id="country-select-{id}" />
+		<label class="fieldset w-max" for="prepared-weight-total-{id}">
+			<span class="label flex items-center gap-1.5 whitespace-nowrap">
+				<span
+					>{$_('recipe.final_prepared_weight_grams', {
+						default: 'Prepared weight'
+					})}</span
+				>
+				<HelperTooltip
+					tip={$_('recipe.final_prepared_weight_help', {
+						default:
+							'Total prepared weight of all ingredients. Available once every ingredient has a prepared weight.'
+					})}
+					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
+				/>
+			</span>
+			<output
+				id="prepared-weight-total-{id}"
+				class="border-base-300 bg-base-200 text-base-content/80 rounded-field flex h-8 w-32 min-w-full cursor-default items-center border px-3 text-sm tabular-nums"
+				aria-live="polite"
+			>
+				<span>{finalPreparedWeight ?? 0}</span>
+				<span class="text-base-content/50 ml-1 text-xs"
+					>{$_('recipe.grams', { default: 'grams' })}</span
+				>
+			</output>
+		</label>
 	</div>
 
 	<RecipeRowEditor bind:ingredients {missingIngredientIds} {title} {id} />

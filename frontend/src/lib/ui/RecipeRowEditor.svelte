@@ -77,61 +77,79 @@
 		ingredients = addEmptyIngredientIfNeeded(ingredients);
 	}
 
-	// Data columns share a width; the icon-only action column stays compact.
+	// Column widths allow room for names, numeric values and concise select choices.
 	const columns = [
 		{
 			key: 'ingredient_name',
+			width: 192,
 			label: 'Ingredient name'
 		},
 		{
 			key: 'ciqual_food',
+			width: 192,
 			label: 'Ciqual',
-			help: 'Generic food from the French Ciqual nutrition database, such as raw tomato. Choose the food that best matches your ingredient.'
+			help: 'Generic food from the French Ciqual database, providing nutrition values for this ingredient.'
 		},
 		{
 			key: 'agribalyse_food',
+			width: 192,
 			label: 'Agribalyse',
-			help: 'Food from the Agribalyse environmental database, used to calculate the Green Score. You can change the suggested match.'
+			help: 'Food from the Agribalyse environmental database, used to calculate the Green Score.'
 		},
 		{
 			key: 'off_product',
+			width: 208,
 			label: 'Open Food Facts',
-			help: 'Select your exact packaged product by name and brand as the nutrition reference. Clear this field to use the generic Ciqual food instead.'
+			help: 'Packaged product used as the nutrition reference. When empty, the generic Ciqual food is used.'
 		},
 		{
 			key: 'quantity_grams',
-			label: 'Quantity (grams)'
+			width: 144,
+			label: 'Quantity'
 		},
 		{
 			key: 'state',
+			width: 176,
 			label: 'State when weighed'
 		},
 		{
 			key: 'preparation_profile',
+			width: 160,
 			label: 'Preparation'
 		},
 		{
+			key: 'prepared_weight_grams',
+			width: 176,
+			label: 'Prepared weight',
+			help: 'Weight of this ingredient as served. Suggestions use the entered quantity when no cooking conversion is needed; a measured weight overrides the suggestion.'
+		},
+		{
 			key: 'labels',
+			width: 192,
 			label: 'Labels',
 			help: 'Certifications carried by this ingredient, such as organic or fair trade. These can affect the Green Score.'
 		},
 		{
 			key: 'origin',
+			width: 160,
 			label: 'Origin',
-			help: 'Country where this ingredient was produced. Used to estimate transport impact.'
+			help: 'Country where this ingredient was produced. If unspecified, conservative penalties for origin and transport are used.'
 		},
 		{
 			key: 'fresh_plant',
-			label: 'Fresh fruit/veg',
-			help: 'Select Yes for fresh fruit or vegetables to enable the seasonality field.'
+			width: 120,
+			label: 'Fresh',
+			help: 'Fresh fruit or vegetables whose environmental impact can depend on seasonality.'
 		},
 		{
 			key: 'in_season',
+			width: 120,
 			label: 'In season',
-			help: 'Select Yes if this fresh fruit or vegetable is in season where and when you prepare the recipe.'
+			help: 'Whether this fresh fruit or vegetable is in season at the place and time the recipe is prepared.'
 		},
-		{ key: 'action', label: 'Action' }
+		{ key: 'action', label: 'Action', width: 56 }
 	];
+	const tableWidth = columns.reduce((total, column) => total + column.width, 0);
 </script>
 
 <div class="w-full min-w-0">
@@ -143,11 +161,14 @@
 		role="region"
 		aria-label={title}
 	>
-		<table class="ingredient-table table-sm table-pin-rows table table-fixed">
+		<table
+			class="ingredient-table table-sm table-pin-rows table table-fixed"
+			style:width={`max(100%, ${tableWidth}px)`}
+		>
 			<caption class="sr-only">{title}</caption>
 			<colgroup
 				>{#each columns as column (column.key)}<col
-						class:action-column={column.key === 'action'}
+						style:width={`${column.width}px`}
 					/>{/each}</colgroup
 			>
 			<thead>
@@ -196,15 +217,6 @@
 </div>
 
 <style>
-	.ingredient-table {
-		width: max(100%, 2176px);
-	}
-	.ingredient-table col {
-		width: 192px;
-	}
-	.ingredient-table col.action-column {
-		width: 64px;
-	}
 	.ingredient-table th.action-column {
 		padding-inline: 4px;
 	}
@@ -221,7 +233,7 @@
 		gap: 2px;
 	}
 	.ingredient-table th {
-		height: 72px;
+		height: 44px;
 		white-space: normal;
 		background: var(--color-base-200);
 	}

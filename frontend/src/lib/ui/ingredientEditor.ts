@@ -13,6 +13,9 @@ export function ingredientCellErrors(ingredient: Ingredient) {
 	return {
 		name: populated && !ingredient.name.trim(),
 		weight: populated && !isPositiveAmount(ingredient.weight),
+		preparedWeight:
+			ingredient.measuredPreparedWeightG != null &&
+			!isPositiveAmount(ingredient.measuredPreparedWeightG),
 		environmentalReference:
 			populated &&
 			!ingredient.agribalyseCode &&

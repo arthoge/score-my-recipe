@@ -22,6 +22,7 @@
 		type TaxonomyItem
 	} from '$lib/types/ingredient';
 	import { ingredientCellErrors } from './ingredientEditor';
+	import { getPreparedWeight } from './preparedWeight';
 
 	type Props = {
 		ingredient: Ingredient;
@@ -51,6 +52,7 @@
 	}: Props = $props();
 	let rowId = $derived(`${recipeId}-${ingredient.id}`);
 	let errors = $derived(ingredientCellErrors(ingredient));
+	let preparedWeight = $derived(getPreparedWeight(ingredient));
 	let referenceInvalid = $derived(
 		errors.environmentalReference || missingIngredientIds.includes(ingredient.id)
 	);
@@ -221,18 +223,34 @@
 		/>
 	</td>
 	<td data-invalid={errors.weight}>
-		<input
-			id="ingredient-weight-{rowId}"
-			class="input validator cell-input text-left tabular-nums"
-			type="number"
-			required
-			bind:value={ingredient.weight}
-			min="0"
-			step="any"
-			inputmode="decimal"
-			aria-label={$_('recipe.quantity_grams', { default: 'Quantity (grams)' })}
-			aria-invalid={errors.weight}
-		/>
+		<div class="relative flex h-[43px] min-w-0 items-center">
+			<input
+				id="ingredient-weight-{rowId}"
+				class="input validator cell-input min-w-0 flex-1 text-left tabular-nums"
+				type="number"
+				required
+				value={ingredient.weight ?? 0}
+				oninput={(event) => {
+					ingredient.weight =
+						event.currentTarget.value === '' ? null : event.currentTarget.valueAsNumber;
+				}}
+				min="0"
+				step="any"
+				inputmode="decimal"
+				aria-label={$_('recipe.quantity_with_unit', { default: 'Quantity (grams)' })}
+				aria-invalid={errors.weight}
+			/>
+			<!-- The invisible number positions the unit; the full-width input keeps its native arrows. -->
+			<div
+				class="pointer-events-none absolute inset-y-0 right-8 left-3 flex items-center gap-1 overflow-hidden text-sm whitespace-nowrap tabular-nums"
+				aria-hidden="true"
+			>
+				<span class="invisible shrink-0">{ingredient.weight ?? 0}</span>
+				<span class="text-base-content/50 shrink-0 text-xs"
+					>{$_('recipe.grams', { default: 'grams' })}</span
+				>
+			</div>
+		</div>
 	</td>
 	<td>
 		<select
@@ -240,7 +258,6 @@
 			bind:value={ingredient.state}
 			aria-label={$_('recipe.state', { default: 'State when weighed' })}
 		>
-			<option value={null}></option>
 			<option value="raw">{$_('recipe.states.raw', { default: 'Raw' })}</option>
 			<option value="cooked">{$_('recipe.states.cooked', { default: 'Cooked' })}</option>
 			<option value="drained">{$_('recipe.states.drained', { default: 'Drained' })}</option>
@@ -258,6 +275,46 @@
 				>
 			{/each}
 		</select>
+	</td>
+	<td data-invalid={errors.preparedWeight}>
+		<div class="relative flex h-[43px] min-w-0 items-center">
+			<input
+				id="ingredient-prepared-weight-{rowId}"
+				class="input validator cell-input min-w-0 flex-1 text-left tabular-nums"
+				type="number"
+				value={preparedWeight ?? 0}
+				oninput={(event) => {
+					ingredient.measuredPreparedWeightG =
+						event.currentTarget.value === '' ? null : event.currentTarget.valueAsNumber;
+				}}
+				min="0"
+				step="any"
+				inputmode="decimal"
+				aria-label={$_('recipe.prepared_weight_with_unit', { default: 'Prepared weight (grams)' })}
+				aria-invalid={errors.preparedWeight}
+				title={$_(
+					ingredient.measuredPreparedWeightG == null
+						? 'recipe.prepared_weight_auto'
+						: 'recipe.prepared_weight_manual',
+					{
+						default:
+							ingredient.measuredPreparedWeightG == null
+								? 'Automatic suggestion. Edit to enter a measured weight.'
+								: 'Measured weight. Clear to restore the automatic suggestion.'
+					}
+				)}
+			/>
+			<!-- The invisible number positions the unit; the full-width input keeps its native arrows. -->
+			<div
+				class="pointer-events-none absolute inset-y-0 right-8 left-3 flex items-center gap-1 overflow-hidden text-sm whitespace-nowrap tabular-nums"
+				aria-hidden="true"
+			>
+				<span class="invisible shrink-0">{preparedWeight ?? 0}</span>
+				<span class="text-base-content/50 shrink-0 text-xs"
+					>{$_('recipe.grams', { default: 'grams' })}</span
+				>
+			</div>
+		</div>
 	</td>
 	<td>
 		<LabelsCell bind:value={ingredient.labels} options={labelOptions} status={labelsStatus} />
@@ -284,10 +341,12 @@
 						: $_('recipe.world', { default: 'World' })}</option
 			>
 			{#if ingredient.origin?.id && !originOptions.some((option) => option.id === ingredient.origin?.id)}
-				<option value={ingredient.origin.id}>{ingredient.origin.label}</option>
+				<option class="text-base-content" value={ingredient.origin.id}
+					>{ingredient.origin.label}</option
+				>
 			{/if}
 			{#each originOptions as option (option.id)}
-				<option value={option.id ?? ''}>{option.label}</option>
+				<option class="text-base-content" value={option.id ?? ''}>{option.label}</option>
 			{/each}
 		</select>
 	</td>

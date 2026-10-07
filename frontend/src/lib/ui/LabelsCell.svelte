@@ -50,9 +50,6 @@
 
 <div class="flex h-[43px] min-w-0 items-center gap-1 px-2">
 	<div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-		{#if value.length === 0}
-			<span class="text-sm opacity-50">{$_('recipe.labels_none', { default: 'None' })}</span>
-		{/if}
 		{#each value as tag, index (tag.id ?? tag.label)}
 			<button
 				type="button"

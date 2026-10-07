@@ -54,14 +54,14 @@
 	});
 </script>
 
-<div class="fieldset">
-	<label class="label" for={id}>
+<div class="fieldset w-max max-w-full">
+	<label class="label whitespace-nowrap" for={id}>
 		<span class="flex items-center gap-1.5">
 			<span class="label-text text-xs">{$_('recipe.country', { default: 'Country' })}</span>
 			<HelperTooltip
 				tip={$_('helpers.country', {
 					default:
-						'Country where the recipe is prepared or consumed, used to calculate transport distances.'
+						'Country where the recipe is prepared or consumed. If unspecified, a conservative transport penalty is used.'
 				})}
 				ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 			/>
@@ -73,7 +73,7 @@
 		<div class="flex items-center gap-2" role="alert" aria-live="polite">
 			<select
 				{id}
-				class="select select-sm w-48"
+				class="select select-sm w-40 max-w-full min-w-full"
 				disabled
 				aria-label={$_('recipe.country_load_error', {
 					default: 'Could not load countries'
@@ -84,7 +84,12 @@
 			</span>
 		</div>
 	{:else}
-		<select {id} class="select select-sm w-48" bind:value disabled={isLoading}>
+		<select
+			{id}
+			class="select select-sm w-40 max-w-full min-w-full"
+			bind:value
+			disabled={isLoading}
+		>
 			<option value={null}>
 				{$_('recipe.country_placeholder', { default: 'Select your country' })}
 			</option>
