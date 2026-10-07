@@ -135,7 +135,10 @@
 		"zero_quantity": "Escluso dal calcolo perché la quantità è di 0 grammi.",
 		"invalid_prepared_weight": "Inserisci un peso preparato maggiore di 0.",
 		"required_nutrition_reference": "Scegli un alimento Ciqual o un prodotto Open Food Facts per i calcoli nutrizionali.",
-		"action": "Azione"
+		"action": "Azione",
+		"export": "Esporta",
+		"export_recipes": "Esporta ricette",
+		"select_all_recipes": "Seleziona tutte le ricette"
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",

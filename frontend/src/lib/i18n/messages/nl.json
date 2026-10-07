@@ -135,7 +135,10 @@
 		"zero_quantity": "Uitgesloten van de berekening omdat de hoeveelheid 0 gram is.",
 		"invalid_prepared_weight": "Voer een bereid gewicht groter dan 0 in.",
 		"required_nutrition_reference": "Kies een Ciqual-voedingsmiddel of Open Food Facts-product voor voedingsberekeningen.",
-		"action": "Actie"
+		"action": "Actie",
+		"export": "Exporteren",
+		"export_recipes": "Recepten exporteren",
+		"select_all_recipes": "Alle recepten selecteren"
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",
