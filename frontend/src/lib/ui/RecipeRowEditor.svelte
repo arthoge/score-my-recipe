@@ -19,18 +19,28 @@
 	import { createEmptyIngredient, type TaxonomyItem } from '$lib/types/ingredient';
 	import IconMdiPlus from '@iconify-svelte/mdi/plus';
 	import { removeIngredientFromList } from '$lib/types/ingredientsList';
+	import type { NutritionDiagnostic } from '$lib/api/nutritionAnalysis';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
 
 	type Props = {
 		ingredients: IngredientsList;
 		/** Ingredient ids flagged as missing in the last computed green-score. */
 		missingIngredientIds?: string[];
+		nutritionDiagnostics?: NutritionDiagnostic[];
+		nutritionFallbackIds?: string[];
 		/** Recipe name used to identify the table to assistive technology. */
 		title: string;
 		id: string;
 	};
 
-	let { ingredients = $bindable(), missingIngredientIds = [], title, id }: Props = $props();
+	let {
+		ingredients = $bindable(),
+		missingIngredientIds = [],
+		nutritionDiagnostics = [],
+		nutritionFallbackIds = [],
+		title,
+		id
+	}: Props = $props();
 
 	// Load each choice list once per recipe, rather than once per ingredient row.
 	let originOptions = $state<TaxonomyItem[]>([]);
@@ -121,7 +131,7 @@
 			key: 'prepared_weight_grams',
 			width: 176,
 			label: 'Prepared weight',
-			help: 'Weight of this ingredient as served. Suggestions use the entered quantity when no cooking conversion is needed; a measured weight overrides the suggestion.'
+			help: 'Weight of this ingredient as served. Uses documented cooking yields where available, otherwise the entered quantity.'
 		},
 		{
 			key: 'labels',
@@ -133,7 +143,7 @@
 			key: 'origin',
 			width: 160,
 			label: 'Origin',
-			help: 'Country where this ingredient was produced. If unspecified, conservative penalties for origin and transport are used.'
+			help: 'Country where this ingredient was produced. When World is selected, conservative penalties for origin and transport are used.'
 		},
 		{
 			key: 'fresh_plant',
@@ -153,16 +163,17 @@
 </script>
 
 <div class="w-full min-w-0">
+	<!-- Let all rows, including the add footer, flow naturally; only scroll horizontally. -->
 	<!-- Keyboard focus lets users scroll the wide table with arrow keys. -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
-		class="table-container border-base-300 max-h-96 overflow-auto border"
+		class="table-container border-base-300 overflow-x-auto border"
 		tabindex="0"
 		role="region"
 		aria-label={title}
 	>
 		<table
-			class="ingredient-table table-sm table-pin-rows table table-fixed"
+			class="ingredient-table table-sm table table-fixed"
 			style:width={`max(100%, ${tableWidth}px)`}
 		>
 			<caption class="sr-only">{title}</caption>
@@ -203,6 +214,8 @@
 						isOnlyItem={ingredients.length === 1}
 						onDelete={handleIngredientDelete}
 						{missingIngredientIds}
+						{nutritionDiagnostics}
+						{nutritionFallbackIds}
 						{originOptions}
 						{labelOptions}
 						{originsStatus}
@@ -331,6 +344,12 @@
 	}
 	:global(.ingredient-table td:focus-within) {
 		box-shadow: inset 0 0 0 1px var(--color-primary);
+	}
+	:global(.ingredient-table td[data-info='true']:not(:focus-within)) {
+		background: color-mix(in oklab, var(--color-info) 15%, var(--color-base-100));
+	}
+	:global(.ingredient-table td[data-warning='true']:not(:focus-within)) {
+		background: color-mix(in oklab, var(--color-warning) 15%, var(--color-base-100));
 	}
 	:global(.ingredient-table td[data-invalid='true']:not(:focus-within)) {
 		background: color-mix(in oklab, var(--color-error) 15%, var(--color-base-100));

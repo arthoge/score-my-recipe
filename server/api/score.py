@@ -71,7 +71,7 @@ async def gather_ef_metrics(
     """Gather the per-ingredient EF score from Agribalyse.
 
     Negative weights are invalid and raise a ``ValueError``. A zero weight is
-    tolerated (it does not perturb the computation).
+    excluded and reported as missing (it does not perturb the computation).
     """
     ingredients_agribalyse = await match_ingredients_to_agribalyse(recipe)
     metrics: list[score_types.IngredientMetrics] = []
@@ -83,7 +83,12 @@ async def gather_ef_metrics(
         agribalyse_row = ingredients_agribalyse[ingredient.id].agribalyse
         ef_score: Optional[float] = None
         missing = True
-        if agribalyse_row and (score_str := agribalyse_row.get("score")):
+        if (
+            ingredient.name.strip()
+            and ingredient.weight > 0
+            and agribalyse_row
+            and (score_str := agribalyse_row.get("score"))
+        ):
             ef_score = float(score_str)
             missing = False
         metrics.append(

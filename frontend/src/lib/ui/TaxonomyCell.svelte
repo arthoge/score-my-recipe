@@ -19,6 +19,8 @@
 		label: string;
 		multiple?: boolean;
 		invalid?: boolean;
+		/** The ingredient name is being matched before this reference has a value. */
+		backgroundLoading?: boolean;
 		/** Background suggestions can be shown even before this cell has been edited. */
 		initialSuggestions?: TaxonomyItem[];
 		searchTerm?: string;
@@ -32,6 +34,7 @@
 		label,
 		multiple = false,
 		invalid = false,
+		backgroundLoading = false,
 		initialSuggestions = [],
 		searchTerm = '',
 		onchange
@@ -187,39 +190,43 @@
 	}
 </script>
 
-<input
-	bind:this={input}
-	{id}
-	type="text"
-	class="cell-input"
-	{value}
-	placeholder={initialSuggestions.length && !value
-		? $_('recipe.reference_suggestions', {
-				default: '{count} suggestions',
-				values: { count: initialSuggestions.length }
-			})
-		: undefined}
-	aria-label={label}
-	aria-invalid={invalid}
-	role="combobox"
-	aria-autocomplete="list"
-	aria-expanded={focused &&
-		!dismissed &&
-		(suggestions.length > 0 || (!!getSuggestions && (loading || searched)))}
-	aria-controls="{id}-options"
-	aria-activedescendant={activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
-	autocomplete="off"
-	oninput={edit}
-	onkeydown={keydown}
-	onfocus={() => {
-		focused = true;
-		dismissed = false;
-	}}
-	onblur={() => {
-		focused = false;
-		onchange(editedTags(value));
-	}}
-/>
+<div class="relative h-[43px]">
+	<input
+		bind:this={input}
+		{id}
+		type="text"
+		class="cell-input"
+		{value}
+		aria-label={label}
+		aria-invalid={invalid}
+		aria-busy={backgroundLoading}
+		role="combobox"
+		aria-autocomplete="list"
+		aria-expanded={focused &&
+			!dismissed &&
+			(suggestions.length > 0 || (!!getSuggestions && (loading || searched)))}
+		aria-controls="{id}-options"
+		aria-activedescendant={activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
+		autocomplete="off"
+		oninput={edit}
+		onkeydown={keydown}
+		onfocus={() => {
+			focused = true;
+			dismissed = false;
+		}}
+		onblur={() => {
+			focused = false;
+			onchange(editedTags(value));
+		}}
+	/>
+
+	{#if backgroundLoading && !focused && !value}
+		<div
+			class="skeleton pointer-events-none absolute top-1/2 left-3 h-4 w-2/3 -translate-y-1/2 rounded"
+			aria-hidden="true"
+		></div>
+	{/if}
+</div>
 
 <!-- Native popovers escape the table's overflow clipping without changing row height.
      https://developer.mozilla.org/en-US/docs/Web/API/Popover_API -->

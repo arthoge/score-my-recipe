@@ -1,6 +1,9 @@
 /** Editable frontend recipes passed from an import flow to the score page. */
 import { createEmptyIngredient, type Ingredient } from './ingredient';
 
+/** Keep displayed recipe names compact for page and printed PDF headings. */
+export const RECIPE_NAME_MAX_LENGTH = 80;
+
 export type RecipeDraft = {
 	id: string;
 	name: string;
@@ -22,6 +25,7 @@ export function getEditorRecipes(state: RecipeEditorState): RecipeDraft[] {
 
 	return recipes.map((recipe) => ({
 		...recipe,
+		name: recipe.name.trim().slice(0, RECIPE_NAME_MAX_LENGTH),
 		// Bindable Svelte props with defaults require explicit values during hydration.
 		portions: recipe.portions ?? 1,
 		// Copy drafts before editing: navigation state should remain an import snapshot.

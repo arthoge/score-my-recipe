@@ -23,6 +23,8 @@ import api.exceptions as exceptions
 import api.score as score
 import api.types as types
 import api.units as units
+import api.preparation as preparation
+import api.nutrition as nutrition
 from api.settings import get_settings
 from api.warmup import warmup as warmup_caches
 
@@ -239,6 +241,13 @@ async def check_make_it_better(request: types.MakeItBetterRequest) -> types.Make
     """Find catalog-backed Nutri-Score and Green-Score improvements for ingredients."""
     return improvements.find_improvements(request.ingredients)
 
+@app.post("/v1/prepared-weight")
+async def prepared_weight(
+    request: preparation.PreparedWeightRequest,
+) -> preparation.PreparedWeightResponse:
+    """Estimate prepared mass using a documented profile for the selected food and method."""
+    return preparation.estimate_prepared_weight(request)
+
 
 @app.post("/v1/recompute-quantity")
 @types.async_validate_model
@@ -271,3 +280,9 @@ async def recompute_quantity(
     except exceptions.UnitConversionNotSupportedError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return types.RecomputeQuantityResponse(quantity_g=quantity_g, value=value, unit=unit)
+
+
+@app.post("/v1/nutrition/analyze")
+async def analyze_nutrition(request: nutrition.NutritionRequest) -> nutrition.NutritionResponse:
+    """Analyze one served recipe component with independent algorithm-2023 availability."""
+    return await nutrition.analyze(request)

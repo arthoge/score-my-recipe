@@ -1,8 +1,20 @@
-/** Prepared-weight display values, pending documented yields from the analysis API. */
+/** Prepared-weight display values, using current API suggestions and quantity fallbacks. */
 import { isIngredientNotEmpty, type Ingredient } from '$lib/types/ingredient';
 import { isPositiveAmount } from './ingredientEditor';
 
-/** Preserve measured overrides; reuse quantities only when no conversion is needed. */
+/** Identify the inputs used by a backend estimate, including food identity changes. */
+export function preparedWeightInputKey(ingredient: Ingredient): string {
+	return JSON.stringify([
+		ingredient.name,
+		ingredient.weight,
+		ingredient.state ?? 'raw',
+		ingredient.preparationProfile ?? 'none',
+		ingredient.ciqualCode ?? '',
+		ingredient.barcode ?? ''
+	]);
+}
+
+/** Display manual edits or a current estimate, falling back to the entered quantity. */
 export function getPreparedWeight(ingredient: Ingredient): number | null {
 	if (ingredient.measuredPreparedWeightG != null) return ingredient.measuredPreparedWeightG;
 	if (!isPositiveAmount(ingredient.weight)) return null;
@@ -13,8 +25,10 @@ export function getPreparedWeight(ingredient: Ingredient): number | null {
 		ingredient.preparationProfile === 'none'
 	)
 		return ingredient.weight;
-	// Cooking coefficients depend on the exact food and process; do not guess them.
-	return null;
+	const suggestion = ingredient.preparedWeightSuggestion;
+	if (suggestion?.inputKey === preparedWeightInputKey(ingredient))
+		return suggestion.weightG ?? ingredient.weight;
+	return ingredient.weight;
 }
 
 /** Show a total only when every populated ingredient has a usable prepared weight. */

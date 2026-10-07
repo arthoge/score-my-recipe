@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyIngredient, type Ingredient } from '$lib/types/ingredient';
-import { canAutoScore, ingredientCellErrors } from './ingredientEditor';
+import { canAutoScore, ingredientCellErrors, ingredientCalculationCells } from './ingredientEditor';
 
 /** An editable ingredient with a selected environmental database reference. */
 function validIngredient(): Ingredient {
@@ -13,9 +13,9 @@ function validIngredient(): Ingredient {
 }
 
 describe('automatic score form validation', () => {
-	it('blocks a reference explicitly marked as lacking environmental impact data', () => {
+	it('allows the backend to exclude a reference lacking environmental impact data', () => {
 		const reference = { id: 'en:unknown', label: 'Unknown', isInTaxonomy: true, hasEfScore: false };
-		expect(canAutoScore([{ ...validIngredient(), codifiedIngredient: reference }])).toBe(false);
+		expect(canAutoScore([{ ...validIngredient(), codifiedIngredient: reference }])).toBe(true);
 	});
 	it('scores valid recipes without treating the trailing insertion row as an error', () => {
 		expect(canAutoScore([validIngredient(), createEmptyIngredient()])).toBe(true);
@@ -30,11 +30,11 @@ describe('automatic score form validation', () => {
 		}
 	);
 
-	it('blocks the whole recipe when any populated row lacks its name or reference', () => {
-		expect(canAutoScore([validIngredient(), { ...validIngredient(), name: '' }])).toBe(false);
+	it('allows incomplete rows to be excluded without blocking other ingredients', () => {
+		expect(canAutoScore([validIngredient(), { ...validIngredient(), name: '' }])).toBe(true);
 		expect(
 			canAutoScore([validIngredient(), { ...validIngredient(), codifiedIngredient: null }])
-		).toBe(false);
+		).toBe(true);
 		expect(
 			canAutoScore([
 				{
@@ -42,7 +42,7 @@ describe('automatic score form validation', () => {
 					codifiedIngredient: { id: null, label: 'Unknown', isInTaxonomy: false }
 				}
 			])
-		).toBe(false);
+		).toBe(true);
 	});
 
 	it('keeps preparation fields optional and validates portions', () => {
@@ -54,7 +54,81 @@ describe('automatic score form validation', () => {
 
 	it('treats preparation-only rows as incomplete drafts rather than ignoring them', () => {
 		expect(canAutoScore([validIngredient(), { ...createEmptyIngredient(), state: 'cooked' }])).toBe(
-			false
+			true
 		);
 	});
+});
+
+describe('calculation cell feedback', () => {
+	it('marks an empty required nutrition source red while leaving optional OFF neutral', () => {
+		const cells = ingredientCalculationCells(validIngredient(), false, [
+			{ code: 'nutrition_reference_missing' }
+		]);
+		expect(cells.ciqual).toBe('error');
+		expect(cells.product).toBeNull();
+		expect(ingredientCalculationCells(createEmptyIngredient(), false, []).ciqual).toBeNull();
+	});
+	it('warns on the active OFF reference without blaming an unused Ciqual reference', () => {
+		const ingredient = { ...validIngredient(), barcode: '123', productName: 'Tomato sauce' };
+		const cells = ingredientCalculationCells(ingredient, false, [
+			{ code: 'nutrients_missing', fields: ['fiber'] }
+		]);
+		expect(cells.product).toBe('warning');
+		expect(cells.ciqual).toBeNull();
+	});
+	it('warns on a filled Ciqual source with missing calculation data', () => {
+		const ingredient = { ...validIngredient(), ciqualCode: '123', ciqualName: 'Tomatoes' };
+		expect(
+			ingredientCalculationCells(ingredient, false, [{ code: 'plant_proportion_missing' }]).ciqual
+		).toBe('warning');
+		expect(ingredientCalculationCells(ingredient, false, []).ciqual).toBeNull();
+	});
+	it('distinguishes an empty environmental reference from a filled unusable reference', () => {
+		expect(ingredientCalculationCells(validIngredient(), true, []).agribalyse).toBe('error');
+		expect(
+			ingredientCalculationCells({ ...validIngredient(), agribalyseName: 'Tomatoes' }, true, [])
+				.agribalyse
+		).toBe('warning');
+	});
+	it('attaches cooking issues to preparation or state rather than the food source', () => {
+		const ingredient = { ...validIngredient(), ciqualCode: '123', ciqualName: 'Tomatoes' };
+		const cells = ingredientCalculationCells(ingredient, false, [
+			{ code: 'unsupported_preparation' },
+			{ code: 'prepared_reference_required' }
+		]);
+		expect(cells.preparation).toBe('warning');
+		expect(cells.state).toBe('warning');
+		expect(cells.ciqual).toBeNull();
+	});
+});
+
+it('shows an info cell only when the backend confirms a usable Ciqual fallback', () => {
+	const ingredient = {
+		...validIngredient(),
+		barcode: '123',
+		productName: 'Tomato sauce',
+		ciqualCode: '456',
+		ciqualName: 'Tomatoes'
+	};
+	const cells = ingredientCalculationCells(ingredient, false, [], true);
+	expect(cells.product).toBe('info');
+	expect(cells.ciqual).toBeNull();
+	expect(
+		ingredientCalculationCells(ingredient, false, [{ code: 'nutrients_missing' }]).product
+	).toBe('warning');
+});
+
+it('allows zero-weight exclusions when another ingredient has a positive quantity', () => {
+	const zero = { ...validIngredient(), weight: 0 };
+	expect(canAutoScore([validIngredient(), zero])).toBe(true);
+	expect(canAutoScore([zero])).toBe(false);
+	expect(ingredientCellErrors(zero).weight).toBe(false);
+	expect(ingredientCalculationCells(zero, true, [{ code: 'zero_quantity' }]).agribalyse).toBeNull();
+});
+
+it('keeps scoring when a newly populated row has no quantity yet', () => {
+	const draft = { ...createEmptyIngredient(), name: 'New ingredient' };
+	expect(canAutoScore([validIngredient(), draft])).toBe(true);
+	expect(canAutoScore([draft])).toBe(false);
+	expect(ingredientCellErrors(draft).weight).toBe(true);
 });

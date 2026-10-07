@@ -3,24 +3,101 @@
 	import { _ } from '$lib/i18n';
 	import { untrack } from 'svelte';
 	import RecipeRowEditor from '$lib/ui/RecipeRowEditor.svelte';
+	import RecipeNameEditor from '$lib/ui/RecipeNameEditor.svelte';
 	import ScoreDisplay from '$lib/ui/ScoreDisplay.svelte';
+	import NutriScoreDisplay from '$lib/ui/NutriScoreDisplay.svelte';
+	import {
+		analyzeNutrition,
+		nutritionInputs,
+		type NutritionAnalysis,
+		type NutritionCategory
+	} from '$lib/api/nutritionAnalysis';
 	import CountrySelect from '$lib/ui/CountrySelect.svelte';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
 	import { getFinalPreparedWeight } from './preparedWeight';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
 	import { isIngredientNotEmpty } from '$lib/types/ingredient';
-	import { canAutoScore, isPositiveAmount } from './ingredientEditor';
-	import { computeGreenScore, type GreenScoreResponse } from '$lib/api/recipe';
+	import { canAutoScore, isPositiveAmount, isNonNegativeAmount } from './ingredientEditor';
+	import {
+		computeGreenScore,
+		ingredientToGreenScoreInput,
+		type GreenScoreResponse
+	} from '$lib/api/recipe';
 
 	/** Each recipe owns its ingredients and an independent score request. */
 	type Props = {
 		id: string;
-		title: string;
+		name: string;
+		fallbackTitle: string;
 		ingredients: IngredientsList;
 		portions?: number | null;
 	};
 
-	let { id, title, ingredients = $bindable(), portions = $bindable(1) }: Props = $props();
+	let {
+		id,
+		name = $bindable(),
+		fallbackTitle,
+		ingredients = $bindable(),
+		portions = $bindable(1)
+	}: Props = $props();
+	let title = $derived(name || fallbackTitle);
+
+	let nutritionCategory = $state<NutritionCategory>('en:meals');
+	let nutrition = $state<NutritionAnalysis | null>(null);
+	let nutritionLoading = $state(false);
+	let nutritionFailed = $state(false);
+	let nutritionFeedbackRows = $state<Record<string, string>>({});
+	let nutritionPayload = $derived(nutritionInputs(ingredients, portions, nutritionCategory));
+	let nutritionSignature = $derived(JSON.stringify(nutritionPayload));
+	let nutritionReady = $derived(
+		nutritionPayload.ingredients.some((row) => isPositiveAmount(row.quantity_g)) &&
+			Number.isInteger(portions) &&
+			isPositiveAmount(portions) &&
+			nutritionPayload.ingredients.every(
+				(row) =>
+					(row.quantity_g == null || isNonNegativeAmount(row.quantity_g)) &&
+					(row.prepared_weight_g == null || isPositiveAmount(row.prepared_weight_g))
+			)
+	);
+
+	// Nutrition has its own validity and request lifecycle; environmental errors do not block it.
+	$effect(() => {
+		void nutritionSignature;
+		const payload = untrack(() => nutritionPayload);
+		const ready = nutritionReady;
+		const controller = new AbortController();
+		let cancelled = false;
+		if (!ready) nutrition = null;
+		nutritionFailed = false;
+		nutritionLoading = ready;
+		const timer = ready
+			? setTimeout(() => {
+					void analyzeNutrition(payload, controller.signal)
+						.then((result) => {
+							if (!cancelled) {
+								nutrition = result;
+								nutritionFeedbackRows = Object.fromEntries(
+									payload.ingredients.map((row) => [row.id, JSON.stringify(row)])
+								);
+							}
+						})
+						.catch(() => {
+							if (!cancelled) {
+								nutrition = null;
+								nutritionFailed = true;
+							}
+						})
+						.finally(() => {
+							if (!cancelled) nutritionLoading = false;
+						});
+				}, 750)
+			: undefined;
+		return () => {
+			cancelled = true;
+			clearTimeout(timer);
+			controller.abort();
+		};
+	});
 
 	// Country the recipe is being cooked in (ISO 3166-1 alpha-2 code, or null).
 	// Used to compute the distance modifier in the green-score.
@@ -29,6 +106,7 @@
 	// --- Green-score state -------------------------------------------------
 	// The latest computed score response (null until computed or while loading).
 	let greenScore = $state<GreenScoreResponse | null>(null);
+	let greenFeedbackRows = $state<Record<string, string>>({});
 	let isScoreLoading = $state(false);
 	let scoreError = $state<string | null>(null);
 	let currentScoreRequestController = $state<AbortController | null>(null);
@@ -52,33 +130,50 @@
 	let scoreReady = $derived(canAutoScore(ingredients, portions));
 	let finalPreparedWeight = $derived(getFinalPreparedWeight(ingredients));
 
-	/**
-	 * Total weight (in grams) of the non-empty ingredients sent to the backend.
-	 */
-	let totalWeight = $derived(
-		ingredients.filter(isIngredientNotEmpty).reduce((sum, i) => sum + (i.weight ?? 0), 0)
+	let excludedGreenIngredients = $derived(
+		ingredients.filter((row) => greenScore?.missingIngredientIds.includes(row.id))
+	);
+	let totalGreenWeight = $derived(
+		ingredients.filter(isIngredientNotEmpty).reduce((sum, row) => sum + (row.weight ?? 0), 0)
+	);
+	let excludedGreenPercent = $derived(
+		totalGreenWeight > 0
+			? Math.round(
+					(excludedGreenIngredients.reduce((sum, row) => sum + (row.weight ?? 0), 0) /
+						totalGreenWeight) *
+						100
+				)
+			: 0
 	);
 
-	/**
-	 * Total weight (in grams) of the ingredients that were ignored by the
-	 * backend (i.e. whose id appears in the missing list of the last response).
-	 */
-	let ignoredWeight = $derived.by(() => {
-		if (!greenScore) return 0;
-		const missing = new Set(greenScore.missingIngredientIds);
-		return ingredients
-			.filter((i) => missing.has(i.id))
-			.reduce((sum, i) => sum + (i.weight ?? 0), 0);
-	});
-
-	/**
-	 * Ingredient ids flagged as missing in the last computed score.
-	 *
-	 * Cleared while a recomputation is in flight (see `isScoreLoading`) so the
-	 * highlight always reflects the currently displayed score, never a stale one.
-	 */
+	// Keep feedback for unchanged rows during recomputation; edited rows cannot reuse stale diagnostics.
 	let missingIngredientIds = $derived(
-		isScoreLoading || !greenScore ? [] : greenScore.missingIngredientIds
+		(greenScore?.missingIngredientIds ?? []).filter((id) => {
+			const row = ingredients.find((row) => row.id === id);
+			return row && greenFeedbackRows[id] === JSON.stringify(ingredientToGreenScoreInput(row));
+		})
+	);
+	let unchangedNutritionIds = $derived(
+		new Set(
+			nutritionPayload.ingredients
+				.filter((row) => nutritionFeedbackRows[row.id] === JSON.stringify(row))
+				.map((row) => row.id)
+		)
+	);
+	let nutritionDiagnostics = $derived(
+		(nutrition?.diagnostics ?? []).filter(
+			(issue) => issue.ingredient_id && unchangedNutritionIds.has(issue.ingredient_id)
+		)
+	);
+	let nutritionFallbackIds = $derived(
+		(nutrition?.assumptions ?? [])
+			.filter(
+				(issue) =>
+					issue.code === 'off_ciqual_fallback' &&
+					issue.ingredient_id &&
+					unchangedNutritionIds.has(issue.ingredient_id)
+			)
+			.map((issue) => issue.ingredient_id!)
 	);
 
 	/**
@@ -102,11 +197,19 @@
 		isScoreLoading = true;
 		scoreError = null;
 		try {
+			const feedbackRows = Object.fromEntries(
+				ingredients
+					.filter(isIngredientNotEmpty)
+					.map((row) => [row.id, JSON.stringify(ingredientToGreenScoreInput(row))])
+			);
 			const result = await computeGreenScore(ingredients, {
 				country: country ?? undefined,
 				signal: requestController.signal
 			});
-			if (currentScoreRequestController === requestController) greenScore = result;
+			if (currentScoreRequestController === requestController) {
+				greenScore = result;
+				greenFeedbackRows = feedbackRows;
+			}
 		} catch (e) {
 			if (currentScoreRequestController !== requestController) return;
 			if (e instanceof DOMException && e.name === 'AbortError') return;
@@ -131,15 +234,15 @@
 		// Read the signature so the effect re-runs on any ingredient change
 		void ingredientsSignature;
 		const ready = scoreReady;
-		// Immediately invalidate the old analysis while waiting for the next request.
+		// Retain unchanged-row feedback while waiting for the next request.
 		// untrack keeps request/loading state from becoming dependencies of this effect.
 		// https://svelte.dev/docs/svelte/svelte#untrack
 		untrack(() => {
 			currentScoreRequestController?.abort();
 			currentScoreRequestController = null;
-			greenScore = null;
+			if (!ready) greenScore = null;
 			scoreError = null;
-			isScoreLoading = false;
+			isScoreLoading = ready;
 		});
 		const timer = ready ? setTimeout(fetchGreenScore, SCORE_INACTIVITY_DELAY) : undefined;
 		return () => {
@@ -150,11 +253,32 @@
 </script>
 
 <section class="w-full min-w-0" aria-labelledby="recipe-heading-{id}">
-	<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-		<h2 id="recipe-heading-{id}" class="text-xl font-bold">{title}</h2>
+	<div class="mb-4 flex items-center gap-2">
+		<h2 id="recipe-heading-{id}" class="min-w-0 text-xl font-bold wrap-anywhere">{title}</h2>
+		<RecipeNameEditor {id} bind:name {title} />
 	</div>
 	<div class="mb-4 flex flex-wrap items-end gap-4">
 		<CountrySelect bind:value={country} id="country-select-{id}" />
+		<label class="fieldset w-max" for="recipe-type-{id}">
+			<span class="label whitespace-nowrap"
+				>{$_('nutrition.recipe_type', { default: 'Recipe type' })}</span
+			>
+			<select
+				id="recipe-type-{id}"
+				bind:value={nutritionCategory}
+				class="select select-sm w-32 min-w-full"
+			>
+				<option value="en:meals">{$_('nutrition.category.dish', { default: 'Dish' })}</option>
+				<option value="en:cheeses">{$_('nutrition.category.cheese', { default: 'Cheese' })}</option>
+				<option value="en:fats"
+					>{$_('nutrition.category.fats', { default: 'Fats and oils' })}</option
+				>
+				<option value="en:beverages"
+					>{$_('nutrition.category.beverage', { default: 'Beverage' })}</option
+				>
+			</select>
+		</label>
+
 		<label class="fieldset w-max">
 			<span class="label whitespace-nowrap"
 				>{$_('recipe.portions', { default: 'Number of portions' })}</span
@@ -178,8 +302,7 @@
 				>
 				<HelperTooltip
 					tip={$_('recipe.final_prepared_weight_help', {
-						default:
-							'Total prepared weight of all ingredients. Available once every ingredient has a prepared weight.'
+						default: 'Total prepared weight of all ingredients.'
 					})}
 					ariaLabel={$_('helpers.more_info', { default: 'More information' })}
 				/>
@@ -197,23 +320,22 @@
 		</label>
 	</div>
 
-	<RecipeRowEditor bind:ingredients {missingIngredientIds} {title} {id} />
+	<RecipeRowEditor
+		bind:ingredients
+		{missingIngredientIds}
+		{nutritionDiagnostics}
+		{nutritionFallbackIds}
+		{title}
+		{id}
+	/>
 
 	<div class="mt-6 flex flex-wrap items-stretch gap-4">
 		<ScoreDisplay
 			score={greenScore}
-			{totalWeight}
-			{ignoredWeight}
 			isLoading={isScoreLoading}
 			error={scoreError}
+			excludedWeightPercent={excludedGreenPercent}
 		/>
-		<div class="bg-base-200 w-96 max-w-full rounded-lg p-4">
-			<h3 class="text-lg font-semibold">{$_('recipe.nutri_score', { default: 'Nutri-Score' })}</h3>
-			<p class="text-base-content/70 mt-2 text-sm">
-				{$_('recipe.no_score', {
-					default: 'Scores update automatically once the required cells are complete.'
-				})}
-			</p>
-		</div>
+		<NutriScoreDisplay analysis={nutrition} loading={nutritionLoading} failed={nutritionFailed} />
 	</div>
 </section>

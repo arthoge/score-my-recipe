@@ -25,8 +25,11 @@
 		{#each recipes as recipe, index (recipe.id)}
 			<RecipeEditor
 				id={recipe.id}
-				title={recipe.name ||
-					$_('recipe.untitled', { default: 'Recipe {number}', values: { number: index + 1 } })}
+				bind:name={recipes[index].name}
+				fallbackTitle={$_('recipe.untitled', {
+					default: 'Recipe {number}',
+					values: { number: index + 1 }
+				})}
 				bind:ingredients={recipes[index].ingredients}
 				bind:portions={recipes[index].portions}
 			/>

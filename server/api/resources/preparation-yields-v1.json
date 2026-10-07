@@ -1,0 +1,42 @@
+{
+  "version": "bognar-2002-v1",
+  "source": "https://www.fao.org/uploads/media/bognar_bfe-r-02-03.pdf",
+  "profiles": [
+    {
+      "id": "white-long-grain-rice-boiled",
+      "ciqual_codes": ["9119"],
+      "preparation": "boiled",
+      "factor": 2.98,
+      "source_table": "Table 29, printed page 37 (PDF page 38)",
+      "source_food": "Rice, long corn, polished, boiled",
+      "conditions": "Dry edible white long-grain rice (Thai/basmati), boiled in water, with optional salt; excludes added fat, parboiled, wholegrain and rice mixtures. Absorbed cooking water is included."
+    },
+    {
+      "id": "dried-egg-pasta-boiled",
+      "ciqual_codes": ["9821"],
+      "preparation": "boiled",
+      "factor": 2.60,
+      "source_table": "Table 30, printed page 38 (PDF page 39)",
+      "source_food": "Noodles, wheat flour with egg, boiled",
+      "conditions": "Dry edible wheat pasta with egg, boiled in water with optional salt; excludes fresh, filled, wholemeal and gluten-free pasta. Absorbed cooking water is included."
+    },
+    {
+      "id": "dried-lentils-boiled",
+      "ciqual_codes": ["20359"],
+      "preparation": "boiled",
+      "factor": 2.73,
+      "source_table": "Table 20, printed page 30 (PDF page 31)",
+      "source_food": "Lentils, boiled / stewed",
+      "conditions": "Dry edible lentils (generic average), boiled in water with optional salt; excludes canned, sprouted and composite dishes. Absorbed cooking water is included."
+    },
+    {
+      "id": "peeled-potatoes-steamed",
+      "ciqual_codes": ["4008"],
+      "preparation": "steamed",
+      "factor": 0.98,
+      "source_table": "Table 21, printed page 31 (PDF page 32)",
+      "source_food": "Potato, without peel, steamed",
+      "conditions": "Raw edible peeled potatoes, steamed without added fat; excludes skin, frozen pre-fried products and potato dishes."
+    }
+  ]
+}
