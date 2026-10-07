@@ -51,8 +51,8 @@
 	});
 </script>
 
-<div class="flex flex-col items-center gap-2">
-	<img src={scoreLogoUrl} alt={letterGrade ?? 'unknown'} class="h-32" />
+<div class="flex flex-col items-start gap-2">
+	<img src={scoreLogoUrl} alt={letterGrade ?? 'unknown'} class="h-16 w-auto" />
 	{#if numericScore !== null}
 		<span class="text-base-content/70 text-sm">
 			{$_('recipe.numeric_score', { default: 'Score' })}: {numericScore.toFixed(1)}/100

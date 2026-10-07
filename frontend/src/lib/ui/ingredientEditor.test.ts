@@ -45,13 +45,11 @@ describe('automatic score form validation', () => {
 		).toBe(false);
 	});
 
-	it('keeps planned preparation fields optional, but validates entered weights', () => {
-		expect(
-			canAutoScore([{ ...validIngredient(), state: 'raw', ciqualCode: '1234' }], 4, 1200)
-		).toBe(true);
-		expect(canAutoScore([{ ...validIngredient(), measuredPreparedWeightG: -1 }])).toBe(false);
+	it('keeps preparation fields optional and validates portions', () => {
+		expect(canAutoScore([{ ...validIngredient(), state: 'raw', ciqualCode: '1234' }], 4)).toBe(
+			true
+		);
 		expect(canAutoScore([validIngredient()], 2.5)).toBe(false);
-		expect(canAutoScore([validIngredient()], 4, 0)).toBe(false);
 	});
 
 	it('treats preparation-only rows as incomplete drafts rather than ignoring them', () => {

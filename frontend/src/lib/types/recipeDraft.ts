@@ -7,7 +7,6 @@ export type RecipeDraft = {
 	name: string;
 	ingredients: Ingredient[];
 	portions?: number | null;
-	finalWeightG?: number | null;
 };
 
 export type RecipeEditorState = {
@@ -25,11 +24,16 @@ export function getEditorRecipes(state: RecipeEditorState): RecipeDraft[] {
 	return recipes.map((recipe) => ({
 		...recipe,
 		// Bindable Svelte props with defaults require explicit values during hydration.
-		portions: recipe.portions ?? null,
-		finalWeightG: recipe.finalWeightG ?? null,
+		portions: recipe.portions ?? 1,
 		// Copy drafts before editing: navigation state should remain an import snapshot.
 		ingredients: addEmptyIngredientIfNeeded(
-			recipe.ingredients.length ? structuredClone(recipe.ingredients) : [createEmptyIngredient()]
+			recipe.ingredients.length
+				? structuredClone(recipe.ingredients).map((ingredient) => ({
+						...ingredient,
+						state: ingredient.state ?? 'raw',
+						preparationProfile: ingredient.preparationProfile ?? 'none'
+					}))
+				: [createEmptyIngredient()]
 		)
 	}));
 }

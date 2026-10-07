@@ -16,31 +16,27 @@ describe('nutrition search drafts', () => {
 			name: 'Rice',
 			ciqualCode: '123',
 			ciqualName: 'Rice, cooked',
-			productName: 'My rice search',
-			nutritionReferenceConfirmed: true
+			productName: 'My rice search'
 		};
 		syncNutritionSearches(ingredient);
 		expect(ingredient.ciqualCode).toBe('123');
 		expect(ingredient.ciqualName).toBe('Rice, cooked');
 		expect(ingredient.productName).toBe('My rice search');
-		expect(ingredient.nutritionReferenceConfirmed).toBe(true);
 	});
 
-	it('invalidates old identifiers and confirmation when the ingredient changes', () => {
+	it('invalidates old identifiers when the ingredient changes', () => {
 		const ingredient = {
 			...createEmptyIngredient(),
 			name: 'Lentils',
 			ciqualCode: '123',
 			barcode: '456',
 			ciqualName: 'Rice',
-			productName: 'Rice — Brand',
-			nutritionReferenceConfirmed: true
+			productName: 'Rice — Brand'
 		};
 		syncNutritionSearches(ingredient, 'Rice');
 		expect(ingredient).toMatchObject({
 			ciqualName: '',
-			productName: '',
-			nutritionReferenceConfirmed: false
+			productName: ''
 		});
 		expect(ingredient.ciqualCode).toBeUndefined();
 		expect(ingredient.barcode).toBeUndefined();
@@ -60,13 +56,12 @@ describe('automatic OFF selection', () => {
 		{ id: '123', label: 'Tomatoes — Brand', isInTaxonomy: true },
 		{ id: '456', label: 'Another product', isInTaxonomy: true }
 	];
-	it('selects the first identified product and requires confirmation', () => {
-		const ingredient = { ...createEmptyIngredient(), nutritionReferenceConfirmed: true };
+	it('selects the first identified product', () => {
+		const ingredient = createEmptyIngredient();
 		suggestOffProduct(ingredient, suggestions);
 		expect(ingredient).toMatchObject({
 			barcode: '123',
-			productName: 'Tomatoes — Brand',
-			nutritionReferenceConfirmed: false
+			productName: 'Tomatoes — Brand'
 		});
 	});
 	it('preserves a manual selection or an ongoing search', () => {

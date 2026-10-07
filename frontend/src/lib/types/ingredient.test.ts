@@ -44,6 +44,8 @@ describe('createEmptyIngredient', () => {
 		expect(empty.isFreshPlant).toBe(false);
 		expect(empty.isInSeason).toBe(false);
 		expect(empty.origin).toBeNull();
+		expect(empty.state).toBe('raw');
+		expect(empty.preparationProfile).toBe('none');
 	});
 
 	it('creates an ingredient considered empty by isIngredientEmpty', () => {
@@ -106,6 +108,11 @@ describe('isIngredientEmpty / isIngredientNotEmpty', () => {
 		expect(isIngredientEmpty(ingredient('i1', '', { isFreshPlant: true, isInSeason: true }))).toBe(
 			true
 		);
+	});
+
+	it('ignores default preparation but preserves a preparation-only draft', () => {
+		expect(isIngredientEmpty(ingredient('i1', '', { preparationProfile: 'none' }))).toBe(true);
+		expect(isIngredientEmpty(ingredient('i1', '', { preparationProfile: 'boiled' }))).toBe(false);
 	});
 
 	it('treats a zero weight as "set" (not empty)', () => {

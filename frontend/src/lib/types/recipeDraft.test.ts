@@ -7,8 +7,7 @@ describe('getEditorRecipes', () => {
 		const ingredient = { ...createEmptyIngredient(), name: 'Tomatoes', weight: 400 };
 		const recipes = getEditorRecipes({ ingredients: [ingredient] });
 		expect(recipes).toHaveLength(1);
-		expect(recipes[0].portions).toBeNull();
-		expect(recipes[0].finalWeightG).toBeNull();
+		expect(recipes[0].portions).toBe(1);
 		expect(recipes[0].ingredients[0]).toEqual(ingredient);
 		expect(recipes[0].ingredients).toHaveLength(2);
 	});
@@ -25,6 +24,39 @@ describe('getEditorRecipes', () => {
 		expect(recipes[1].ingredients[0].weight).toBeNull();
 		expect(imported[0].ingredients[0].weight).toBeNull();
 		expect(recipes[0].ingredients.at(-1)?.id).not.toBe(recipes[1].ingredients.at(-1)?.id);
+	});
+
+	it('defaults imported ingredients to raw while preserving explicit cooked and drained states', () => {
+		const ingredients = ['raw', 'cooked', 'drained'].map((name) => ({
+			...createEmptyIngredient(),
+			name
+		}));
+		ingredients[0].state = undefined;
+		ingredients[1].state = 'cooked';
+		ingredients[2].state = 'drained';
+		const result = getEditorRecipes({ ingredients })[0].ingredients;
+		expect(result.map((ingredient) => ingredient.state)).toEqual([
+			'raw',
+			'cooked',
+			'drained',
+			'raw'
+		]);
+		expect(ingredients[0].state).toBeUndefined();
+	});
+
+	it('defaults imported preparation without replacing an explicit choice', () => {
+		const ingredients = [createEmptyIngredient(), createEmptyIngredient()];
+		ingredients[0].name = 'Tomatoes';
+		ingredients[0].preparationProfile = undefined;
+		ingredients[1].name = 'Rice';
+		ingredients[1].preparationProfile = 'boiled';
+		const result = getEditorRecipes({ ingredients })[0].ingredients;
+		expect(result.map((ingredient) => ingredient.preparationProfile)).toEqual([
+			'none',
+			'boiled',
+			'none'
+		]);
+		expect(ingredients[0].preparationProfile).toBeUndefined();
 	});
 
 	it('provides an empty editable row for direct entry and empty imported recipes', () => {

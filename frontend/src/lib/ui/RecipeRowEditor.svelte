@@ -13,7 +13,11 @@
 -->
 <script lang="ts">
 	import IngredientLine from './IngredientLine.svelte';
-	import { _ } from '$lib/i18n';
+	import HelperTooltip from './HelperTooltip.svelte';
+	import { _, getLocale } from '$lib/i18n';
+	import { onMount } from 'svelte';
+	import { getCountries, getLabelsTaxonomy } from '$lib/api/taxonomy';
+	import type { TaxonomyItem } from '$lib/types/ingredient';
 	import { removeIngredientFromList, addEmptyIngredientIfNeeded } from '$lib/types/ingredientsList';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
 
@@ -28,6 +32,41 @@
 
 	let { ingredients = $bindable(), missingIngredientIds = [], title, id }: Props = $props();
 
+	// Load each choice list once per recipe, rather than once per ingredient row.
+	let originOptions = $state<TaxonomyItem[]>([]);
+	let labelOptions = $state<TaxonomyItem[]>([]);
+	let originsStatus = $state<'loading' | 'ready' | 'failed'>('loading');
+	let labelsStatus = $state<'loading' | 'ready' | 'failed'>('loading');
+
+	onMount(() => {
+		let cancelled = false;
+		void getCountries(getLocale().startsWith('fr') ? 'fr' : 'en')
+			.then((countries) => {
+				if (cancelled) return;
+				originOptions = countries.map((country) => ({
+					id: country.id,
+					label: country.label,
+					isInTaxonomy: true
+				}));
+				originsStatus = 'ready';
+			})
+			.catch(() => {
+				if (!cancelled) originsStatus = 'failed';
+			});
+		void getLabelsTaxonomy(false)
+			.then((labels) => {
+				if (cancelled) return;
+				labelOptions = labels;
+				labelsStatus = 'ready';
+			})
+			.catch(() => {
+				if (!cancelled) labelsStatus = 'failed';
+			});
+		return () => {
+			cancelled = true;
+		};
+	});
+
 	/** Handle delete of an ingredient by id. */
 	function handleIngredientDelete(id: string) {
 		ingredients = removeIngredientFromList(ingredients, id);
@@ -40,20 +79,57 @@
 
 	// Data columns share a width; the icon-only action column stays compact.
 	const columns = [
-		{ key: 'ingredient_name', label: 'Ingredient name' },
-		{ key: 'ciqual_food', label: 'CIQUAL food' },
-		{ key: 'agribalyse_food', label: 'Agribalyse correspondence' },
-		{ key: 'off_product', label: 'Open Food Facts product' },
-		{ key: 'quantity_grams', label: 'Quantity (grams)' },
-		{ key: 'state', label: 'Ingredient state' },
-		{ key: 'nutrition_confirmed', label: 'Nutrition reference confirmed' },
-		{ key: 'preparation_profile', label: 'Preparation profile' },
-		{ key: 'measured_prepared_weight', label: 'Measured prepared weight (grams)' },
-		{ key: 'estimated_prepared_weight', label: 'Estimated prepared weight (grams)' },
-		{ key: 'labels', label: 'Labels' },
-		{ key: 'origin', label: 'Origin' },
-		{ key: 'fresh_plant', label: 'Fresh fruit/veg' },
-		{ key: 'in_season', label: 'In season' },
+		{
+			key: 'ingredient_name',
+			label: 'Ingredient name'
+		},
+		{
+			key: 'ciqual_food',
+			label: 'Ciqual',
+			help: 'Generic food from the French Ciqual nutrition database, such as raw tomato. Choose the food that best matches your ingredient.'
+		},
+		{
+			key: 'agribalyse_food',
+			label: 'Agribalyse',
+			help: 'Food from the Agribalyse environmental database, used to calculate the Green Score. You can change the suggested match.'
+		},
+		{
+			key: 'off_product',
+			label: 'Open Food Facts',
+			help: 'Select your exact packaged product by name and brand as the nutrition reference. Clear this field to use the generic Ciqual food instead.'
+		},
+		{
+			key: 'quantity_grams',
+			label: 'Quantity (grams)'
+		},
+		{
+			key: 'state',
+			label: 'State when weighed'
+		},
+		{
+			key: 'preparation_profile',
+			label: 'Preparation'
+		},
+		{
+			key: 'labels',
+			label: 'Labels',
+			help: 'Certifications carried by this ingredient, such as organic or fair trade. These can affect the Green Score.'
+		},
+		{
+			key: 'origin',
+			label: 'Origin',
+			help: 'Country where this ingredient was produced. Used to estimate transport impact.'
+		},
+		{
+			key: 'fresh_plant',
+			label: 'Fresh fruit/veg',
+			help: 'Select Yes for fresh fruit or vegetables to enable the seasonality field.'
+		},
+		{
+			key: 'in_season',
+			label: 'In season',
+			help: 'Select Yes if this fresh fruit or vegetable is in season where and when you prepare the recipe.'
+		},
 		{ key: 'action', label: 'Action' }
 	];
 </script>
@@ -78,7 +154,22 @@
 				<tr>
 					{#each columns as column (column.key)}
 						<th class:action-column={column.key === 'action'} scope="col">
-							{$_(`recipe.${column.key}`, { default: column.label })}
+							<div class="header-content">
+								<span class:sr-only={column.key === 'action'}
+									>{$_(`recipe.${column.key}`, { default: column.label })}</span
+								>
+								{#if column.help}
+									<HelperTooltip
+										floating
+										position="bottom"
+										tip={$_(`recipe.column_help.${column.key}`, { default: column.help })}
+										ariaLabel={$_('helpers.column_info', {
+											default: 'Information about {column}',
+											values: { column: $_(`recipe.${column.key}`, { default: column.label }) }
+										})}
+									/>
+								{/if}
+							</div>
 						</th>
 					{/each}
 				</tr>
@@ -89,9 +180,14 @@
 						recipeId={id}
 						bind:ingredient={ingredients[index]}
 						isLastItem={index === ingredients.length - 1}
+						isOnlyItem={ingredients.length === 1}
 						onDelete={handleIngredientDelete}
 						onNotEmpty={addIngredientLine}
 						{missingIngredientIds}
+						{originOptions}
+						{labelOptions}
+						{originsStatus}
+						{labelsStatus}
 					/>
 				{/each}
 			</tbody>
@@ -101,7 +197,7 @@
 
 <style>
 	.ingredient-table {
-		width: max(100%, 2752px);
+		width: max(100%, 2176px);
 	}
 	.ingredient-table col {
 		width: 192px;
@@ -110,8 +206,19 @@
 		width: 64px;
 	}
 	.ingredient-table th.action-column {
-		padding-inline: 8px;
-		text-align: center;
+		padding-inline: 4px;
+	}
+	.header-content {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.header-content > span {
+		min-width: 0;
+	}
+	.action-column .header-content {
+		gap: 2px;
 	}
 	.ingredient-table th {
 		height: 72px;
@@ -142,6 +249,8 @@
 		border-radius: 0;
 		padding: 0 12px;
 		background: transparent;
+		/* Cell styling replaces DaisyUI input depth shadows, including validation colors. */
+		box-shadow: none;
 		font-size: 0.875rem;
 		outline: none;
 	}
@@ -152,24 +261,10 @@
 	:global(.ingredient-table td:focus-within) {
 		background: var(--color-base-200);
 	}
-	:global(.ingredient-table td[data-readonly='true']) {
-		background: var(--color-base-200);
-	}
 	:global(.ingredient-table td:focus-within) {
 		box-shadow: inset 0 0 0 1px var(--color-primary);
 	}
 	:global(.ingredient-table td[data-invalid='true']:not(:focus-within)) {
 		background: color-mix(in oklab, var(--color-error) 15%, var(--color-base-100));
-	}
-	@media (min-width: 768px) {
-		:global(.ingredient-table td:first-child),
-		.ingredient-table th:first-child {
-			position: sticky;
-			left: 0;
-			z-index: 1;
-		}
-		.ingredient-table th:first-child {
-			z-index: 3;
-		}
 	}
 </style>

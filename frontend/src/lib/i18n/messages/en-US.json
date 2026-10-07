@@ -49,21 +49,21 @@
 		"quantity_grams": "Quantity (grams)",
 		"environmental_reference": "Environmental reference",
 		"environmental_reference_hint": "Ingredient selected in the environmental impact database. Nutrition references are separate.",
-		"state": "Ingredient state",
-		"states": { "raw": "Raw", "cooked": "Cooked", "drained": "Drained" },
-		"ciqual_food": "CIQUAL correspondence",
-		"agribalyse_food": "Agribalyse correspondence",
-		"off_product": "OFF correspondence",
+		"state": "State when weighed",
+		"states": {
+			"raw": "Raw",
+			"cooked": "Cooked",
+			"drained": "Drained"
+		},
+		"ciqual_food": "Ciqual",
+		"agribalyse_food": "Agribalyse",
+		"off_product": "Open Food Facts",
 		"reference_suggestions": "{count} suggestions",
 		"search_loading": "Searching…",
 		"search_failed": "Search unavailable. Try again.",
 		"search_empty": "No matching foods or products.",
-		"nutrition_confirmed": "Nutrition reference confirmed",
-		"preparation_profile": "Preparation profile",
-		"measured_prepared_weight": "Measured prepared weight (grams)",
-		"estimated_prepared_weight": "Estimated prepared weight (grams)",
+		"preparation_profile": "Preparation",
 		"portions": "Number of portions",
-		"final_weight": "Final dish weight (grams)",
 		"nutri_score": "Nutri-Score",
 		"score_unavailable": "No score available",
 		"quantity_needed": "Enter a quantity",
@@ -92,12 +92,9 @@
 		"delete_ingredient": "Delete ingredient",
 		"action": "Action",
 		"summary": "Summary",
-		"ingredients_count": "ingredient(s) added",
 		"green_score": "Green Score",
 		"computing": "Computing score...",
 		"numeric_score": "Score",
-		"ignored_ingredients": "ingredient(s) ignored",
-		"ignored_weight": "of total weight",
 		"no_score": "Scores update automatically once the required cells are complete.",
 		"compute_score": "Compute score",
 		"country": "Country",
@@ -107,7 +104,31 @@
 		"ingredient_not_accounted_tooltip": "We could not find a correspondence in our impact database for this ingredient",
 		"ingredient_zero_quantity": "Zero quantity",
 		"ingredient_zero_quantity_tooltip": "This ingredient's quantity is 0g, so it cannot be taken into account in the calculation.",
-		"ingredient_scorable": "This ingredient can be counted in the green score"
+		"ingredient_scorable": "This ingredient can be counted in the green score",
+		"column_help": {
+			"ciqual_food": "Generic food from the French Ciqual nutrition database, such as raw tomato. Choose the food that best matches your ingredient.",
+			"agribalyse_food": "Food from the Agribalyse environmental database, used to calculate the Green Score. You can change the suggested match.",
+			"off_product": "Select your exact packaged product by name and brand as the nutrition reference. Clear this field to use the generic Ciqual food instead.",
+			"labels": "Certifications carried by this ingredient, such as organic or fair trade. These can affect the Green Score.",
+			"origin": "Country where this ingredient was produced. Used to estimate transport impact.",
+			"fresh_plant": "Select Yes for fresh fruit or vegetables to enable the seasonality field.",
+			"in_season": "Select Yes if this fresh fruit or vegetable is in season where and when you prepare the recipe."
+		},
+		"preparations": {
+			"none": "No preparation",
+			"boiled": "Boiled",
+			"steamed": "Steamed",
+			"baked_roasted": "Baked / roasted",
+			"grilled": "Grilled",
+			"pan_fried": "Pan-fried",
+			"deep_fried": "Deep-fried"
+		},
+		"remove_label": "Remove {label}",
+		"select_labels": "Select labels",
+		"labels_none": "None",
+		"no_labels_available": "No labels available",
+		"world": "World",
+		"excluded_summary": "{count} ingredient(s) excluded ({percent}% of recipe weight)."
 	},
 	"homepage": {
 		"title": "Score My Recipe - Open Food Facts",
@@ -164,7 +185,8 @@
 		"labels": "Official certifications (e.g. Organic, Label Rouge, Fair Trade) that grant Green-Score bonuses.",
 		"seasonality": "Check if seasonal fruits and vegetables are produced in season for a score bonus.",
 		"origin": "Geographical origin of the ingredient, used to evaluate transportation impact.",
-		"country": "Country where the recipe is prepared or consumed, used to calculate transport distances."
+		"country": "Country where the recipe is prepared or consumed, used to calculate transport distances.",
+		"column_info": "Information about {column}"
 	},
 	"examples": {
 		"title": "Or try an example recipe:"

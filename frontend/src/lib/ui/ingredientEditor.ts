@@ -21,24 +21,16 @@ export function ingredientCellErrors(ingredient: Ingredient) {
 					reference?.id &&
 					reference.isInTaxonomy &&
 					!('hasEfScore' in reference && reference.hasEfScore === false)
-				)),
-		measuredPreparedWeightG:
-			ingredient.measuredPreparedWeightG != null &&
-			!isPositiveAmount(ingredient.measuredPreparedWeightG)
+				))
 	};
 }
 
 /** Ignore the blank insertion row and block scoring until every populated row is valid. */
-export function canAutoScore(
-	ingredients: Ingredient[],
-	portions?: number | null,
-	finalWeightG?: number | null
-): boolean {
+export function canAutoScore(ingredients: Ingredient[], portions?: number | null): boolean {
 	const rows = ingredients.filter(isIngredientNotEmpty);
 	return (
 		rows.length > 0 &&
 		(portions == null || (isPositiveAmount(portions) && Number.isInteger(portions))) &&
-		(finalWeightG == null || isPositiveAmount(finalWeightG)) &&
 		rows.every((ingredient) => !Object.values(ingredientCellErrors(ingredient)).some(Boolean))
 	);
 }

@@ -29,7 +29,6 @@
 					$_('recipe.untitled', { default: 'Recipe {number}', values: { number: index + 1 } })}
 				bind:ingredients={recipes[index].ingredients}
 				bind:portions={recipes[index].portions}
-				bind:finalWeightG={recipes[index].finalWeightG}
 			/>
 		{/each}
 	</div>

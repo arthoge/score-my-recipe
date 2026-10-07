@@ -12,8 +12,10 @@
 	import { getMatchingTags } from '$lib/api/taxonomy';
 	import { findMatchingSuggestion } from '$lib/utils/taxonomyMatch';
 	import TaxonomyCell from './TaxonomyCell.svelte';
+	import LabelsCell from './LabelsCell.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
 	import {
+		PREPARATION_OPTIONS,
 		isIngredientEmpty,
 		isIngredientNotEmpty,
 		type Ingredient,
@@ -25,7 +27,12 @@
 		ingredient: Ingredient;
 		recipeId: string;
 		isLastItem?: boolean;
+		isOnlyItem?: boolean;
 		missingIngredientIds?: string[];
+		originOptions: TaxonomyItem[];
+		labelOptions: TaxonomyItem[];
+		originsStatus: 'loading' | 'ready' | 'failed';
+		labelsStatus: 'loading' | 'ready' | 'failed';
 		onDelete?: (id: string) => void;
 		onNotEmpty?: () => void;
 	};
@@ -33,7 +40,12 @@
 		ingredient = $bindable(),
 		recipeId,
 		isLastItem = false,
+		isOnlyItem = false,
 		missingIngredientIds = [],
+		originOptions,
+		labelOptions,
+		originsStatus,
+		labelsStatus,
 		onDelete,
 		onNotEmpty
 	}: Props = $props();
@@ -86,7 +98,6 @@
 									if (!ingredient.ciqualCode && !ingredient.ciqualName && result.ciqual) {
 										ingredient.ciqualCode = result.ciqual.code;
 										ingredient.ciqualName = result.ciqual.name;
-										ingredient.nutritionReferenceConfirmed = false;
 									}
 								})
 								.catch(() => {
@@ -144,7 +155,7 @@
 			id="ingredient-ciqual-{rowId}"
 			getSuggestions={searchCiqualFoods}
 			searchTerm={ingredient.name}
-			label={$_('recipe.ciqual_food', { default: 'CIQUAL food' })}
+			label={$_('recipe.ciqual_food', { default: 'Ciqual food' })}
 			tags={ingredient.ciqualName
 				? [
 						{
@@ -157,7 +168,6 @@
 			onchange={(tags) => {
 				const selected = tags[0];
 				const code = selected?.isInTaxonomy ? (selected.id ?? undefined) : undefined;
-				if (code !== ingredient.ciqualCode) ingredient.nutritionReferenceConfirmed = false;
 				ingredient.ciqualName = selected?.label ?? '';
 				ingredient.ciqualCode = code;
 			}}
@@ -205,7 +215,6 @@
 			onchange={(tags) => {
 				const selected = tags[0];
 				const code = selected?.isInTaxonomy ? (selected.id ?? undefined) : undefined;
-				if (code !== ingredient.barcode) ingredient.nutritionReferenceConfirmed = false;
 				ingredient.productName = selected?.label ?? '';
 				ingredient.barcode = code;
 			}}
@@ -229,7 +238,7 @@
 		<select
 			class="cell-input"
 			bind:value={ingredient.state}
-			aria-label={$_('recipe.state', { default: 'Ingredient state' })}
+			aria-label={$_('recipe.state', { default: 'State when weighed' })}
 		>
 			<option value={null}></option>
 			<option value="raw">{$_('recipe.states.raw', { default: 'Raw' })}</option>
@@ -240,67 +249,49 @@
 	<td>
 		<select
 			class="cell-input"
-			bind:value={ingredient.nutritionReferenceConfirmed}
-			disabled={!ingredient.ciqualCode?.trim() && !ingredient.barcode?.trim()}
-			aria-label={$_('recipe.nutrition_confirmed', { default: 'Nutrition reference confirmed' })}
+			bind:value={ingredient.preparationProfile}
+			aria-label={$_('recipe.preparation_profile', { default: 'Preparation' })}
 		>
-			<option value={undefined}></option>
-			<option value={false}>{$_('recipe.no', { default: 'No' })}</option>
-			<option value={true}>{$_('recipe.yes', { default: 'Yes' })}</option>
+			{#each PREPARATION_OPTIONS as option (option.value)}
+				<option value={option.value}
+					>{$_(`recipe.preparations.${option.value}`, { default: option.label })}</option
+				>
+			{/each}
 		</select>
 	</td>
 	<td>
-		<input
-			class="cell-input"
-			type="text"
-			bind:value={ingredient.preparationProfile}
-			aria-label={$_('recipe.preparation_profile', { default: 'Preparation profile' })}
-		/>
-	</td>
-	<td data-invalid={errors.measuredPreparedWeightG}>
-		<input
-			class="input validator cell-input text-left tabular-nums"
-			type="number"
-			bind:value={ingredient.measuredPreparedWeightG}
-			min="0"
-			step="any"
-			inputmode="decimal"
-			aria-invalid={errors.measuredPreparedWeightG}
-			aria-label={$_('recipe.measured_prepared_weight', {
-				default: 'Measured prepared weight (grams)'
-			})}
-		/>
-	</td>
-	<td data-readonly="true">
-		<input
-			class="cell-input text-left tabular-nums"
-			type="text"
-			readonly
-			value={ingredient.estimatedPreparedWeightG ?? ''}
-			aria-label={$_('recipe.estimated_prepared_weight', {
-				default: 'Estimated prepared weight (grams)'
-			})}
-		/>
+		<LabelsCell bind:value={ingredient.labels} options={labelOptions} status={labelsStatus} />
 	</td>
 	<td>
-		<TaxonomyCell
-			id="ingredient-labels-{rowId}"
-			tagtype="labels"
-			multiple
-			tags={ingredient.labels}
-			label={$_('recipe.labels', { default: 'Labels' })}
-			onchange={(tags) => (ingredient.labels = tags)}
-		/>
-	</td>
-	<td>
-		<TaxonomyCell
+		<select
 			id="ingredient-origin-{rowId}"
-			tagtype="countries"
-			tags={ingredient.origin ? [ingredient.origin] : []}
-			label={$_('recipe.origin', { default: 'Origin' })}
-			onchange={(tags) => (ingredient.origin = tags[0] ?? null)}
-		/>
+			class="cell-input"
+			value={ingredient.origin?.id ?? ''}
+			disabled={originsStatus !== 'ready'}
+			aria-label={$_('recipe.origin', { default: 'Origin' })}
+			onchange={(event) => {
+				const selected = event.currentTarget.value;
+				ingredient.origin =
+					originOptions.find((option) => option.id === selected) ??
+					(selected && selected === ingredient.origin?.id ? ingredient.origin : null);
+			}}
+		>
+			<option value=""
+				>{originsStatus === 'loading'
+					? $_('recipe.search_loading', { default: 'Searching…' })
+					: originsStatus === 'failed'
+						? $_('recipe.search_failed', { default: 'Search unavailable. Try again.' })
+						: $_('recipe.world', { default: 'World' })}</option
+			>
+			{#if ingredient.origin?.id && !originOptions.some((option) => option.id === ingredient.origin?.id)}
+				<option value={ingredient.origin.id}>{ingredient.origin.label}</option>
+			{/if}
+			{#each originOptions as option (option.id)}
+				<option value={option.id ?? ''}>{option.label}</option>
+			{/each}
+		</select>
 	</td>
+
 	<td>
 		<select
 			class="cell-input"
@@ -324,15 +315,14 @@
 		</select>
 	</td>
 	<td class="text-center">
-		{#if !(isLastItem && isIngredientEmpty(ingredient))}
-			<button
-				type="button"
-				class="btn btn-ghost btn-square btn-sm text-error"
-				onclick={() => onDelete?.(ingredient.id)}
-				aria-label={$_('recipe.delete_ingredient', { default: 'Delete ingredient' })}
-			>
-				<IconMdiDelete class="h-4 w-4" aria-hidden="true" />
-			</button>
-		{/if}
+		<button
+			type="button"
+			class="btn btn-ghost btn-square btn-sm text-error disabled:text-base-content/30 disabled:bg-transparent disabled:opacity-50"
+			disabled={isOnlyItem || (isLastItem && isIngredientEmpty(ingredient))}
+			onclick={() => onDelete?.(ingredient.id)}
+			aria-label={$_('recipe.delete_ingredient', { default: 'Delete ingredient' })}
+		>
+			<IconMdiDelete class="h-4 w-4" aria-hidden="true" />
+		</button>
 	</td>
 </tr>

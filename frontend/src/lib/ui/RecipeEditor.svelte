@@ -5,7 +5,6 @@
 	import RecipeRowEditor from '$lib/ui/RecipeRowEditor.svelte';
 	import ScoreDisplay from '$lib/ui/ScoreDisplay.svelte';
 	import CountrySelect from '$lib/ui/CountrySelect.svelte';
-	import { countNonEmptyIngredients } from '$lib/types/ingredientsList';
 	import type { IngredientsList } from '$lib/types/ingredientsList';
 	import { isIngredientNotEmpty } from '$lib/types/ingredient';
 	import { canAutoScore, isPositiveAmount } from './ingredientEditor';
@@ -17,16 +16,9 @@
 		title: string;
 		ingredients: IngredientsList;
 		portions?: number | null;
-		finalWeightG?: number | null;
 	};
 
-	let {
-		id,
-		title,
-		ingredients = $bindable(),
-		portions = $bindable(null),
-		finalWeightG = $bindable(null)
-	}: Props = $props();
+	let { id, title, ingredients = $bindable(), portions = $bindable(1) }: Props = $props();
 
 	// Country the recipe is being cooked in (ISO 3166-1 alpha-2 code, or null).
 	// Used to compute the distance modifier in the green-score.
@@ -51,11 +43,11 @@
 		JSON.stringify({
 			ingredients: ingredients.filter(isIngredientNotEmpty),
 			country,
-			portions,
-			finalWeightG
+			portions
 		})
 	);
-	let scoreReady = $derived(canAutoScore(ingredients, portions, finalWeightG));
+
+	let scoreReady = $derived(canAutoScore(ingredients, portions));
 
 	/**
 	 * Total weight (in grams) of the non-empty ingredients sent to the backend.
@@ -75,9 +67,6 @@
 			.filter((i) => missing.has(i.id))
 			.reduce((sum, i) => sum + (i.weight ?? 0), 0);
 	});
-
-	/** Number of non-empty ingredients currently in the editor. */
-	let nonEmptyIngredientCount = $derived(countNonEmptyIngredients(ingredients));
 
 	/**
 	 * Ingredient ids flagged as missing in the last computed score.
@@ -160,10 +149,6 @@
 <section class="w-full min-w-0" aria-labelledby="recipe-heading-{id}">
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
 		<h2 id="recipe-heading-{id}" class="text-xl font-bold">{title}</h2>
-		<p class="text-base-content/70 text-sm">
-			{nonEmptyIngredientCount}
-			{$_('recipe.ingredients_count', { default: 'ingredient(s) added' })}
-		</p>
 	</div>
 	<div class="mb-4 flex flex-wrap items-end gap-4">
 		<label class="fieldset">
@@ -178,40 +163,25 @@
 				bind:value={portions}
 			/>
 		</label>
-		<label class="fieldset">
-			<span class="label"
-				>{$_('recipe.final_weight', { default: 'Final dish weight (grams)' })}</span
-			>
-			<input
-				class="input input-sm w-48"
-				class:input-error={finalWeightG != null && !isPositiveAmount(finalWeightG)}
-				type="number"
-				min="0"
-				step="any"
-				bind:value={finalWeightG}
-			/>
-		</label>
 		<CountrySelect bind:value={country} id="country-select-{id}" />
 	</div>
 
 	<RecipeRowEditor bind:ingredients {missingIngredientIds} {title} {id} />
 
-	<div class="mt-6 grid items-start gap-6 lg:grid-cols-2">
+	<div class="mt-6 flex flex-wrap items-stretch gap-4">
 		<ScoreDisplay
 			score={greenScore}
-			totalIngredientCount={nonEmptyIngredientCount}
 			{totalWeight}
 			{ignoredWeight}
 			isLoading={isScoreLoading}
 			error={scoreError}
 		/>
-		<div class="bg-base-200 rounded-lg p-4">
+		<div class="bg-base-200 w-80 max-w-full rounded-lg p-4">
 			<h3 class="text-lg font-semibold">{$_('recipe.nutri_score', { default: 'Nutri-Score' })}</h3>
-			<p
-				class="text-base-content/70 mt-2"
-				aria-label={$_('recipe.score_unavailable', { default: 'No score available' })}
-			>
-				—
+			<p class="text-base-content/70 mt-2 text-sm">
+				{$_('recipe.no_score', {
+					default: 'Scores update automatically once the required cells are complete.'
+				})}
 			</p>
 		</div>
 	</div>

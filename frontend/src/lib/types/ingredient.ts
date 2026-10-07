@@ -49,6 +49,19 @@ export interface IngredientSuggestion extends TaxonomyItem {
 	hasEfScore: boolean;
 }
 
+/** Preparation choices shared by the editor and its typed draft values. */
+export const PREPARATION_OPTIONS = [
+	{ value: 'none', label: 'No preparation' },
+	{ value: 'boiled', label: 'Boiled' },
+	{ value: 'steamed', label: 'Steamed' },
+	{ value: 'baked_roasted', label: 'Baked / roasted' },
+	{ value: 'grilled', label: 'Grilled' },
+	{ value: 'pan_fried', label: 'Pan-fried' },
+	{ value: 'deep_fried', label: 'Deep-fried' }
+] as const;
+
+export type PreparationProfile = (typeof PREPARATION_OPTIONS)[number]['value'];
+
 /**
  * Represents a single ingredient in a recipe
  */
@@ -82,11 +95,7 @@ export interface Ingredient {
 	barcode?: string;
 	/** Visible product name and brand, separate from the internally stored barcode. */
 	productName?: string;
-	nutritionReferenceConfirmed?: boolean;
-	preparationProfile?: string;
-	measuredPreparedWeightG?: number | null;
-	/** Only populated by a documented backend preparation estimate. */
-	estimatedPreparedWeightG?: number | null;
+	preparationProfile?: PreparationProfile;
 }
 
 /**
@@ -110,7 +119,9 @@ export function createEmptyIngredient(): Ingredient {
 		labels: [],
 		isFreshPlant: false,
 		isInSeason: false,
-		origin: null
+		origin: null,
+		state: 'raw',
+		preparationProfile: 'none'
 	};
 }
 
@@ -120,24 +131,21 @@ export function createEmptyIngredient(): Ingredient {
  * @returns True if the ingredient has no name
  */
 export function isIngredientEmpty(ingredient: Ingredient): boolean {
-	// isFreshPlant and isInSeason are default-false flags that don't make a
-	// line "non-empty", so they are excluded from the emptiness check.
+	// Default flags, raw state and no preparation do not populate the insertion row.
 	return (
 		ingredient.name.trim() === '' &&
 		ingredient.weight === null &&
 		ingredient.codifiedIngredient === null &&
 		ingredient.labels.length === 0 &&
 		ingredient.origin === null &&
-		!ingredient.state &&
+		(!ingredient.state || ingredient.state === 'raw') &&
 		!ingredient.ciqualCode?.trim() &&
 		!ingredient.ciqualName?.trim() &&
 		!ingredient.agribalyseName?.trim() &&
 		!ingredient.agribalyseCode &&
 		!ingredient.barcode?.trim() &&
 		!ingredient.productName?.trim() &&
-		!ingredient.nutritionReferenceConfirmed &&
-		!ingredient.preparationProfile?.trim() &&
-		ingredient.measuredPreparedWeightG == null
+		(!ingredient.preparationProfile || ingredient.preparationProfile === 'none')
 	);
 }
 

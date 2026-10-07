@@ -7,7 +7,6 @@
 
   Props:
   - score: The full green-score response from the backend, or null.
-  - totalIngredientCount: The total number of ingredients sent to the backend.
   - ignoredWeight: The total weight (in grams) of the ignored ingredients.
   - totalWeight: The total weight (in grams) of all sent ingredients.
   - isLoading: Whether the score is currently being computed.
@@ -20,7 +19,6 @@
 
 	type Props = {
 		score?: GreenScoreResponse | null;
-		totalIngredientCount?: number;
 		ignoredWeight?: number;
 		totalWeight?: number;
 		isLoading?: boolean;
@@ -29,7 +27,6 @@
 
 	let {
 		score = null,
-		totalIngredientCount = 0,
 		ignoredWeight = 0,
 		totalWeight = 0,
 		isLoading = false,
@@ -45,14 +42,14 @@
 	);
 </script>
 
-<div class="bg-base-200 rounded-lg p-4">
+<div class="bg-base-200 w-80 max-w-full rounded-lg p-4">
 	<h3 class="text-lg font-semibold">
 		{$_('recipe.green_score', { default: 'Green Score' })}
 	</h3>
 
 	{#if isLoading}
-		<div class="flex items-center gap-3 py-4">
-			<span class="loading loading-spinner loading-lg"></span>
+		<div class="flex items-center gap-2 py-2">
+			<span class="loading loading-spinner loading-sm"></span>
 			<span>{$_('recipe.computing', { default: 'Computing score...' })}</span>
 		</div>
 	{:else if error}
@@ -65,18 +62,13 @@
 			<GreenScore letterGrade={score.letterGrade} numericScore={score.numericScore} />
 		</div>
 
-		<!-- Ignored ingredients summary -->
-		{#if totalIngredientCount > 0}
-			<div class="text-base-content/70 mt-3 text-sm">
-				<p>
-					<strong>{ignoredCount}</strong>
-					{$_('recipe.ignored_ingredients', { default: 'ingredient(s) ignored' })}
-				</p>
-				<p>
-					<strong>{ignoredWeightPercent}%</strong>
-					{$_('recipe.ignored_weight', { default: 'of total weight' })}
-				</p>
-			</div>
+		{#if ignoredCount > 0}
+			<p class="text-warning mt-3 text-sm" role="status">
+				{$_('recipe.excluded_summary', {
+					default: '{count} ingredient(s) excluded ({percent}% of recipe weight).',
+					values: { count: ignoredCount, percent: ignoredWeightPercent }
+				})}
+			</p>
 		{/if}
 	{:else}
 		<p class="text-base-content/70 mt-2 text-sm">

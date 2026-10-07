@@ -7,7 +7,6 @@ export function suggestOffProduct(ingredient: Ingredient, suggestions: TaxonomyI
 	if (ingredient.barcode || ingredient.productName || !match) return;
 	ingredient.barcode = match.id ?? undefined;
 	ingredient.productName = match.label;
-	ingredient.nutritionReferenceConfirmed = false;
 }
 
 /** Seed empty searches on load; changing ingredients invalidates previous references. */
@@ -19,7 +18,6 @@ export function syncNutritionSearches(ingredient: Ingredient, previousName?: str
 		ingredient.agribalyseName = '';
 		ingredient.referenceSource = undefined;
 		ingredient.barcode = undefined;
-		ingredient.nutritionReferenceConfirmed = false;
 	}
 	if (changed) {
 		ingredient.ciqualName = '';
