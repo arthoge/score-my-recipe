@@ -1,0 +1,117 @@
+[
+  {
+    "id": "chocolate-yogurt",
+    "name": "Chocolate yogurt",
+    "aliases": [
+      "chocolate yogurt",
+      "chocolate yoghurt"
+    ],
+    "nutri_score": "D",
+    "green_score": "D",
+    "better_options": [
+      "plain-yogurt",
+      "organic-plain-yogurt"
+    ]
+  },
+  {
+    "id": "plain-yogurt",
+    "name": "Plain yogurt",
+    "aliases": [
+      "plain yogurt",
+      "natural yogurt"
+    ],
+    "nutri_score": "A",
+    "green_score": "B"
+  },
+  {
+    "id": "organic-plain-yogurt",
+    "name": "Organic plain yogurt",
+    "aliases": [
+      "organic plain yogurt"
+    ],
+    "nutri_score": "A",
+    "green_score": "A"
+  },
+  {
+    "id": "milk",
+    "name": "Milk",
+    "aliases": [
+      "milk",
+      "lait",
+      "leche",
+      "lait demi-ecreme",
+      "semi-skimmed milk"
+    ],
+    "nutri_score": "B",
+    "green_score": "C",
+    "better_options": [
+      "organic-milk"
+    ]
+  },
+  {
+    "id": "organic-milk",
+    "name": "Organic Milk",
+    "aliases": [
+      "organic milk",
+      "lait bio",
+      "leche ecologica"
+    ],
+    "nutri_score": "B",
+    "green_score": "B"
+  },
+  {
+    "id": "eggs",
+    "name": "Eggs",
+    "aliases": [
+      "egg",
+      "eggs",
+      "oeuf",
+      "oeufs",
+      "huevo",
+      "huevos",
+      "\u0153ufs"
+    ],
+    "nutri_score": "A",
+    "green_score": "D",
+    "better_options": [
+      "organic-eggs"
+    ]
+  },
+  {
+    "id": "organic-eggs",
+    "name": "Organic Eggs",
+    "aliases": [
+      "organic eggs",
+      "oeufs bio",
+      "huevos ecologicos"
+    ],
+    "nutri_score": "A",
+    "green_score": "B"
+  },
+  {
+    "id": "tomato",
+    "name": "Tomato",
+    "aliases": [
+      "tomato",
+      "tomatoes",
+      "tomate",
+      "tomates"
+    ],
+    "nutri_score": "A",
+    "green_score": "B",
+    "better_options": [
+      "organic-tomato"
+    ]
+  },
+  {
+    "id": "organic-tomato",
+    "name": "Organic Tomato",
+    "aliases": [
+      "organic tomato",
+      "tomate bio",
+      "tomate ecologico"
+    ],
+    "nutri_score": "A",
+    "green_score": "A"
+  }
+]

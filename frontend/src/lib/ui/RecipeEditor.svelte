@@ -21,8 +21,12 @@
 	import {
 		computeGreenScore,
 		ingredientToGreenScoreInput,
+		getMakeItBetterSuggestions,
+		type MakeItBetterSuggestion,
 		type GreenScoreResponse
 	} from '$lib/api/recipe';
+	import MakeItBetterDialog from '$lib/ui/MakeItBetterDialog.svelte';
+	import { replaceSelectedRecipeProducts } from '$lib/ui/makeItBetter';
 
 	/** Each recipe owns its ingredients and an independent score request. */
 	type Props = {
@@ -251,6 +255,42 @@
 			currentScoreRequestController?.abort();
 		};
 	});
+
+	// --- Make It Better state ----------------------------------------------
+	let isCheckingImprovements = $state(false);
+	let improvementError = $state<string | null>(null);
+	let improvementSuggestions = $state<MakeItBetterSuggestion[]>([]);
+	let isImprovementDialogOpen = $state(false);
+
+	async function openMakeItBetter() {
+		isCheckingImprovements = true;
+		improvementError = null;
+		try {
+			const names = ingredients.map((i) => {
+				if (i.codifiedIngredient?.id) {
+					// Use language-agnostic ID (e.g. 'en:chocolate-yogurt' -> 'chocolate-yogurt')
+					// which converts to 'chocolate yogurt' during catalog matching.
+					return i.codifiedIngredient.id.split(':').pop()?.replace(/-/g, ' ');
+				}
+				return i.name;
+			}).filter(Boolean) as string[];
+			const result = await getMakeItBetterSuggestions(names);
+			improvementSuggestions = result.suggestions;
+			if (result.suggestions.length === 0) {
+				improvementError = 'No catalogued improvements are available for this recipe.';
+				return;
+			}
+			isImprovementDialogOpen = true;
+		} catch (e) {
+			improvementError = e instanceof Error ? e.message : 'Could not check recipe improvements.';
+		} finally {
+			isCheckingImprovements = false;
+		}
+	}
+
+	function applySelectedImprovements(suggestions: MakeItBetterSuggestion[]) {
+		replaceSelectedRecipeProducts(ingredients, suggestions);
+	}
 </script>
 
 <section class="w-full min-w-0" aria-labelledby="recipe-heading-{id}">
@@ -340,4 +380,30 @@
 				: null}
 		/>
 	</div>
+
+	<div class="mt-4" aria-live="polite" aria-busy={isCheckingImprovements}>
+		<button
+			type="button"
+			class="btn w-half md:max-w-[49rem] min-h-[4rem] border-0 bg-black hover:bg-black text-white transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] font-semibold text-xl flex items-center justify-center rounded-lg"
+			disabled={isCheckingImprovements || ingredients.length === 0}
+			onclick={openMakeItBetter}
+		>
+			<div class="flex items-center gap-2">
+				{#if isCheckingImprovements}
+					<span class="loading loading-spinner loading-md"></span>
+				{:else}
+				{/if}
+				<span>{$_('make_it_better.button', { default: 'Check for improvements' })}</span>
+			</div>
+		</button>
+		{#if improvementError}
+			<p class="text-error mt-2 text-sm">{improvementError}</p>
+		{/if}
+	</div>
 </section>
+
+<MakeItBetterDialog
+	bind:open={isImprovementDialogOpen}
+	suggestions={improvementSuggestions}
+	onapply={applySelectedImprovements}
+/>

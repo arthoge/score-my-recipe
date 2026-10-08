@@ -2,7 +2,10 @@
 	import { tick } from 'svelte';
 	import { _, getLocale } from '$lib/i18n';
 	import { goto } from '$app/navigation';
-	import { parseRecipeText, apiIngredientsToIngredients } from '$lib/api/recipe';
+	import {
+		parseRecipeText,
+		apiIngredientsToIngredients
+	} from '$lib/api/recipe';
 	import OnboardingBanner from '$lib/ui/OnboardingBanner.svelte';
 	import HelperTooltip from '$lib/ui/HelperTooltip.svelte';
 	import RecipeExamples from '$lib/ui/RecipeExamples.svelte';
@@ -217,4 +220,5 @@
 			<span>{error}</span>
 		</div>
 	{/if}
+
 </div>

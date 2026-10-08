@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import api.logging_config as logging_config
+import api.improvements as improvements
 import api.recipes as recipes
 import api.references as references
 import api.exceptions as exceptions
@@ -235,6 +236,11 @@ async def green_score(request: types.GreenScoreRequest) -> types.GreenScoreRespo
         country=request.country,
     )
 
+
+@app.post("/v1/make-it-better/check")
+async def check_make_it_better(request: types.MakeItBetterRequest) -> types.MakeItBetterResponse:
+    """Find catalog-backed Nutri-Score and Green-Score improvements for ingredients."""
+    return improvements.find_improvements(request.ingredients)
 
 @app.post("/v1/prepared-weight")
 async def prepared_weight(

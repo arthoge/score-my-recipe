@@ -183,6 +183,20 @@
 		"or": "or use",
 		"guided_entry": "guided entry"
 	},
+	"make_it_better": {
+		"button": "Make it better",
+		"comparison_title": "Make your recipe better",
+		"comparison_description": "Review the catalogued score improvements before changing your recipe.",
+		"original": "Original Recipe",
+		"improved": "Improved Recipe",
+		"switch": "Switch",
+		"no": "Cancel",
+		"select_title": "Choose products to replace",
+		"select_description": "Select only the recommended products you want to replace.",
+		"select_legend": "Available replacements",
+		"apply": "Apply selected changes",
+		"close": "Close"
+	},
 	"onboarding": {
 		"title": "How to score your recipe",
 		"subtitle": "Calculate the environmental impact of your culinary creations in seconds.",
