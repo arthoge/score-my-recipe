@@ -919,3 +919,49 @@ async def test_partial_preview_is_returned_but_not_cached(monkeypatch, catalogs)
         assert search.await_count == 2
     finally:
         improvements._cached_search.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_product_candidate_uses_new_supported_certifications_for_verification(monkeypatch):
+    """Replacement scoring receives its own labels, never the previous product's claims."""
+    monkeypatch.setattr(
+        improvements.nutrition_data,
+        "get_product",
+        AsyncMock(return_value={"categories_tags": ["en:yogurts"]}),
+    )
+    monkeypatch.setattr(
+        improvements.off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {
+                    "code": "222",
+                    "product_name": "New yogurt",
+                    "categories_tags": ["en:yogurts"],
+                    "labels_tags": ["en:eu-organic", "en:unknown", "en:eu-organic"],
+                    "origins_tags": ["en:france"],
+                }
+            ]
+        ),
+    )
+    monkeypatch.setattr(
+        improvements.recipes,
+        "get_labels",
+        AsyncMock(return_value=[types.Label(id="en:eu-organic", label="Bio européen")]),
+    )
+    monkeypatch.setattr(
+        improvements.recipes,
+        "get_countries",
+        AsyncMock(return_value=[types.Country(id="en:france", label="France", country_code="FR")]),
+    )
+    row = recipe().ingredients[0]
+    row.barcode = "111"
+    row.labels = [types.TaxonomyItem(id="en:demeter", label="Demeter", is_in_taxonomy=True)]
+    candidate = (await improvements.product_candidates(row, "fr"))[0]
+    assert candidate.after.labels == [
+        types.TaxonomyItem(id="en:eu-organic", label="Bio européen", is_in_taxonomy=True)
+    ]
+    assert candidate.after.origin.id == "en:france"
+    assert candidate.before.labels == row.labels
+    # Serialize/validate the same contract returned by Optimize, not just in-memory objects.
+    assert type(row).model_validate(candidate.after.model_dump()).labels == candidate.after.labels

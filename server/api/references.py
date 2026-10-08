@@ -20,6 +20,31 @@ class FoodReference(BaseModel):
     missing_data: list[str] = Field(default_factory=list)
     no_data: bool = False
     automatic_match: bool | None = None
+    label_ids: list[str] = Field(default_factory=list)
+    origin_id: str | None = None
+
+
+def product_label_ids(product: dict) -> list[str]:
+    """Read declared taxonomy IDs only; free-text claims never imply certification."""
+    tags = product.get("labels_tags")
+    if not isinstance(tags, list):
+        return []
+    return list(dict.fromkeys(tag for tag in tags if isinstance(tag, str) and ":" in tag))
+
+
+def product_origin_id(product: dict) -> str | None:
+    """Accept one declared ingredient origin, never sales or manufacturing locations.
+
+    Mixed, malformed and absent origins cannot populate the recipe's single origin cell.
+    The caller resolves the ID against supported origins before using it for scoring.
+    """
+    tags = product.get("origins_tags")
+    if not isinstance(tags, list) or not tags:
+        return None
+    if any(not isinstance(tag, str) or ":" not in tag for tag in tags):
+        return None
+    origins = set(tags)
+    return next(iter(origins)) if len(origins) == 1 else None
 
 
 class FoodReferencesResponse(BaseModel):
@@ -284,6 +309,8 @@ async def product_references(
                 missing_data=[key for key in nutrition.REQUIRED if values.get(key) is None],
                 no_data=all(values.get(key) is None for key in nutrition.REQUIRED),
                 automatic_match=automatic,
+                label_ids=product_label_ids(product),
+                origin_id=product_origin_id(product),
             )
         )
     if _retry and not retried and foods and not any(food.automatic_match for food in foods):

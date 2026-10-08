@@ -25,6 +25,10 @@ export interface TaxonomyItem {
 	noData?: boolean;
 	/** The backend verified that a product is suitable for automatic correspondence. */
 	automaticMatch?: boolean;
+	/** Declared OFF labels; recognized certifications are resolved through the label options. */
+	productLabelIds?: string[];
+	/** A single declared ingredient origin from OFF, not a manufacturing or sales country. */
+	productOriginId?: string | null;
 }
 
 /**
@@ -86,6 +90,10 @@ export interface Ingredient {
 	codifiedIngredient: IngredientType | null;
 	/** List of labels (e.g., organic, fair-trade) */
 	labels: Label[];
+	/** Pending declared labels consumed once the supported label options have loaded. */
+	offProductLabelIds?: string[];
+	/** Pending origin consumed once the supported origin options load. */
+	offProductOriginId?: string | null;
 	/** Whether the ingredient is a fresh fruit or vegetable (gates `isInSeason`) */
 	isFreshPlant: boolean;
 	/** Whether the ingredient is in season (only meaningful when `isFreshPlant` is true) */

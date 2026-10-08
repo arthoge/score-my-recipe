@@ -189,3 +189,153 @@ it('keeps rejected environmental proxies out of score requests', async () => {
 	expect(ingredient.ciqualCode).toBe('20106');
 	expect(ingredientToGreenScoreInput(ingredient).codifiedIngredient.id).toBeNull();
 });
+
+it('fills only supported certifications, replaces manual labels and consumes metadata once', async () => {
+	const { applyProductCertifications } = await import('./nutritionSearch');
+	const organic = { id: 'en:eu-organic', label: 'Bio européen', isInTaxonomy: true };
+	const fair = { id: 'en:fairtrade-international', label: 'Fairtrade', isInTaxonomy: true };
+	const ingredient = { ...createEmptyIngredient(), name: 'Milk', labels: [fair] };
+	suggestOffProduct(ingredient, [
+		{
+			id: '123',
+			label: 'Milk',
+			isInTaxonomy: true,
+			productLabelIds: [organic.id, organic.id, fair.id, 'en:unknown']
+		}
+	]);
+	expect(ingredient.labels).toEqual([]); // Previous claims clear before label options load.
+	applyProductCertifications(ingredient, [organic, fair]);
+	expect(ingredient.labels).toEqual([organic, fair]);
+	ingredient.labels = [fair];
+	applyProductCertifications(ingredient, [organic, fair]);
+	expect(ingredient.labels).toEqual([fair]);
+});
+
+it('clears all certifications when the new product declares none', async () => {
+	const { selectOffProduct, applyProductCertifications } = await import('./nutritionSearch');
+	const organic = { id: 'en:eu-organic', label: 'Organic', isInTaxonomy: true };
+	const manual = { id: 'en:demeter', label: 'Demeter', isInTaxonomy: true };
+	const ingredient = { ...createEmptyIngredient(), labels: [manual] };
+	selectOffProduct(ingredient, {
+		id: '123',
+		label: 'First',
+		isInTaxonomy: true,
+		productLabelIds: [organic.id]
+	});
+	applyProductCertifications(ingredient, [organic, manual]);
+	selectOffProduct(ingredient, {
+		id: '456',
+		label: 'Second',
+		isInTaxonomy: true,
+		productLabelIds: []
+	});
+	applyProductCertifications(ingredient, [organic, manual]);
+	expect(ingredient.labels).toEqual([]);
+	expect(ingredient.barcode).toBe('456');
+});
+
+it('does not apply pending labels from a previous product or an edited ingredient', async () => {
+	const { selectOffProduct, applyProductCertifications } = await import('./nutritionSearch');
+	const organic = { id: 'en:eu-organic', label: 'Organic', isInTaxonomy: true };
+	const ingredient = { ...createEmptyIngredient(), name: 'Milk' };
+	selectOffProduct(ingredient, {
+		id: '123',
+		label: 'First',
+		isInTaxonomy: true,
+		productLabelIds: [organic.id]
+	});
+	selectOffProduct(ingredient, { id: '456', label: 'Second', isInTaxonomy: true });
+	applyProductCertifications(ingredient, [organic]);
+	expect(ingredient.labels).toEqual([]);
+	selectOffProduct(ingredient, {
+		id: '123',
+		label: 'First',
+		isInTaxonomy: true,
+		productLabelIds: [organic.id]
+	});
+	applyProductCertifications(ingredient, [organic]);
+	ingredient.name = 'Rice';
+	syncNutritionSearches(ingredient, 'Milk');
+	expect(ingredient.labels).toEqual([]);
+	expect(ingredient.barcode).toBeUndefined();
+	expect(ingredient.offProductLabelIds).toBeUndefined();
+});
+
+it('clears manually re-added certifications when the product is removed', async () => {
+	const { selectOffProduct, applyProductCertifications } = await import('./nutritionSearch');
+	const organic = { id: 'en:eu-organic', label: 'Organic', isInTaxonomy: true };
+	const ingredient = createEmptyIngredient();
+	selectOffProduct(ingredient, {
+		id: '123',
+		label: 'First',
+		isInTaxonomy: true,
+		productLabelIds: [organic.id]
+	});
+	applyProductCertifications(ingredient, [organic]);
+	ingredient.labels = [];
+	ingredient.labels = [organic];
+	selectOffProduct(ingredient);
+	expect(ingredient.labels).toEqual([]);
+});
+
+it('replaces manual origin with supported OFF origin, without changing nutrition references', async () => {
+	const { selectOffProduct, applyProductOrigin } = await import('./nutritionSearch');
+	const france = { id: 'en:france', label: 'France', isInTaxonomy: true };
+	const italy = { id: 'en:italy', label: 'Italie', isInTaxonomy: true };
+	const ingredient = {
+		...createEmptyIngredient(),
+		origin: italy,
+		ciqualCode: '123',
+		agribalyseCode: '456'
+	};
+	selectOffProduct(ingredient, {
+		id: '111',
+		label: 'Rice',
+		isInTaxonomy: true,
+		productOriginId: france.id
+	});
+	expect(ingredient.origin).toBeNull();
+	applyProductOrigin(ingredient, [france, italy]);
+	expect(ingredient.origin).toEqual(france);
+	ingredient.origin = italy;
+	applyProductOrigin(ingredient, [france, italy]);
+	expect(ingredient.origin).toEqual(italy); // Consumed once, later manual edits are allowed.
+	selectOffProduct(ingredient, {
+		id: '111',
+		label: 'Rice',
+		isInTaxonomy: true,
+		productOriginId: france.id
+	});
+	expect(ingredient.origin).toEqual(italy); // Same product isn't a switch.
+	selectOffProduct(ingredient, {
+		id: '222',
+		label: 'Other rice',
+		isInTaxonomy: true,
+		productOriginId: 'en:unknown'
+	});
+	applyProductOrigin(ingredient, [france, italy]);
+	expect(ingredient.origin).toBeNull();
+	expect(ingredient.ciqualCode).toBe('123');
+	expect(ingredient.agribalyseCode).toBe('456');
+});
+
+it('discards pending origin on product switch, clearing and ingredient name changes', async () => {
+	const { selectOffProduct, applyProductOrigin } = await import('./nutritionSearch');
+	const france = { id: 'en:france', label: 'France', isInTaxonomy: true };
+	const ingredient = { ...createEmptyIngredient(), name: 'Rice' };
+	const product = { id: '111', label: 'Rice', isInTaxonomy: true, productOriginId: france.id };
+	selectOffProduct(ingredient, product);
+	selectOffProduct(ingredient, { id: '222', label: 'Other', isInTaxonomy: true });
+	applyProductOrigin(ingredient, [france]);
+	expect(ingredient.origin).toBeNull();
+	selectOffProduct(ingredient, product);
+	selectOffProduct(ingredient);
+	applyProductOrigin(ingredient, [france]);
+	expect(ingredient.origin).toBeNull();
+	selectOffProduct(ingredient, product);
+	ingredient.name = 'Milk';
+	syncNutritionSearches(ingredient, 'Rice');
+	applyProductOrigin(ingredient, [france]);
+	expect(ingredient.origin).toBeNull();
+	expect(ingredient.offProductOriginId).toBeUndefined();
+});

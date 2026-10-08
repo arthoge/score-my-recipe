@@ -68,6 +68,8 @@ window.fetch=async (input,init)=>{
  if(!url.includes('/v1/') && !url.includes('openfoodfacts.org'))return originalFetch(input,init);
  const path=new URL(url,location.href); const body=init?.body?JSON.parse(init.body):null;
  window.calls.push({url:path.pathname,q:path.searchParams.get('q'),lang:path.searchParams.get('lang'),body});
+ if(url.includes('/v1/countries')) { await new Promise(r=>setTimeout(r,3500)); return send({countries:[{id:'en:france',label:'France',country_code:'FR'},{id:'en:italy',label:'Italie',country_code:'IT'}]}); }
+ if(url.includes('/v1/labels')) { await new Promise(r=>setTimeout(r,3000)); return send({labels:[{id:'en:eu-organic',label:'Bio européen'}]}); }
  if(url.includes('/v1/parse_text')) return send({ingredients:[{codified_ingredient:'Yaourt au chocolat',taxonomy_id:'en:chocolate-yogurt',is_in_taxonomy:true,quantity_g:100},{codified_ingredient:'Crème',taxonomy_id:'en:cream',is_in_taxonomy:true,quantity_g:100}]});
  if(url.includes('/v1/ingredient-references')) {
   await new Promise(r=>setTimeout(r,150));
@@ -77,13 +79,13 @@ window.fetch=async (input,init)=>{
  if(url.includes('/v1/nutrition/products')) {
   await new Promise(r=>setTimeout(r,path.searchParams.get('q').includes('UHT')?1800:250));
   const name=path.searchParams.get('q');const code=name.includes('UHT')?'444':name==='Yaourt nature'?'333':name==='Pomme'?'222':'111';
-  return send({foods:[{code:'rejected',name:'Unrelated product',automatic_match:false},{code,name:name+' OFF',automatic_match:true}]});
+  return send({foods:[{code:'rejected',name:'Unrelated product',automatic_match:false},{code,name:name+' OFF',automatic_match:true,label_ids:['en:eu-organic','en:unknown-claim'],origin_id:'en:france'}]});
  }
  if(url.includes('/v1/green-score'))return send({numericScore:body.ingredients[0].agribalyseCode==='19593'?80:50,letterGrade:'B',missingIngredientIds:[]});
  if(url.includes('/v1/nutrition/analyze'))return send({status:'complete',nutri_score:{grade:body.ingredients[0].ciqual_code==='19593'?'a':'d',score:body.ingredients[0].ciqual_code==='19593'?0:12,components:{positive:[],negative:[]}},ingredients:[],diagnostics:[],assumptions:[],excluded_ingredients:[],excluded_weight_percent:0,additives:[],allergens:[]});
  if(url.includes('/v1/make-it-better/check')) {
   const recipe=body.recipe;window.reviewRecipe=recipe;
-  window.reviewAfter=recipe.ingredients.map((before,i)=>({...before,name:i===0?'Yaourt nature':'Crème 30% MG, semi-épaisse, UHT',ciqual_code:i===0?'19593':'19415',barcode:${selectedProduct} && i===0?'333':null,agribalyse_code:i===0?'19593':'19415',codified_ingredient:null,labels:[],origin:null}));
+  window.reviewAfter=recipe.ingredients.map((before,i)=>({...before,name:i===0?'Yaourt nature':'Crème 30% MG, semi-épaisse, UHT',ciqual_code:i===0?'19593':'19415',barcode:${selectedProduct} && i===0?'333':null,agribalyse_code:i===0?'19593':'19415',codified_ingredient:null,labels:${selectedProduct} && i===0?[{id:'en:eu-organic',label:'Bio européen',isInTaxonomy:true}]:[],origin:${selectedProduct} && i===0?{id:'en:france',label:'France',isInTaxonomy:true}:null}));
   return send({suggestions:window.reviewAfter.map((after,i)=>({id:after.id+':swap',ingredient_id:after.id,category:'ingredient',before:recipe.ingredients[i],after,product_name:after.barcode?after.name+' OFF':null,ciqual_name:after.name+' CIQUAL',agribalyse_name:after.name+' Agribalyse',green_score:{before:50,after:80,percent:60},nutri_score:{before:12,after:0,percent:100}}))});
  }
  if(url.includes('/v1/make-it-better/optimize'))return send({recipe:{...window.reviewRecipe,ingredients:window.reviewAfter}});
@@ -152,6 +154,17 @@ try {
 		`(()=>{const input=document.querySelector('input[id^="ingredient-name-"]');input.focus();input.value='Pomme';input.dispatchEvent(new Event('input',{bubbles:true}));input.blur()})()`
 	);
 	await checkRow('Pomme', '13000', '222');
+	await until(
+		`document.querySelector('select[id^="ingredient-origin-"]')?.value==='en:france'`,
+		'origin from selected product'
+	);
+	await evaluate(
+		`(()=>{const select=document.querySelector('select[id^="ingredient-origin-"]');select.value='en:italy';select.dispatchEvent(new Event('change',{bubbles:true}));})()`
+	);
+	await until(
+		`window.calls.filter(c=>c.url==='/v1/green-score').at(-1)?.body.ingredients[0].origin?.id==='en:italy'`,
+		'manual origin before optimization'
+	);
 	await evaluate(
 		`[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(labels.better)}).click()`
 	);
@@ -192,6 +205,15 @@ try {
 		selectedProduct ? 0 : 1,
 		'A replacement with a selected product must not start another OFF lookup'
 	);
+	await until(
+		`window.calls.filter(c=>c.url==='/v1/green-score').at(-1)?.body.ingredients.every(row=>row.labels.length===1 && row.labels[0].id==='en:eu-organic' && row.origin?.id==='en:france')`,
+		'certifications included in both optimized rows'
+	);
+	assert(
+		(await evaluate('document.body.innerText')).includes('Bio européen'),
+		'Localized certification visible'
+	);
+	console.log('PASS certifications and origin autofilled and included in Green-Score');
 	console.log('PASS second optimized row independently completes its slower OFF lookup');
 	await until(
 		`!document.querySelector('[aria-live="polite"][aria-busy="true"]')`,

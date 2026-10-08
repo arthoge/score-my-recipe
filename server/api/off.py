@@ -99,7 +99,7 @@ async def search_products(query: str, lang: str, limit: int = 8) -> list[dict]:
             "q": query,
             "langs": lang,
             "page_size": min(limit * 3, 100),
-            "fields": f"code,product_name,product_name_{lang},brands,product_type,categories_tags,nutriments",
+            "fields": f"code,product_name,product_name_{lang},brands,product_type,categories_tags,nutriments,labels_tags,origins_tags",
         }
     )
     request = urllib.request.Request(

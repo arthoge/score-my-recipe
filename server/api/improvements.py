@@ -8,7 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 from async_lru import alru_cache
 
-from api import agribalyse, ciqual, nutrition_data, off, references
+from api import agribalyse, ciqual, nutrition_data, off, references, recipes, types
 from api.improvement_candidates import discover_food_codes
 from api.recipe_analysis import ExportIngredient, ExportRecipe, calculate_report
 
@@ -335,6 +335,23 @@ async def product_candidates(row: ExportIngredient, lang: str) -> list[Improveme
         return []
     category = categories[-1]
     hits = await off.search_products(row.name, lang, 3)
+    # Reuse the supported-label taxonomy; include only the new product's declared
+    # certifications in the same recipe simulation that verifies its score gain.
+    supported_labels = {}
+    if any(references.product_label_ids(hit) for hit in hits):
+        labels = await recipes.get_labels(lang)
+        supported_labels = {
+            label.id: types.TaxonomyItem(id=label.id, label=label.label, is_in_taxonomy=True)
+            for label in labels
+        }
+    supported_origins = {}
+    if any(references.product_origin_id(hit) for hit in hits):
+        origins = await recipes.get_countries(lang)
+        supported_origins = {
+            origin.id: types.TaxonomyItem(id=origin.id, label=origin.label, is_in_taxonomy=True)
+            for origin in origins
+            if origin.country_code
+        }
     candidates = []
     for hit in hits:
         code = hit.get("code")
@@ -352,8 +369,12 @@ async def product_candidates(row: ExportIngredient, lang: str) -> list[Improveme
             update={
                 "barcode": code,
                 "ciqual_code": None,
-                "labels": [],
-                "origin": None,
+                "labels": [
+                    supported_labels[label_id]
+                    for label_id in references.product_label_ids(hit)
+                    if label_id in supported_labels
+                ],
+                "origin": supported_origins.get(references.product_origin_id(hit)),
             },
         )
         candidates.append(

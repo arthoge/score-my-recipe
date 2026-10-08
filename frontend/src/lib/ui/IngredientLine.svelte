@@ -7,6 +7,9 @@
 	import { searchOffProducts, getIngredientReferences } from '$lib/api/nutrition';
 	import {
 		applyIngredientReferences,
+		applyProductCertifications,
+		selectOffProduct,
+		applyProductOrigin,
 		syncNutritionSearches,
 		suggestOffProduct
 	} from './nutritionSearch';
@@ -319,6 +322,25 @@
 		};
 	});
 
+	// Labels load independently: filling certifications must not restart product
+	// matching or wait for another OFF request. Consume metadata only once.
+	$effect(() => {
+		const barcode = ingredient.barcode;
+		const pending = ingredient.offProductLabelIds;
+		const ready = labelsStatus === 'ready';
+		const options = labelOptions;
+		if (barcode && pending && ready) untrack(() => applyProductCertifications(ingredient, options));
+	});
+
+	$effect(() => {
+		const barcode = ingredient.barcode;
+		const pending = ingredient.offProductOriginId;
+		const ready = originsStatus === 'ready';
+		const options = originOptions;
+		if (barcode && pending !== undefined && ready)
+			untrack(() => applyProductOrigin(ingredient, options));
+	});
+
 	/** Seasonality is meaningful only for fresh fruit and vegetables. */
 	function toggleFreshPlant(event: Event) {
 		ingredient.isFreshPlant = (event.target as HTMLSelectElement).value === 'true';
@@ -366,12 +388,7 @@
 						}
 					]
 				: []}
-			onchange={(tags) => {
-				const selected = tags[0];
-				const code = selected?.isInTaxonomy ? (selected.id ?? undefined) : undefined;
-				ingredient.productName = selected?.label ?? '';
-				ingredient.barcode = code;
-			}}
+			onchange={(tags) => selectOffProduct(ingredient, tags[0])}
 		/>
 	</td>
 	<td data-invalid={errors.weight}>

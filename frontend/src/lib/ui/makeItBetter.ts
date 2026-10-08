@@ -38,6 +38,8 @@ export function applyOptimizedRecipe(
 					(row.barcode === ingredient.barcode ? ingredient.productName : ''))
 				: '',
 			labels: row.labels ?? [],
+			offProductLabelIds: undefined,
+			offProductOriginId: undefined,
 			origin: row.origin ?? null,
 			isFreshPlant: row.is_fresh_plant ?? false,
 			isInSeason: row.is_in_season ?? false,

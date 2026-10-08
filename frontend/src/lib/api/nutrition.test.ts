@@ -141,3 +141,18 @@ it('carries backend automatic product eligibility to the editor', async () => {
 	);
 	expect((await searchOffProducts('truffe'))[0].automaticMatch).toBe(false);
 });
+
+it('carries declared OFF label IDs alongside the selected product without another request', async () => {
+	const fetch = vi.fn().mockResolvedValue(
+		new Response(
+			JSON.stringify({
+				foods: [{ code: '123', name: 'Milk', label_ids: ['en:eu-organic'], origin_id: 'en:france' }]
+			})
+		)
+	);
+	vi.stubGlobal('fetch', fetch);
+	const product = (await searchOffProducts('Milk'))[0];
+	expect(product.productLabelIds).toEqual(['en:eu-organic']);
+	expect(product.productOriginId).toBe('en:france');
+	expect(fetch).toHaveBeenCalledTimes(1);
+});

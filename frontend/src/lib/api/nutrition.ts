@@ -102,6 +102,8 @@ export async function searchOffProducts(query: string, limit = 8, signal?: Abort
 			missing_data?: string[];
 			no_data?: boolean;
 			automatic_match?: boolean;
+			label_ids?: string[];
+			origin_id?: string | null;
 		}[];
 	} = await response.json();
 	return data.foods.slice(0, limit).map(
@@ -111,7 +113,9 @@ export async function searchOffProducts(query: string, limit = 8, signal?: Abort
 			isInTaxonomy: true,
 			missingData: food.missing_data,
 			noData: food.no_data,
-			automaticMatch: food.automatic_match
+			automaticMatch: food.automatic_match,
+			productLabelIds: food.label_ids,
+			productOriginId: food.origin_id
 		})
 	);
 }

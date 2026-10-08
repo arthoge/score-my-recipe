@@ -601,6 +601,10 @@ export interface components {
 		 * @description Readable catalog food with its internal identifiers.
 		 */
 		FoodReference: {
+			/** Label Ids */
+			label_ids?: string[];
+			/** Origin Id */
+			origin_id?: string | null;
 			/** Automatic Match */
 			automatic_match?: boolean | null;
 			/** Code */

@@ -38,14 +38,55 @@ export function suggestOffProduct(ingredient: Ingredient, suggestions: TaxonomyI
 		(item) => item.id && item.isInTaxonomy && item.automaticMatch !== false
 	);
 	if (ingredient.barcode || ingredient.productName || !match) return;
-	ingredient.barcode = match.id ?? undefined;
-	ingredient.productName = match.label;
+	selectOffProduct(ingredient, match);
+}
+
+/** Product changes invalidate all previous claims, including manually entered values. */
+function clearOffMetadata(ingredient: Ingredient) {
+	ingredient.labels = [];
+	ingredient.origin = null;
+	ingredient.offProductOriginId = undefined;
+	ingredient.offProductLabelIds = undefined;
+}
+
+/** Select a product atomically with its pending certifications, without a new lookup. */
+export function selectOffProduct(ingredient: Ingredient, product?: TaxonomyItem) {
+	const code = product?.isInTaxonomy ? (product.id ?? undefined) : undefined;
+	if (code !== ingredient.barcode) {
+		clearOffMetadata(ingredient);
+		if (code) {
+			ingredient.offProductLabelIds = product?.productLabelIds;
+			ingredient.offProductOriginId = product?.productOriginId;
+		}
+	}
+	ingredient.barcode = code;
+	ingredient.productName = product?.label ?? '';
+}
+
+/** Consume declared labels once; later manual removals must not be automatically undone. */
+export function applyProductCertifications(ingredient: Ingredient, options: TaxonomyItem[]) {
+	if (!ingredient.barcode || !ingredient.offProductLabelIds) return;
+	const declared = new Set(ingredient.offProductLabelIds);
+	const existing = new Set(ingredient.labels.map((label) => label.id));
+	const additions = options.filter(
+		(label) => label.id && declared.has(label.id) && !existing.has(label.id)
+	);
+	ingredient.labels = [...ingredient.labels, ...additions];
+	ingredient.offProductLabelIds = undefined;
+}
+
+/** Resolve a declared origin once; manual edits afterward remain until the product changes. */
+export function applyProductOrigin(ingredient: Ingredient, options: TaxonomyItem[]) {
+	if (!ingredient.barcode || ingredient.offProductOriginId === undefined) return;
+	ingredient.origin = options.find((origin) => origin.id === ingredient.offProductOriginId) ?? null;
+	ingredient.offProductOriginId = undefined;
 }
 
 /** Seed empty searches on load; changing ingredients invalidates previous references. */
 export function syncNutritionSearches(ingredient: Ingredient, previousName?: string) {
 	const changed = previousName !== undefined && previousName !== ingredient.name;
 	if (changed && ingredient.resolvedReferenceName !== ingredient.name) {
+		clearOffMetadata(ingredient);
 		ingredient.ciqualCode = undefined;
 		ingredient.agribalyseCode = undefined;
 		ingredient.agribalyseName = '';

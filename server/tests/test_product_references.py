@@ -81,6 +81,8 @@ async def test_off_proxy_request(monkeypatch, query):
         assert "code" in params["fields"][0]
         assert "product_type" in params["fields"][0].split(",")
         assert "nutriments" in params["fields"][0].split(",")
+        assert "labels_tags" in params["fields"][0].split(",")
+        assert "origins_tags" in params["fields"][0].split(",")
         assert request.get_header("User-agent") == off.USER_AGENT
         assert timeout == 10
     finally:
@@ -476,3 +478,65 @@ async def test_broad_alias_cannot_erase_an_explicit_product_qualifier(monkeypatc
         ("456", True),
         ("123", False),
     ]
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        (None, []),
+        ("Organic", []),
+        ([None, 42, {}, "organic"], []),
+        (["en:eu-organic", "en:eu-organic", "en:unknown"], ["en:eu-organic", "en:unknown"]),
+    ],
+)
+def test_product_label_ids_are_declared_deduplicated_taxonomy_tags(raw, expected):
+    """Malformed metadata or free-text marketing must never invent certifications."""
+    assert references.product_label_ids({"labels_tags": raw, "labels": "organic"}) == expected
+
+
+@pytest.mark.asyncio
+async def test_product_search_preserves_certifications_without_a_second_lookup(monkeypatch):
+    """Names, barcodes and declared certifications travel in the same search response."""
+    search = AsyncMock(
+        return_value=[
+            {
+                "code": "123",
+                "product_name": "Lait",
+                "labels_tags": ["en:eu-organic"],
+                "origins_tags": ["en:france"],
+            }
+        ]
+    )
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references("lait", "fr", 8)
+    assert result.foods[0].label_ids == ["en:eu-organic"]
+    assert result.foods[0].origin_id == "en:france"
+    assert result.foods[0].code == "123"
+    search.assert_awaited_once()
+
+
+@pytest.mark.parametrize(
+    "tags, expected",
+    [
+        (None, None),
+        ("France", None),
+        ([], None),
+        ([None], None),
+        (["en:france"], "en:france"),
+        (["en:france", "en:france"], "en:france"),
+        (["en:france", "en:italy"], None),
+        (["en:france", 123], None),
+    ],
+)
+def test_product_origin_uses_only_unambiguous_ingredient_origins(tags, expected):
+    """Manufacturing and sales countries never stand in for ingredient origin."""
+    assert (
+        references.product_origin_id(
+            {
+                "origins_tags": tags,
+                "countries_tags": ["en:france"],
+                "manufacturing_places_tags": ["en:france"],
+            }
+        )
+        == expected
+    )

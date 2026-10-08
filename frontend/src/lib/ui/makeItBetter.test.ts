@@ -159,3 +159,21 @@ it('ignores suggestion labels without confirmed codes so automatic lookup can fi
 	]);
 	expect(updated.barcode).toBe('verified');
 });
+
+it('tracks certifications from optimized products and clears them on the next product change', async () => {
+	const { ingredients, suggestion, result } = fixture();
+	const { selectOffProduct } = await import('./nutritionSearch');
+	const label = { id: 'en:eu-organic', label: 'Organic', isInTaxonomy: true };
+	result.recipe.ingredients[0].barcode = '456';
+	result.recipe.ingredients[0].labels = [label];
+	result.recipe.ingredients[0].origin = { id: 'en:france', label: 'France', isInTaxonomy: true };
+	const updated = applyOptimizedRecipe(ingredients, result, [suggestion]);
+	expect(updated[1].labels).toEqual([label]);
+	expect(updated[1].origin?.id).toBe('en:france');
+	expect(updated[0]).toBe(ingredients[0]);
+	selectOffProduct(updated[1], { id: '789', label: 'Another product', isInTaxonomy: true });
+	expect(updated[1].labels).toEqual([]);
+	expect(updated[1].origin).toBeNull();
+	expect(updated[1].ciqualCode).toBe('19593');
+	expect(updated[1].agribalyseCode).toBe('resolved-green');
+});
