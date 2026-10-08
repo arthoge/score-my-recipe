@@ -68,4 +68,19 @@ describe('prepared weight display', () => {
 			expect(getFinalPreparedWeight([food({ measuredPreparedWeightG })])).toBeNull();
 		}
 	});
+
+	it('ignores zero quantities even with manual prepared weights or cooking suggestions', () => {
+		for (const measuredPreparedWeightG of [null, 0, 500]) {
+			const unused = food({ weight: 0, measuredPreparedWeightG, preparationProfile: 'boiled' });
+			unused.preparedWeightSuggestion = {
+				inputKey: preparedWeightInputKey(unused),
+				weightG: 298,
+				yieldFactor: 2.98,
+				source: null
+			};
+			expect(getPreparedWeight(unused)).toBe(0);
+			expect(getFinalPreparedWeight([food(), unused])).toBe(100);
+			expect(getFinalPreparedWeight([unused])).toBeNull();
+		}
+	});
 });

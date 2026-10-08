@@ -51,6 +51,7 @@
 	let activeIndex = $state(-1);
 	let position = $state({ left: 0, top: 0, width: 0, height: 240 });
 	let query = $derived((multiple ? (value.split(',').at(-1) ?? '') : value || searchTerm).trim());
+	let menuOpen = $derived(focused && !dismissed && (suggestions.length > 0 || loading || searched));
 
 	$effect(() => {
 		// Keep imported references visible without overwriting an in-progress edit.
@@ -122,10 +123,7 @@
 	});
 
 	$effect(() => {
-		const open =
-			focused &&
-			!dismissed &&
-			(suggestions.length > 0 || (getSuggestions && (loading || searched)));
+		const open = menuOpen;
 		untrack(() => {
 			if (!menu) return;
 			if (open) {
@@ -199,12 +197,10 @@
 		{value}
 		aria-label={label}
 		aria-invalid={invalid}
-		aria-busy={backgroundLoading}
+		aria-busy={backgroundLoading || loading}
 		role="combobox"
 		aria-autocomplete="list"
-		aria-expanded={focused &&
-			!dismissed &&
-			(suggestions.length > 0 || (!!getSuggestions && (loading || searched)))}
+		aria-expanded={menuOpen}
 		aria-controls="{id}-options"
 		aria-activedescendant={activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
 		autocomplete="off"
@@ -256,7 +252,7 @@
 			</button>
 		{/each}
 	</div>
-	{#if getSuggestions && suggestions.length === 0}
+	{#if suggestions.length === 0 && (loading || searched)}
 		<p class="text-base-content/70 px-3 py-2 text-sm" role="status">
 			{loading
 				? $_('recipe.search_loading', { default: 'Searching…' })

@@ -253,8 +253,13 @@ def render_pdf(reports, translations: ReportTranslations | None = None) -> bytes
                 small,
             ),
         ]
+        # Stable sorting preserves table order for equal quantities and missing quantities.
         ingredients = [
-            ingredient_description(row, labels.unnamed_ingredient) for row in recipe.ingredients
+            ingredient_description(row, labels.unnamed_ingredient)
+            for row in sorted(
+                recipe.ingredients,
+                key=lambda row: (row.quantity_g is None, -(row.quantity_g or 0)),
+            )
         ]
         intro.append(labelled_text(labels.ingredients, ", ".join(ingredients)))
         recipe_story.extend([*intro, Spacer(1, 3)])

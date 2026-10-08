@@ -5,6 +5,20 @@ import { analyzeNutrition, nutritionInputs } from './nutritionAnalysis';
 afterEach(() => vi.unstubAllGlobals());
 
 describe('independent recipe nutrition requests', () => {
+	it('clears manual prepared masses for zero quantities so they cannot block scoring', () => {
+		for (const measuredPreparedWeightG of [null, 0, 500]) {
+			const payload = nutritionInputs(
+				[
+					{ ...createEmptyIngredient(), name: 'Rice', weight: 100, ciqualCode: '9119' },
+					{ ...createEmptyIngredient(), name: 'Unused', weight: 0, measuredPreparedWeightG }
+				],
+				1
+			);
+			expect(payload.ingredients[0].quantity_g).toBe(100);
+			expect(payload.ingredients[1]).toMatchObject({ quantity_g: 0, prepared_weight_g: null });
+		}
+	});
+
 	it('keeps references and measured masses without sending stale display estimates', () => {
 		const row = {
 			...createEmptyIngredient(),

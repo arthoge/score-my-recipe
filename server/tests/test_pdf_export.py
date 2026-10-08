@@ -409,6 +409,38 @@ def test_ingredient_labels_in_printed_list(monkeypatch, labels, expected):
     assert all(fragment.fontName == "RecipeSans" for fragment in paragraph.frags[1:])
 
 
+def test_printed_ingredients_sorted_by_quantity(monkeypatch):
+    """Largest quantities come first; ties and missing quantities retain table order."""
+    captured = []
+    monkeypatch.setattr(
+        pdf_export.SimpleDocTemplate, "build", lambda self, story, **kwargs: captured.extend(story)
+    )
+    item = recipe(
+        ingredients=[
+            {"id": "unknown-a", "name": "Unknown first", "quantity_g": None},
+            {"id": "small", "name": "Small", "quantity_g": 0.5},
+            {"id": "tie-a", "name": "Tie first", "quantity_g": 100},
+            {"id": "zero", "name": "Zero", "quantity_g": 0},
+            {"id": "unknown-b", "name": "Unknown second"},
+            {"id": "largest", "name": "Largest", "quantity_g": 200},
+            {"id": "tie-b", "name": "Tie second", "quantity_g": 100},
+        ]
+    )
+    original_ids = [row.id for row in item.ingredients]
+
+    pdf_export.render_pdf([(item, None, None)])
+
+    paragraph = next(
+        flow
+        for flow in report_flowables(captured)
+        if isinstance(flow, pdf_export.Paragraph) and flow.getPlainText().startswith("Ingredients:")
+    )
+    assert paragraph.getPlainText() == (
+        "Ingredients: Largest, Tie first, Tie second, Small, Zero, Unknown first, Unknown second"
+    )
+    assert [row.id for row in item.ingredients] == original_ids
+
+
 def test_localized_report_text_and_safe_placeholders(monkeypatch):
     """Selected-locale text is escaped and exclusion tokens use server results."""
     captured = []

@@ -16,6 +16,7 @@ export function preparedWeightInputKey(ingredient: Ingredient): string {
 
 /** Display manual edits or a current estimate, falling back to the entered quantity. */
 export function getPreparedWeight(ingredient: Ingredient): number | null {
+	if (ingredient.weight === 0) return 0;
 	if (ingredient.measuredPreparedWeightG != null) return ingredient.measuredPreparedWeightG;
 	if (!isPositiveAmount(ingredient.weight)) return null;
 	if (
@@ -31,9 +32,11 @@ export function getPreparedWeight(ingredient: Ingredient): number | null {
 	return ingredient.weight;
 }
 
-/** Show a total only when every populated ingredient has a usable prepared weight. */
+/** Sum usable prepared weights, ignoring empty and zero-quantity ingredients. */
 export function getFinalPreparedWeight(ingredients: Ingredient[]): number | null {
-	const rows = ingredients.filter(isIngredientNotEmpty);
+	const rows = ingredients.filter(
+		(ingredient) => isIngredientNotEmpty(ingredient) && ingredient.weight !== 0
+	);
 	if (!rows.length) return null;
 	const weights = rows.map(getPreparedWeight);
 	if (weights.some((weight) => !isPositiveAmount(weight))) return null;

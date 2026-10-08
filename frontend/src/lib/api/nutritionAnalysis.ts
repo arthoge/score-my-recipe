@@ -26,7 +26,8 @@ export function nutritionInputs(
 			preparation: row.preparationProfile ?? 'none',
 			ciqual_code: row.ciqualCode || null,
 			barcode: row.barcode || null,
-			prepared_weight_g: row.measuredPreparedWeightG ?? null
+			// Zero-quantity rows are excluded by the backend regardless of a manual mass.
+			prepared_weight_g: row.weight === 0 ? null : (row.measuredPreparedWeightG ?? null)
 		}))
 	};
 }
