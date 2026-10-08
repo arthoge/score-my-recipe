@@ -52,9 +52,9 @@
 			"cooked": "Cooked",
 			"drained": "Drained"
 		},
-		"ciqual_food": "Ciqual",
-		"agribalyse_food": "Agribalyse",
-		"off_product": "Open Food Facts",
+		"ciqual_food": "Ciqual reference",
+		"agribalyse_food": "Agribalyse reference",
+		"off_product": "Open Food Facts product",
 		"search_loading": "Searching…",
 		"search_failed": "Search unavailable. Try again.",
 		"search_empty": "No matching foods or products.",

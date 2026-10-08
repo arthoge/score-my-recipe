@@ -52,9 +52,9 @@
 			"cooked": "Cotto",
 			"drained": "Sgocciolato"
 		},
-		"ciqual_food": "Ciqual",
-		"agribalyse_food": "Agribalyse",
-		"off_product": "Open Food Facts",
+		"ciqual_food": "Riferimento Ciqual",
+		"agribalyse_food": "Riferimento Agribalyse",
+		"off_product": "Prodotto Open Food Facts",
 		"search_loading": "Ricerca…",
 		"search_failed": "Ricerca non disponibile. Riprova.",
 		"search_empty": "Nessun alimento o prodotto corrispondente.",
@@ -238,15 +238,15 @@
 		"details_button": "Dettagli",
 		"close": "Chiudi",
 		"details_description": "Based on available product data. Information may be missing or inaccurate.",
-		"additives": "Additives",
-		"allergens": "Allergens",
-		"no_product_information": "No information available"
+		"additives": "Additivi",
+		"allergens": "Allergeni",
+		"no_product_information": "Nessuna informazione disponibile"
 	},
 	"pdf": {
-		"title": "Recipes",
-		"subtitle": "Based on available ingredient and product data. Information may be missing or inaccurate.",
-		"ingredients": "Ingredients",
-		"unnamed_ingredient": "Unnamed ingredient",
-		"nutrition": "Nutrition"
+		"title": "Ricette",
+		"subtitle": "Basato sui dati disponibili su ingredienti e prodotti. Le informazioni possono essere mancanti o inesatte.",
+		"ingredients": "Ingredienti",
+		"unnamed_ingredient": "Ingrediente senza nome",
+		"nutrition": "Valori nutrizionali"
 	}
 }

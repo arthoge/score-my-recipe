@@ -52,9 +52,9 @@
 			"cooked": "Gegart",
 			"drained": "Abgetropft"
 		},
-		"ciqual_food": "Ciqual",
-		"agribalyse_food": "Agribalyse",
-		"off_product": "Open Food Facts",
+		"ciqual_food": "Ciqual-Referenz",
+		"agribalyse_food": "Agribalyse-Referenz",
+		"off_product": "Open Food Facts-Produkt",
 		"search_loading": "Suche…",
 		"search_failed": "Suche nicht verfügbar. Erneut versuchen.",
 		"search_empty": "Keine passenden Lebensmittel oder Produkte.",
@@ -238,15 +238,15 @@
 		"details_button": "Details",
 		"close": "Schließen",
 		"details_description": "Based on available product data. Information may be missing or inaccurate.",
-		"additives": "Additives",
-		"allergens": "Allergens",
-		"no_product_information": "No information available"
+		"additives": "Zusatzstoffe",
+		"allergens": "Allergene",
+		"no_product_information": "Keine Informationen verfügbar"
 	},
 	"pdf": {
-		"title": "Recipes",
-		"subtitle": "Based on available ingredient and product data. Information may be missing or inaccurate.",
-		"ingredients": "Ingredients",
-		"unnamed_ingredient": "Unnamed ingredient",
-		"nutrition": "Nutrition"
+		"title": "Rezepte",
+		"subtitle": "Basierend auf verfügbaren Zutaten- und Produktdaten. Informationen können fehlen oder ungenau sein.",
+		"ingredients": "Zutaten",
+		"unnamed_ingredient": "Unbenannte Zutat",
+		"nutrition": "Nährwerte"
 	}
 }

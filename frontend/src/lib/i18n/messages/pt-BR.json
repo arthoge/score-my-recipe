@@ -52,9 +52,9 @@
 			"cooked": "Cozinhado",
 			"drained": "Escorrido"
 		},
-		"ciqual_food": "Ciqual",
-		"agribalyse_food": "Agribalyse",
-		"off_product": "Open Food Facts",
+		"ciqual_food": "Referência Ciqual",
+		"agribalyse_food": "Referência Agribalyse",
+		"off_product": "Produto Open Food Facts",
 		"search_loading": "A pesquisar…",
 		"search_failed": "Pesquisa indisponível. Tente novamente.",
 		"search_empty": "Nenhum alimento ou produto correspondente.",
@@ -238,15 +238,15 @@
 		"details_button": "Detalhes",
 		"close": "Fechar",
 		"details_description": "Based on available product data. Information may be missing or inaccurate.",
-		"additives": "Additives",
-		"allergens": "Allergens",
-		"no_product_information": "No information available"
+		"additives": "Aditivos",
+		"allergens": "Alérgenos",
+		"no_product_information": "Nenhuma informação disponível"
 	},
 	"pdf": {
-		"title": "Recipes",
-		"subtitle": "Based on available ingredient and product data. Information may be missing or inaccurate.",
-		"ingredients": "Ingredients",
-		"unnamed_ingredient": "Unnamed ingredient",
-		"nutrition": "Nutrition"
+		"title": "Receitas",
+		"subtitle": "Com base nos dados disponíveis sobre ingredientes e produtos. Algumas informações podem estar ausentes ou ser imprecisas.",
+		"ingredients": "Ingredientes",
+		"unnamed_ingredient": "Ingrediente sem nome",
+		"nutrition": "Informação nutricional"
 	}
 }

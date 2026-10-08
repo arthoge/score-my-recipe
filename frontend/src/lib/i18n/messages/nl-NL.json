@@ -52,9 +52,9 @@
 			"cooked": "Bereid",
 			"drained": "Uitgelekt"
 		},
-		"ciqual_food": "Ciqual",
-		"agribalyse_food": "Agribalyse",
-		"off_product": "Open Food Facts",
+		"ciqual_food": "Ciqual-referentie",
+		"agribalyse_food": "Agribalyse-referentie",
+		"off_product": "Open Food Facts-product",
 		"search_loading": "Zoeken…",
 		"search_failed": "Zoeken niet beschikbaar. Probeer opnieuw.",
 		"search_empty": "Geen overeenkomende voedingsmiddelen of producten.",
@@ -238,15 +238,15 @@
 		"details_button": "Details",
 		"close": "Sluiten",
 		"details_description": "Based on available product data. Information may be missing or inaccurate.",
-		"additives": "Additives",
-		"allergens": "Allergens",
-		"no_product_information": "No information available"
+		"additives": "Additieven",
+		"allergens": "Allergenen",
+		"no_product_information": "Geen informatie beschikbaar"
 	},
 	"pdf": {
-		"title": "Recipes",
-		"subtitle": "Based on available ingredient and product data. Information may be missing or inaccurate.",
-		"ingredients": "Ingredients",
-		"unnamed_ingredient": "Unnamed ingredient",
-		"nutrition": "Nutrition"
+		"title": "Recepten",
+		"subtitle": "Gebaseerd op beschikbare gegevens over ingrediënten en producten. Informatie kan ontbreken of onjuist zijn.",
+		"ingredients": "Ingrediënten",
+		"unnamed_ingredient": "Naamloos ingrediënt",
+		"nutrition": "Voedingswaarden"
 	}
 }

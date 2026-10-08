@@ -1,6 +1,7 @@
 /** Export input contracts keep environmental and nutritional data aligned. */
 import { afterEach, expect, it, vi } from 'vitest';
-import { locale, waitLocale } from '$lib/i18n';
+import { _, locale, waitLocale } from '$lib/i18n';
+import { get } from 'svelte/store';
 import { createEmptyIngredient } from '$lib/types/ingredient';
 import { recipeExportInputs, exportRecipes } from './recipeExport';
 
@@ -82,3 +83,62 @@ it('exports the selected website language and follows later selector changes', a
 	await exportRecipes(recipes);
 	expect(JSON.parse(fetch.mock.calls[1][1].body).translations.ingredients).toBe('Ingredients');
 });
+
+it.each([
+	['en-US', 'Open Food Facts product', 'Recipes', 'Ingredients', 'No information available'],
+	['en-GB', 'Open Food Facts product', 'Recipes', 'Ingredients', 'No information available'],
+	['en-AU', 'Open Food Facts product', 'Recipes', 'Ingredients', 'No information available'],
+	['fr-FR', 'Produit Open Food Facts', 'Recettes', 'Ingrédients', 'Aucune information disponible'],
+	['de-DE', 'Open Food Facts-Produkt', 'Rezepte', 'Zutaten', 'Keine Informationen verfügbar'],
+	[
+		'es-ES',
+		'Producto de Open Food Facts',
+		'Recetas',
+		'Ingredientes',
+		'No hay información disponible'
+	],
+	[
+		'it-IT',
+		'Prodotto Open Food Facts',
+		'Ricette',
+		'Ingredienti',
+		'Nessuna informazione disponibile'
+	],
+	[
+		'ca-ES',
+		'Producte d’Open Food Facts',
+		'Receptes',
+		'Ingredients',
+		'No hi ha informació disponible'
+	],
+	['nl-NL', 'Open Food Facts-product', 'Recepten', 'Ingrediënten', 'Geen informatie beschikbaar'],
+	['nl-BE', 'Open Food Facts-product', 'Recepten', 'Ingrediënten', 'Geen informatie beschikbaar'],
+	['pt-PT', 'Produto Open Food Facts', 'Receitas', 'Ingredientes', 'Nenhuma informação disponível'],
+	['pt-BR', 'Produto Open Food Facts', 'Receitas', 'Ingredientes', 'Nenhuma informação disponível']
+])(
+	'localizes product labels and PDF downloads in %s',
+	async (code, product, title, ingredients, noInformation) => {
+		const fetch = vi
+			.fn()
+			.mockImplementation(
+				async () => new Response('%PDF-test', { headers: { 'Content-Type': 'application/pdf' } })
+			);
+		vi.stubGlobal('fetch', fetch);
+		await locale.set(code);
+		await exportRecipes(recipes);
+		expect(get(_)('recipe.off_product', { default: 'Open Food Facts product' })).toBe(product);
+		const payload = JSON.parse(fetch.mock.calls[0][1].body);
+		expect(payload.translations).toMatchObject({
+			title,
+			ingredients,
+			no_information: noInformation
+		});
+		if (!code.startsWith('en')) {
+			expect(payload.translations.subtitle).not.toContain('Based on available');
+			expect(payload.translations.unnamed_ingredient).not.toBe('Unnamed ingredient');
+			expect(payload.translations.nutrition).not.toBe('Nutrition');
+			expect(payload.translations.additives).not.toBe('Additives');
+			expect(payload.translations.allergens).not.toBe('Allergens');
+		}
+	}
+);

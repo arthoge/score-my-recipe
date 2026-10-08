@@ -52,9 +52,9 @@
 			"cooked": "Cuit",
 			"drained": "Égoutté"
 		},
-		"ciqual_food": "Ciqual",
-		"agribalyse_food": "Agribalyse",
-		"off_product": "Open Food Facts",
+		"ciqual_food": "Référence Ciqual",
+		"agribalyse_food": "Référence Agribalyse",
+		"off_product": "Produit Open Food Facts",
 		"search_loading": "Recherche…",
 		"search_failed": "Recherche indisponible. Réessayez.",
 		"search_empty": "Aucun aliment ou produit correspondant.",

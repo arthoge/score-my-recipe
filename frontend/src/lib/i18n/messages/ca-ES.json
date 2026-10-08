@@ -52,9 +52,9 @@
 			"cooked": "Cuit",
 			"drained": "Escorregut"
 		},
-		"ciqual_food": "Ciqual",
-		"agribalyse_food": "Agribalyse",
-		"off_product": "Open Food Facts",
+		"ciqual_food": "Referència de Ciqual",
+		"agribalyse_food": "Referència de Agribalyse",
+		"off_product": "Producte d’Open Food Facts",
 		"search_loading": "Cercant…",
 		"search_failed": "Cerca no disponible. Torna-ho a provar.",
 		"search_empty": "Cap aliment o producte coincident.",
@@ -238,15 +238,15 @@
 		"details_button": "Detalls",
 		"close": "Tanca",
 		"details_description": "Based on available product data. Information may be missing or inaccurate.",
-		"additives": "Additives",
-		"allergens": "Allergens",
-		"no_product_information": "No information available"
+		"additives": "Additius",
+		"allergens": "Al·lèrgens",
+		"no_product_information": "No hi ha informació disponible"
 	},
 	"pdf": {
-		"title": "Recipes",
-		"subtitle": "Based on available ingredient and product data. Information may be missing or inaccurate.",
+		"title": "Receptes",
+		"subtitle": "Basat en les dades disponibles sobre ingredients i productes. La informació pot faltar o ser inexacta.",
 		"ingredients": "Ingredients",
-		"unnamed_ingredient": "Unnamed ingredient",
-		"nutrition": "Nutrition"
+		"unnamed_ingredient": "Ingredient sense nom",
+		"nutrition": "Informació nutricional"
 	}
 }
