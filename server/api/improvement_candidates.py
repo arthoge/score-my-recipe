@@ -71,12 +71,3 @@ def discover_food_codes(code: str | None, environmental: dict[str, float]) -> li
         key=lambda key: (environmental[key], key),
     )
     return list(dict.fromkeys(nutrition[:2] + green[:2]))
-
-
-def can_reduce(code: str | None) -> bool:
-    """Find concentrated sugar, fat or salt from composition instead of food-code lists."""
-    nutrients = nutrition_data.get_foods().get(code, {}).get("nutrients", {})
-    return any(
-        (nutrition_data.nutrient_value(nutrients.get(key))[0] or 0) >= threshold
-        for key, threshold in (("sugars", 70), ("fat", 60), ("salt", 50))
-    )

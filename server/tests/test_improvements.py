@@ -532,24 +532,18 @@ def test_catalog_discovery_preserves_culinary_role():
     assert discover_food_codes("unknown", {}) == []
 
 
-def test_quantity_candidates_are_modest_and_preserve_references():
-    """Added sugar/oil reductions preserve identity and never target vegetables."""
-    for code in ("31016", "17270"):
+def test_optimization_candidates_never_change_quantities():
+    """Even concentrated sugar and oil can only be replaced at the same quantity."""
+    for code in ("31016", "17270", "13000", "19410"):
         row = recipe().ingredients[0].model_copy(update={"ciqual_code": code, "quantity_g": 50})
         candidates = improvements.food_candidates(row, "en")
-        reductions = [item for item in candidates if ":quantity:" in item.id]
-        assert [item.after.quantity_g for item in reductions] == [45, 40]
-        assert all(item.after.ciqual_code == code for item in reductions)
-        assert all(item.after.name == row.name for item in reductions)
-    row = recipe().ingredients[0].model_copy(update={"ciqual_code": "13000"})
-    assert not any(":quantity:" in item.id for item in improvements.food_candidates(row, "en"))
-    row.prepared_weight_g = 80
-    assert improvements.food_candidates(row, "en") == []
+        assert all(item.after.quantity_g == row.quantity_g for item in candidates)
+        assert not any(":quantity:" in item.id for item in candidates)
 
 
 @pytest.mark.asyncio
-async def test_quantity_change_is_verified_on_recipe_and_applied(monkeypatch):
-    """A generic quantity candidate must improve the real comparison, then survive optimize."""
+async def test_quantity_reduction_is_not_offered_even_if_it_would_improve_score(monkeypatch):
+    """Quantity reduction is outside optimization even when it would improve the score."""
     item = recipe(
         ingredients=[{"id": "sugar", "name": "Sugar", "ciqual_code": "31016", "quantity_g": 50}]
     )
@@ -559,13 +553,8 @@ async def test_quantity_change_is_verified_on_recipe_and_applied(monkeypatch):
 
     monkeypatch.setattr(improvements, "calculate_report", calculate)
     response = await improvements.find_improvements(improvements.ImprovementRequest(recipe=item))
-    assert len(response.suggestions) == 1
-    suggestion = response.suggestions[0]
-    assert suggestion.after.quantity_g == 40
-    optimized = await improvements.optimize_recipe(
-        improvements.OptimizeRequest(recipe=item, selected_ids=[suggestion.id])
-    )
-    assert optimized.recipe.ingredients[0].quantity_g == 40
+    assert response.suggestions == []
+    assert item.ingredients[0].quantity_g == 50
 
 
 @pytest.mark.asyncio
@@ -653,8 +642,8 @@ async def test_unresolved_foods_have_an_actionable_empty_reason(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_missing_editor_ciqual_does_not_hide_quantity_improvements(monkeypatch):
-    """Resolve the baseline from the chosen environmental food and validate the same selection."""
+async def test_resolving_missing_ciqual_does_not_enable_quantity_reductions(monkeypatch):
+    """Resolving a generic food must preserve the same no-quantity-change contract."""
     monkeypatch.setattr(
         improvements.agribalyse,
         "get_reference_rows",
@@ -674,13 +663,231 @@ async def test_missing_editor_ciqual_does_not_hide_quantity_improvements(monkeyp
         ]
     )
     response = await improvements.find_improvements(improvements.ImprovementRequest(recipe=item))
-    assert response.suggestions[0].after.quantity_g == 40
-    optimized = await improvements.optimize_recipe(
-        improvements.OptimizeRequest(
-            recipe=item,
-            selected_ids=[response.suggestions[0].id],
-        )
-    )
-    assert optimized.recipe.ingredients[0].quantity_g == 40
-    assert optimized.recipe.ingredients[0].ciqual_code == "31016"
+    assert response.suggestions == []
+    assert item.ingredients[0].quantity_g == 50
     assert item.ingredients[0].ciqual_code is None
+
+
+@pytest.mark.asyncio
+async def test_optimize_keeps_preview_choice_when_another_alternative_ranks_higher(monkeypatch):
+    """A valid displayed swap survives changing rankings without repeating the search."""
+    item = recipe(ingredients=[recipe().ingredients[0]])
+    row = item.ingredients[0]
+    candidates = [
+        improvements.ImprovementSuggestion(
+            id=f"{row.id}:ciqual:{code}",
+            ingredient_id=row.id,
+            category="ingredient",
+            before=row,
+            after=row.model_copy(update={"ciqual_code": code}),
+            green_score=None,
+            nutri_score=None,
+        )
+        for code in ("19594", "19593")
+    ]
+    monkeypatch.setattr(improvements, "food_candidates", lambda *_: candidates)
+    optimized_stage = False
+
+    async def calculate(current):
+        """The first swap still helps, while the second becomes a better ranked choice."""
+        code = current.ingredients[0].ciqual_code
+        gain = {"19580": 0, "19594": 5, "19593": 10 if optimized_stage else 2}[code]
+        return result(current, green=50 + gain)
+
+    calculator = AsyncMock(side_effect=calculate)
+    monkeypatch.setattr(improvements, "calculate_report", calculator)
+    preview = await improvements.find_improvements(improvements.ImprovementRequest(recipe=item))
+    assert preview.suggestions[0].id == "first:ciqual:19594"
+    optimized_stage = True
+    calculator.reset_mock()
+    optimized = await improvements.optimize_recipe(
+        improvements.OptimizeRequest(recipe=item, selected_ids=[preview.suggestions[0].id])
+    )
+    assert optimized.recipe.ingredients[0].ciqual_code == "19594"
+    assert calculator.await_count == 2
+    assert item.ingredients[0].ciqual_code == "19580"
+
+
+@pytest.mark.asyncio
+async def test_optimize_local_swap_skips_unrelated_product_search(monkeypatch, catalogs):
+    """A local food substitution needs no OFF alternative search, even for branded rows."""
+    item = recipe()
+    for row in item.ingredients:
+        row.barcode = "111"
+    products = AsyncMock(side_effect=OSError("offline"))
+    monkeypatch.setattr(improvements, "product_candidates", products)
+
+    async def calculate(current):
+        changed = any(row.ciqual_code == "19594" for row in current.ingredients)
+        return result(current, nutri=6 if changed else 10)
+
+    calculator = AsyncMock(side_effect=calculate)
+    monkeypatch.setattr(improvements, "calculate_report", calculator)
+    optimized = await improvements.optimize_recipe(
+        improvements.OptimizeRequest(recipe=item, selected_ids=["first:ciqual:19594"])
+    )
+    products.assert_not_awaited()
+    assert calculator.await_count == 2
+    assert optimized.recipe.ingredients[1] == item.ingredients[1]
+
+
+@pytest.mark.asyncio
+async def test_optimize_rejects_multiple_alternatives_for_one_row(monkeypatch):
+    """A crafted request cannot silently overwrite one selected replacement with another."""
+    item = recipe(ingredients=[{"id": "sugar", "quantity_g": 50, "ciqual_code": "31016"}])
+    calculator = AsyncMock()
+    monkeypatch.setattr(improvements, "calculate_report", calculator)
+    with pytest.raises(ValueError, match="no longer"):
+        await improvements.optimize_recipe(
+            improvements.OptimizeRequest(
+                recipe=item, selected_ids=["sugar:quantity:0.9", "sugar:quantity:0.8"]
+            )
+        )
+    calculator.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_optimize_distinguishes_unavailable_scores_from_no_combined_gain(
+    monkeypatch, catalogs
+):
+    """Losing score data is a verification failure rather than a measured bad combination."""
+    monkeypatch.setattr(
+        improvements, "calculate_report", AsyncMock(return_value=(recipe(), None, None))
+    )
+    with pytest.raises(ValueError, match="available score data"):
+        await improvements.optimize_recipe(
+            improvements.OptimizeRequest(recipe=recipe(), selected_ids=["first:ciqual:19594"])
+        )
+
+
+@pytest.mark.asyncio
+async def test_optimize_selected_product_validates_category_and_combined_score(monkeypatch):
+    """Product selections still come from the verified same-category candidate search."""
+    item = recipe(ingredients=[{"id": "row:with:colons", "quantity_g": 100, "barcode": "111"}])
+    row = item.ingredients[0]
+    candidate = improvements.ImprovementSuggestion(
+        id=f"{row.id}:off:222",
+        ingredient_id=row.id,
+        category="open_food_facts",
+        before=row,
+        after=row.model_copy(update={"barcode": "222"}),
+        green_score=None,
+        nutri_score=None,
+    )
+    search = AsyncMock(return_value=[candidate])
+    monkeypatch.setattr(improvements, "product_candidates", search)
+
+    async def calculate(current):
+        """Only the verified alternative improves the recipe's nutritional score."""
+        return result(current, nutri=6 if current.ingredients[0].barcode == "222" else 10)
+
+    monkeypatch.setattr(improvements, "calculate_report", calculate)
+    optimized = await improvements.optimize_recipe(
+        improvements.OptimizeRequest(recipe=item, selected_ids=[candidate.id])
+    )
+    search.assert_awaited_once_with(row, "en")
+    assert optimized.recipe.ingredients[0].barcode == "222"
+    assert item.ingredients[0].barcode == "111"
+
+
+@pytest.mark.asyncio
+async def test_identical_previews_share_a_stable_isolated_result(monkeypatch):
+    """Repeated and concurrent clicks reuse a preview; changed quantities search again."""
+    import asyncio
+
+    improvements._cached_search.cache_clear()
+    search = AsyncMock(return_value=improvements.ImprovementResponse(reason="no_candidates"))
+    monkeypatch.setattr(improvements, "find_improvements", search)
+    request = improvements.ImprovementRequest(recipe=recipe())
+    try:
+        first, second = await asyncio.gather(
+            improvements.cached_find_improvements(request),
+            improvements.cached_find_improvements(request),
+        )
+        first.reason = "no_improvement"
+        assert second.reason == "no_candidates"
+        assert (await improvements.cached_find_improvements(request)).reason == "no_candidates"
+        assert search.await_count == 1
+        request.recipe.ingredients[0].quantity_g = 200
+        await improvements.cached_find_improvements(request)
+        assert search.await_count == 2
+    finally:
+        improvements._cached_search.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_unavailable_empty_preview_can_be_retried(monkeypatch):
+    """A temporary outage must not pin an empty search in the preview cache."""
+    improvements._cached_search.cache_clear()
+    search = AsyncMock(
+        side_effect=[
+            improvements.ImprovementResponse(unavailable=True, reason="scores_unavailable"),
+            improvements.ImprovementResponse(reason="no_candidates"),
+        ]
+    )
+    monkeypatch.setattr(improvements, "find_improvements", search)
+    request = improvements.ImprovementRequest(recipe=recipe())
+    try:
+        assert not (await improvements.cached_find_improvements(request)).unavailable
+        assert not (await improvements.cached_find_improvements(request)).unavailable
+        assert search.await_count == 2
+    finally:
+        improvements._cached_search.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_equal_gain_alternatives_use_stable_tie_breaking(monkeypatch, catalogs):
+    """Candidate arrival order cannot select a different equally good alternative."""
+    item = recipe()
+    first = improvements.food_candidates(item.ingredients[0], "en")[0]
+    second = first.model_copy(update={"id": "first:ciqual:99999"})
+    monkeypatch.setattr(improvements, "food_candidates", lambda row, lang: [second, first])
+
+    async def calculate(current):
+        """Give both alternatives the same independently verified recipe gain."""
+        changed = any(row.ciqual_code == "19594" for row in current.ingredients)
+        return result(current, nutri=5 if changed else 10)
+
+    monkeypatch.setattr(improvements, "calculate_report", calculate)
+    request = improvements.ImprovementRequest(recipe=item)
+    a = await improvements.find_improvements(request)
+    monkeypatch.setattr(improvements, "food_candidates", lambda row, lang: [first, second])
+    b = await improvements.find_improvements(request)
+    assert [c.id for c in a.suggestions] == [first.id]
+    assert [c.id for c in b.suggestions] == [first.id]
+
+
+@pytest.mark.asyncio
+async def test_preview_retry_is_bounded_and_outage_not_cached(monkeypatch):
+    """A sustained outage gets two attempts per click and cannot poison later previews."""
+    improvements._cached_search.cache_clear()
+    search = AsyncMock(return_value=improvements.ImprovementResponse(unavailable=True))
+    monkeypatch.setattr(improvements, "find_improvements", search)
+    request = improvements.ImprovementRequest(recipe=recipe())
+    try:
+        assert (await improvements.cached_find_improvements(request)).unavailable
+        assert search.await_count == 2
+        assert (await improvements.cached_find_improvements(request)).unavailable
+        assert search.await_count == 4
+    finally:
+        improvements._cached_search.cache_clear()
+
+
+def test_tiny_gains_retain_precision_for_display():
+    """Rounding in the API must not turn a real improvement into a displayed zero."""
+    green, _, safe = improvements.score_changes(result(green=50), result(green=50.001))
+    assert safe
+    assert 0 < green.percent < 0.1
+
+
+@pytest.mark.asyncio
+async def test_old_quantity_suggestion_cannot_be_applied(monkeypatch):
+    """A modal opened before deployment cannot still reduce an ingredient's quantity."""
+    item = recipe(ingredients=[{"id": "sugar", "quantity_g": 50, "ciqual_code": "31016"}])
+    calculator = AsyncMock()
+    monkeypatch.setattr(improvements, "calculate_report", calculator)
+    with pytest.raises(ValueError, match="no longer"):
+        await improvements.optimize_recipe(
+            improvements.OptimizeRequest(recipe=item, selected_ids=["sugar:quantity:0.9"])
+        )
+    calculator.assert_not_awaited()

@@ -14,7 +14,7 @@
 	import IngredientLine from './IngredientLine.svelte';
 	import HelperTooltip from './HelperTooltip.svelte';
 	import { _, getLocale } from '$lib/i18n';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { getCountries, getLabelsTaxonomy } from '$lib/api/taxonomy';
 	import { type TaxonomyItem } from '$lib/types/ingredient';
 	import AddIngredientsDialog from './AddIngredientsDialog.svelte';
@@ -32,6 +32,7 @@
 		/** Recipe name used to identify the table to assistive technology. */
 		title: string;
 		id: string;
+		onmatchingchange?: (pending: boolean) => void;
 	};
 
 	let {
@@ -41,7 +42,8 @@
 		nutritionFallbackIds = [],
 		nutritionSources = {},
 		title,
-		id
+		id,
+		onmatchingchange
 	}: Props = $props();
 
 	// Load each choice list once per recipe, rather than once per ingredient row.
@@ -49,6 +51,11 @@
 	let labelOptions = $state<TaxonomyItem[]>([]);
 	let originsStatus = $state<'loading' | 'ready' | 'failed'>('loading');
 	let labelsStatus = $state<'loading' | 'ready' | 'failed'>('loading');
+	let pendingRows = $state<Record<string, boolean>>({});
+	$effect(() => {
+		const pending = ingredients.some((row) => pendingRows[row.id]);
+		untrack(() => onmatchingchange?.(pending));
+	});
 
 	onMount(() => {
 		let cancelled = false;
@@ -205,6 +212,7 @@
 						{labelOptions}
 						{originsStatus}
 						{labelsStatus}
+						onmatchingchange={(pending) => (pendingRows[ingredient.id] = pending)}
 					/>
 				{:else}
 					<tr>

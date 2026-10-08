@@ -5,9 +5,10 @@ from pathlib import Path
 from difflib import SequenceMatcher
 import hashlib
 import json
-import unicodedata
+import re
 import urllib.request
 import xml.etree.ElementTree as ET
+from api import food_matching
 
 CATALOG_PATH = Path(__file__).parent / "resources" / "ciqual-foods-2025.json"
 SOURCE_URL = "https://entrepot.recherche.data.gouv.fr/api/access/datafile/666252"
@@ -73,22 +74,21 @@ def food_name(food: dict[str, str], lang: str) -> str:
 
 def normalize(text: str) -> str:
     """Compare food names independent of accents and case."""
-    return "".join(
-        char
-        for char in unicodedata.normalize("NFD", text.strip().lower())
-        if not unicodedata.combining(char)
-    )
+    return food_matching.normalize(text)
 
 
-def search_foods(query: str, limit: int = 8) -> list[dict[str, str]]:
+def search_foods(query: str, limit: int = 8, *, automatic: bool = False) -> list[dict[str, str]]:
     """Search both official languages, keeping distinct raw, cooked and drained foods."""
-    needle = normalize(query)
+    needle = food_matching.recipe_name(query)
     if not needle:
         return []
     matches = []
     for food in get_foods().values():
         names = [normalize(food[key]) for key in ("name_fr", "name_en")]
-        rank = max(_match_rank(needle, name) for name in names)
+        rank = max(
+            food_matching.automatic_rank(query, name) if automatic else _match_rank(needle, name)
+            for name in names
+        )
         if rank >= 0.45:
             matches.append((rank, food))
     matches.sort(key=lambda item: (-item[0], item[1]["code"]))
@@ -97,13 +97,56 @@ def search_foods(query: str, limit: int = 8) -> list[dict[str, str]]:
 
 def _match_rank(needle: str, name: str) -> float:
     """Prefer a food named by the query over composite dishes containing that ingredient."""
+    automatic = food_matching.automatic_rank(needle, name)
+    if automatic:
+        return automatic
+    return min(0.79, _manual_match_rank(needle, name))
+
+
+def _manual_match_rank(needle: str, name: str) -> float:
+    """Keep broad manual results below verified automatic correspondences."""
     if needle == name:
         return 1.0
+    query_terms, target_terms = food_matching.words(needle), food_matching.words(name)
+    if not query_terms or not target_terms:
+        return 0.0
+    # Discard unrelated catalogue entries before doing any full-string fuzzy comparison.
+    if (
+        query_terms[0] not in target_terms
+        and SequenceMatcher(None, query_terms[0], target_terms[0]).ratio() < 0.8
+    ):
+        return 0.0
+    # Simple English/French plurals should not promote a soup over the ingredient.
+    needle, name = (
+        re.sub(r"\b([a-z]{3,})s\b", lambda m: m[0] if m[0].endswith(("ss", "us")) else m[1], text)
+        for text in (needle, name)
+    )
     similarity = SequenceMatcher(None, needle, name).ratio()
+    average = "(average)" in name or "(aliment moyen)" in name
     if name.startswith(needle + ","):
-        return 0.95 + similarity * 0.04 + (0.03 if "(average)" in name else 0)
-    if name.startswith(needle):
-        return 0.85 + similarity * 0.09
-    if needle in name:
+        raw = bool(re.search(r"\b(?:raw|cru|crue)\b", name))
+        return 0.95 + similarity * 0.01 + (0.02 if average else 0) + (0.015 if raw else 0)
+    if re.match(re.escape(needle) + r"(?:\b|$)", name):
+        # A compound such as 'butter of cocoa' is less generic than a fat percentage.
+        compound = bool(re.match(r"\s+(?:de\b|d'|of\b|with\b)", name[len(needle) :]))
+        return 0.85 + similarity * 0.05 + (0.08 if average else 0) - (0.08 if compound else 0)
+    if re.search(r"\b" + re.escape(needle) + r"\b", name):
         return 0.65 + similarity * 0.14
+    query_words, name_words = (re.findall(r"[a-z]+", text) for text in (needle, name))
+    # Approximation must preserve the food identity, not just a shared adjective.
+    # Names with unrecognized qualifiers remain available through taxonomy synonyms.
+    if not query_words or not name_words:
+        return 0.0
+    if SequenceMatcher(None, query_words[0], name_words[0]).ratio() < 0.8:
+        return 0.0
+    if set(query_words) <= set(name_words):
+        return 0.8 + similarity * 0.05
+    if any(
+        len(word) > 3
+        and not any(
+            SequenceMatcher(None, word, candidate).ratio() >= 0.8 for candidate in name_words
+        )
+        for word in query_words[1:]
+    ):
+        return 0.0
     return similarity * 0.8

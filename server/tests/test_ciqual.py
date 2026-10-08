@@ -46,3 +46,22 @@ def test_pinned_release_checksum(tmp_path):
     with pytest.raises(ValueError, match="checksum"):
         ciqual.write_catalog(b"<TABLE/>", target)
     assert not target.exists()
+
+
+@pytest.mark.parametrize(
+    "query,code",
+    [
+        ("lentilles", "20359"),
+        ("huile d’olive", "17270"),
+        ("pomme", "13396"),
+    ],
+)
+def test_short_names_prefer_generic_food_over_dishes_and_processed_variants(query, code):
+    """Common plural and punctuated names resolve to the ingredient's own catalog row."""
+    assert ciqual.search_foods(query, 1)[0]["code"] == code
+
+
+def test_fuzzy_search_does_not_match_only_a_shared_adjective():
+    """Fresh cream cannot become fresh mint because both names contain 'fraîche'."""
+    assert ciqual._match_rank("creme fraiche", "menthe, fraiche") == 0
+    assert all(food["code"] != "11027" for food in ciqual.search_foods("crème fraîche"))

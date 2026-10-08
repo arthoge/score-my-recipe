@@ -23,6 +23,8 @@ export interface TaxonomyItem {
 	missingData?: string[];
 	/** The reference has no usable measurements for its score. */
 	noData?: boolean;
+	/** The backend verified that a product is suitable for automatic correspondence. */
+	automaticMatch?: boolean;
 }
 
 /**
@@ -76,6 +78,8 @@ export interface Ingredient {
 	name: string;
 	/** Name whose references were resolved together by a confirmed server replacement. */
 	resolvedReferenceName?: string;
+	/** Restart correspondence lookup after a confirmed replacement, even with the same name. */
+	referenceRevision?: number;
 	/** Weight in grams (null if not specified) */
 	weight: number | null;
 	/** Codified ingredient from taxonomy */

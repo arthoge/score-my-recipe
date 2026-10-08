@@ -60,9 +60,17 @@ export async function searchAgribalyseFoods(query: string, limit = 8, signal?: A
 	);
 }
 
-/** Fetch the same taxonomy correspondences used by the backend's Green Score matching. */
-export async function getIngredientReferences(taxonomyId: string, signal?: AbortSignal) {
-	const params = new URLSearchParams({ taxonomy_id: taxonomyId, lang: getLocale().split('-')[0] });
+/** Resolve selected codes and conservative catalogue/taxonomy name correspondences. */
+export async function getIngredientReferences(
+	taxonomyId: string | undefined,
+	signal?: AbortSignal,
+	input?: { name: string; ciqualCode?: string; agribalyseCode?: string }
+) {
+	const params = new URLSearchParams({ lang: getLocale().split('-')[0] });
+	if (taxonomyId) params.set('taxonomy_id', taxonomyId);
+	if (input?.name) params.set('q', input.name);
+	if (input?.ciqualCode) params.set('ciqual_code', input.ciqualCode);
+	if (input?.agribalyseCode) params.set('agribalyse_code', input.agribalyseCode);
 	const response = await fetch(
 		`${env.PUBLIC_RECIPE_API_URL ?? ''}/v1/ingredient-references?${params}`,
 		{ signal }
@@ -88,7 +96,13 @@ export async function searchOffProducts(query: string, limit = 8, signal?: Abort
 	);
 	if (!response.ok) throw new Error(`Product search failed: ${response.status}`);
 	const data: {
-		foods: { code: string; name: string; missing_data?: string[]; no_data?: boolean }[];
+		foods: {
+			code: string;
+			name: string;
+			missing_data?: string[];
+			no_data?: boolean;
+			automatic_match?: boolean;
+		}[];
 	} = await response.json();
 	return data.foods.slice(0, limit).map(
 		(food): TaxonomyItem => ({
@@ -96,7 +110,8 @@ export async function searchOffProducts(query: string, limit = 8, signal?: Abort
 			label: food.name,
 			isInTaxonomy: true,
 			missingData: food.missing_data,
-			noData: food.no_data
+			noData: food.no_data,
+			automaticMatch: food.automatic_match
 		})
 	);
 }

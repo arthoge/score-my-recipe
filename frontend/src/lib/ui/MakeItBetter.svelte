@@ -7,6 +7,7 @@
 	import {
 		checkImprovements,
 		optimizeRecipe,
+		ImprovementError,
 		type ImprovementRequest,
 		type ImprovementResponse
 	} from '$lib/api/improvements';
@@ -21,19 +22,30 @@
 		name,
 		ingredients = $bindable(),
 		portions,
-		country
+		country,
+		disabled = false,
+		onoptimized
 	}: {
 		id: string;
 		name: string;
 		ingredients: Ingredient[];
 		portions?: number | null;
 		country?: string | null;
+		disabled?: boolean;
+		onoptimized?: () => void;
 	} = $props();
 	let dialog: HTMLDialogElement;
 	const dialogId = $props.id();
 	let loading = $state(false);
 	let optimizing = $state(false);
-	let error = $state(false);
+	let error = $state<ImprovementError['reason'] | null>(null);
+	const errorDefaults = {
+		failed: 'Could not verify these improvements. Try again; your recipe has not changed.',
+		selection_unavailable:
+			'A selected alternative is no longer available. Close this dialog and check again; your recipe has not changed.',
+		no_combined_gain:
+			'These changes do not improve the recipe when combined. Try selecting fewer changes; your recipe has not changed.'
+	};
 	let result = $state<ImprovementResponse | null>(null);
 	let selectedIds = $state<string[]>([]);
 	let snapshot: ImprovementRequest | undefined;
@@ -49,13 +61,13 @@
 		suggestions.length > 0 && suggestions.every((row) => selectedIds.includes(row.id))
 	);
 	let someSelected = $derived(suggestions.some((row) => selectedIds.includes(row.id)));
-	let hasTradeoffs = $derived(suggestions.some(hasScoreRegression));
 	let hasRows = $derived(recipe.ingredients.some((row) => (row.quantity_g ?? 0) > 0));
 
 	onDestroy(() => controller?.abort());
 
 	/** Open immediately, then load suggestions from an immutable recipe snapshot. */
 	async function openDialog() {
+		if (disabled) return;
 		controller?.abort();
 		const requestController = new AbortController();
 		controller = requestController;
@@ -63,7 +75,7 @@
 		snapshotSignature = signature;
 		result = null;
 		selectedIds = [];
-		error = false;
+		error = null;
 		loading = true;
 		dialog.showModal();
 		try {
@@ -74,7 +86,7 @@
 				.filter((row) => !hasScoreRegression(row))
 				.map((row) => row.id);
 		} catch {
-			if (!requestController.signal.aborted) error = true;
+			if (!requestController.signal.aborted) error = 'failed';
 		} finally {
 			if (controller === requestController) loading = false;
 		}
@@ -83,6 +95,8 @@
 	/** Cancel network work as well as the dialog; cancelled responses never mutate a recipe. */
 	function closeDialog() {
 		controller?.abort();
+		// Do not compare a closing modal's old preview with the newly applied recipe.
+		snapshotSignature = '';
 		dialog.close();
 	}
 
@@ -93,18 +107,21 @@
 		controller = requestController;
 		const selection = [...selectedIds];
 		optimizing = true;
-		error = false;
+		error = null;
 		try {
 			const response = await optimizeRecipe(snapshot, selection, requestController.signal);
 			if (requestController.signal.aborted || signature !== snapshotSignature) return;
-			ingredients = applyOptimizedRecipe(
+			const optimizedIngredients = applyOptimizedRecipe(
 				ingredients,
 				response,
 				suggestions.filter((row) => selection.includes(row.id))
 			);
-			dialog.close();
-		} catch {
-			if (!requestController.signal.aborted) error = true;
+			closeDialog();
+			ingredients = optimizedIngredients;
+			onoptimized?.();
+		} catch (failure) {
+			if (!requestController.signal.aborted)
+				error = failure instanceof ImprovementError ? failure.reason : 'failed';
 		} finally {
 			optimizing = false;
 		}
@@ -115,7 +132,7 @@
 	type="button"
 	class="btn btn-success improvement-button"
 	aria-haspopup="dialog"
-	disabled={!hasRows}
+	disabled={disabled || !hasRows}
 	onclick={openDialog}
 >
 	{$_('improvements.title', { default: 'Make it better' })}
@@ -125,7 +142,10 @@
 	bind:this={dialog}
 	class="modal"
 	aria-labelledby="{dialogId}-title"
-	onclose={() => controller?.abort()}
+	onclose={() => {
+		controller?.abort();
+		snapshotSignature = '';
+	}}
 >
 	<div class="modal-box w-11/12 max-w-5xl">
 		<h2 id="{dialogId}-title" class="mb-4 text-lg font-bold">
@@ -179,10 +199,7 @@
 						<tr
 							><td colspan="6" class="text-base-content/70 py-8 text-center"
 								>{#if error}
-									{$_('improvements.failed', {
-										default:
-											'Could not verify these improvements. Try again; your recipe has not changed.'
-									})}
+									{$_(`improvements.${error}`, { default: errorDefaults[error] })}
 								{:else if result?.reason === 'no_candidates'}
 									{$_('improvements.no_candidates', {
 										default: 'No substitutions are available for these ingredient references yet.'
@@ -235,9 +252,7 @@
 											suggestion.before.name
 										: suggestion.before.name}</td
 								>
-								<td class="wrap-anywhere">
-									{suggestion.product_name ?? suggestion.after.name}
-								</td>
+								<td class="wrap-anywhere">{suggestion.product_name ?? suggestion.after.name}</td>
 								{#each [suggestion.green_score, suggestion.nutri_score] as change, index (index)}
 									<td class="font-medium whitespace-nowrap tabular-nums">
 										<span
@@ -253,18 +268,6 @@
 				</tbody>
 			</table>
 		</div>
-		{#if hasTradeoffs}<p class="text-warning mt-3 text-sm" role="status">
-				{$_('improvements.tradeoffs', {
-					default:
-						'Some alternatives improve one score but worsen the other. Negative percentages show the trade-off; these changes start unchecked.'
-				})}
-			</p>{/if}
-		{#if error}<p class="text-error mt-3 text-sm" role="alert">
-				{$_('improvements.unavailable', {
-					default:
-						'Some food data or score services are unavailable. Suggestions may be incomplete.'
-				})}
-			</p>{/if}
 		{#if result?.limited}<p class="text-base-content/70 mt-3 text-sm">
 				{$_('improvements.limited', {
 					default: 'This search checked up to 60 alternatives across the recipe.'
@@ -275,10 +278,8 @@
 					default: 'The recipe changed. Close this dialog and check for improvements again.'
 				})}
 			</p>{/if}
-		{#if error}<p class="text-error mt-3 text-sm" role="alert">
-				{$_('improvements.failed', {
-					default: 'Could not verify these improvements. Try again; your recipe has not changed.'
-				})}
+		{#if error && suggestions.length}<p class="text-error mt-3 text-sm" role="alert">
+				{$_(`improvements.${error}`, { default: errorDefaults[error] })}
 			</p>{/if}
 		<div class="modal-action">
 			<button type="button" class="btn btn-outline" onclick={closeDialog}

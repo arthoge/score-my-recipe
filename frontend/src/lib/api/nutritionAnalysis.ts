@@ -37,12 +37,28 @@ export async function analyzeNutrition(
 	inputs: ReturnType<typeof nutritionInputs>,
 	signal: AbortSignal
 ) {
-	const response = await fetch(`${env.PUBLIC_RECIPE_API_URL ?? ''}/v1/nutrition/analyze`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(inputs),
-		signal
-	});
-	if (!response.ok) throw new Error(`Nutrition analysis failed: ${response.status}`);
-	return (await response.json()) as NutritionAnalysis;
+	for (let attempt = 0; ; attempt++) {
+		signal.throwIfAborted();
+		let response: Response;
+		try {
+			response = await fetch(`${env.PUBLIC_RECIPE_API_URL ?? ''}/v1/nutrition/analyze`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(inputs),
+				signal
+			});
+		} catch (error) {
+			if (attempt === 0 && !signal.aborted && error instanceof TypeError) continue;
+			throw error;
+		}
+		// A cold or temporarily unavailable dependency gets one retry. Invalid inputs
+		// and incomplete food data need correction rather than another identical call.
+		if (!response.ok) {
+			if (attempt === 0 && [502, 503, 504].includes(response.status)) continue;
+			throw new Error(`Nutrition analysis failed: ${response.status}`);
+		}
+		const result = (await response.json()) as NutritionAnalysis;
+		if (attempt === 0 && result.status === 'dependency_error') continue;
+		return result;
+	}
 }

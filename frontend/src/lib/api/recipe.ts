@@ -111,7 +111,7 @@ export function ingredientToGreenScoreInput(
 ): components['schemas']['RecipeIngredientInput'] {
 	// A manually cleared or unresolved correspondence must not fall back to the taxonomy mapping.
 	const codifiedIngredient: IngredientType =
-		ingredient.referenceSource === 'manual' && !ingredient.agribalyseCode
+		['manual', 'unmatched'].includes(ingredient.referenceSource ?? '') && !ingredient.agribalyseCode
 			? { id: null, label: ingredient.name, isInTaxonomy: false }
 			: (ingredient.codifiedIngredient ?? {
 					id: ingredient.name,

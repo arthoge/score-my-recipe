@@ -48,6 +48,8 @@
 		deleteDisabled = false
 	}: Props = $props();
 	let title = $derived(name || fallbackTitle);
+	let referencesLoading = $state(false);
+	let scoreRevision = $state(0);
 
 	let nutrition = $state<NutritionAnalysis | null>(null);
 	let nutritionLoading = $state(false);
@@ -65,36 +67,40 @@
 			)
 	);
 
-	// Nutrition has its own validity and request lifecycle; environmental errors do not block it.
+	// Wait for reference lookups to settle before scoring the final ingredient inputs.
+	// Missing matches still settle and are excluded by nutrition independently of Green-Score.
 	$effect(() => {
 		void nutritionSignature;
+		void scoreRevision;
 		const payload = untrack(() => nutritionPayload);
 		const ready = nutritionReady;
+		const waitingForReferences = referencesLoading;
 		const controller = new AbortController();
 		let cancelled = false;
 		if (!ready) nutrition = null;
 		nutritionLoading = ready;
-		const timer = ready
-			? setTimeout(() => {
-					void analyzeNutrition(payload, controller.signal)
-						.then((result) => {
-							if (!cancelled) {
-								nutrition = result;
-								nutritionFeedbackRows = Object.fromEntries(
-									payload.ingredients.map((row) => [row.id, JSON.stringify(row)])
-								);
-							}
-						})
-						.catch(() => {
-							if (!cancelled) {
-								nutrition = null;
-							}
-						})
-						.finally(() => {
-							if (!cancelled) nutritionLoading = false;
-						});
-				}, 750)
-			: undefined;
+		const timer =
+			ready && !waitingForReferences
+				? setTimeout(() => {
+						void analyzeNutrition(payload, controller.signal)
+							.then((result) => {
+								if (!cancelled) {
+									nutrition = result;
+									nutritionFeedbackRows = Object.fromEntries(
+										payload.ingredients.map((row) => [row.id, JSON.stringify(row)])
+									);
+								}
+							})
+							.catch(() => {
+								if (!cancelled) {
+									nutrition = null;
+								}
+							})
+							.finally(() => {
+								if (!cancelled) nutritionLoading = false;
+							});
+					}, 750)
+				: undefined;
 		return () => {
 			cancelled = true;
 			clearTimeout(timer);
@@ -123,9 +129,8 @@
 	 */
 	let ingredientsSignature = $derived(
 		JSON.stringify({
-			ingredients: ingredients.filter(isIngredientNotEmpty),
-			country,
-			portions
+			ingredients: ingredients.filter(isIngredientNotEmpty).map(ingredientToGreenScoreInput),
+			country
 		})
 	);
 
@@ -243,6 +248,7 @@
 	$effect(() => {
 		// Read the signature so the effect re-runs on any ingredient change
 		void ingredientsSignature;
+		void scoreRevision;
 		const ready = scoreReady;
 		// Retain unchanged-row feedback while waiting for the next request.
 		// untrack keeps request/loading state from becoming dependencies of this effect.
@@ -333,6 +339,7 @@
 		{nutritionSources}
 		{title}
 		{id}
+		onmatchingchange={(pending) => (referencesLoading = pending)}
 	/>
 
 	<div class="mt-6 flex flex-wrap items-stretch gap-4">
@@ -355,6 +362,14 @@
 		/>
 	</div>
 	<div class="mt-4">
-		<MakeItBetter {id} name={title} bind:ingredients {portions} {country} />
+		<MakeItBetter
+			{id}
+			name={title}
+			bind:ingredients
+			{portions}
+			{country}
+			disabled={referencesLoading}
+			onoptimized={() => (scoreRevision += 1)}
+		/>
 	</div>
 </section>

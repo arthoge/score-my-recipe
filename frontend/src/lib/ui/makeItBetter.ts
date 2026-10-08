@@ -18,21 +18,25 @@ export function applyOptimizedRecipe(
 			...ingredient,
 			name: row.name ?? '',
 			resolvedReferenceName: row.name ?? '',
+			referenceRevision: (ingredient.referenceRevision ?? 0) + 1,
 			weight: row.quantity_g ?? null,
 			codifiedIngredient: row.codified_ingredient ?? null,
 			ciqualCode: row.ciqual_code ?? undefined,
-			ciqualName:
-				suggestion.ciqual_name ??
-				(row.ciqual_code === ingredient.ciqualCode ? ingredient.ciqualName : ''),
+			ciqualName: row.ciqual_code
+				? (suggestion.ciqual_name ??
+					(row.ciqual_code === ingredient.ciqualCode ? ingredient.ciqualName : ''))
+				: '',
 			agribalyseCode: row.agribalyse_code ?? undefined,
-			agribalyseName:
-				suggestion.agribalyse_name ??
-				(row.agribalyse_code === ingredient.agribalyseCode ? ingredient.agribalyseName : ''),
+			agribalyseName: row.agribalyse_code
+				? (suggestion.agribalyse_name ??
+					(row.agribalyse_code === ingredient.agribalyseCode ? ingredient.agribalyseName : ''))
+				: '',
 			referenceSource: row.agribalyse_code ? 'manual' : undefined,
 			barcode: row.barcode ?? undefined,
-			productName:
-				suggestion.product_name ??
-				(row.barcode === ingredient.barcode ? ingredient.productName : ''),
+			productName: row.barcode
+				? (suggestion.product_name ??
+					(row.barcode === ingredient.barcode ? ingredient.productName : ''))
+				: '',
 			labels: row.labels ?? [],
 			origin: row.origin ?? null,
 			isFreshPlant: row.is_fresh_plant ?? false,
@@ -49,7 +53,8 @@ export function applyOptimizedRecipe(
 export function formatImprovementPercent(percent: number | null | undefined): string {
 	if (percent == null) return '—';
 	const rounded = percent.toFixed(1);
-	if (Number(rounded) === 0) return '0.0%';
+	if (percent === 0) return '0.0%';
+	if (Number(rounded) === 0) return `${percent > 0 ? '+' : '−'}<0.1%`;
 	return `${percent > 0 ? '+' : ''}${rounded}%`;
 }
 

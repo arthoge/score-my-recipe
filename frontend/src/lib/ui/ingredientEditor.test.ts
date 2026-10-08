@@ -45,15 +45,18 @@ describe('automatic score form validation', () => {
 		).toBe(false);
 	});
 
-	it('does not score cleared manual correspondences unless another usable row remains', () => {
-		const cleared = { ...validIngredient(), referenceSource: 'manual' };
-		expect(canAutoScore([cleared])).toBe(false);
-		expect(canAutoScore([{ ...validIngredient(), name: '' }])).toBe(false);
-		expect(canAutoScore([{ ...validIngredient(), codifiedIngredient: null }])).toBe(false);
-		expect(canAutoScore([cleared, validIngredient()])).toBe(true);
-		expect(canAutoScore([{ ...cleared, agribalyseCode: '123' }])).toBe(true);
-		expect(canAutoScore([])).toBe(false);
-	});
+	it.each(['manual', 'unmatched'])(
+		'does not reuse %s correspondences unless another usable row remains',
+		(referenceSource) => {
+			const cleared = { ...validIngredient(), referenceSource };
+			expect(canAutoScore([cleared])).toBe(false);
+			expect(canAutoScore([{ ...validIngredient(), name: '' }])).toBe(false);
+			expect(canAutoScore([{ ...validIngredient(), codifiedIngredient: null }])).toBe(false);
+			expect(canAutoScore([cleared, validIngredient()])).toBe(true);
+			expect(canAutoScore([{ ...cleared, agribalyseCode: '123' }])).toBe(true);
+			expect(canAutoScore([])).toBe(false);
+		}
+	);
 
 	it('keeps preparation fields optional and validates portions', () => {
 		expect(canAutoScore([{ ...validIngredient(), state: 'raw', ciqualCode: '1234' }], 4)).toBe(

@@ -288,6 +288,8 @@
 		"limited": "This search checked up to 60 alternatives across the recipe.",
 		"stale": "The recipe changed. Close this dialog and check for improvements again.",
 		"failed": "Could not verify these improvements. Try again; your recipe has not changed.",
+		"selection_unavailable": "A selected alternative is no longer available. Close this dialog and check again; your recipe has not changed.",
+		"no_combined_gain": "These changes do not improve the recipe when combined. Try selecting fewer changes; your recipe has not changed.",
 		"optimize": "Optimize",
 		"references_missing": "Choose CIQUAL foods or Open Food Facts products for the ingredients, then try again.",
 		"no_candidates": "No substitutions are available for these ingredient references yet.",

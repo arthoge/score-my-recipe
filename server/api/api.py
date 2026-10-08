@@ -193,10 +193,16 @@ async def suggest_scored_ingredient(
 
 @app.get("/v1/ingredient-references")
 async def ingredient_references(
-    taxonomy_id: str, lang: str = "en"
+    taxonomy_id: str | None = None,
+    lang: str = "en",
+    q: str = "",
+    ciqual_code: str | None = None,
+    agribalyse_code: str | None = None,
 ) -> references.IngredientReferencesResponse:
-    """Return proposed Agribalyse and linked CIQUAL correspondences for a taxonomy ingredient."""
-    return await references.ingredient_references(taxonomy_id, lang)
+    """Resolve independent food references from explicit codes, names or taxonomy."""
+    return await references.resolve_ingredient_references(
+        taxonomy_id, lang, q, ciqual_code, agribalyse_code
+    )
 
 
 @app.get("/v1/agribalyse/foods")
@@ -280,7 +286,7 @@ async def recompute_quantity(
 
 @app.post("/v1/nutrition/analyze")
 async def analyze_nutrition(request: nutrition.NutritionRequest) -> nutrition.NutritionResponse:
-    """Analyze one served recipe component with independent algorithm-2023 availability."""
+    """Analyze one served recipe component with a local algorithm-2023 calculation."""
     return await nutrition.analyze(request)
 
 
@@ -309,7 +315,7 @@ async def check_improvements(
     request: improvements.ImprovementRequest,
 ) -> improvements.ImprovementResponse:
     """Compare safe ingredient and product substitutions using whole-recipe scores."""
-    return await improvements.find_improvements(request)
+    return await improvements.cached_find_improvements(request)
 
 
 @app.post("/v1/make-it-better/optimize")

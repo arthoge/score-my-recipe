@@ -5,9 +5,11 @@
 	import { _ } from '$lib/i18n';
 	import { untrack } from 'svelte';
 	import { searchOffProducts, getIngredientReferences } from '$lib/api/nutrition';
-	import { syncNutritionSearches, suggestOffProduct } from './nutritionSearch';
-	import { getMatchingTags } from '$lib/api/taxonomy';
-	import { findMatchingSuggestion } from '$lib/utils/taxonomyMatch';
+	import {
+		applyIngredientReferences,
+		syncNutritionSearches,
+		suggestOffProduct
+	} from './nutritionSearch';
 	import TaxonomyCell from './TaxonomyCell.svelte';
 	import IngredientDetailsDialog from './IngredientDetailsDialog.svelte';
 	import LabelsCell from './LabelsCell.svelte';
@@ -34,6 +36,7 @@
 		originsStatus: 'loading' | 'ready' | 'failed';
 		labelsStatus: 'loading' | 'ready' | 'failed';
 		onDelete?: (id: string) => void;
+		onmatchingchange?: (pending: boolean) => void;
 	};
 	let {
 		ingredient = $bindable(),
@@ -47,7 +50,8 @@
 		labelOptions,
 		originsStatus,
 		labelsStatus,
-		onDelete
+		onDelete,
+		onmatchingchange
 	}: Props = $props();
 	let rowId = $derived(`${recipeId}-${ingredient.id}`);
 	let errors = $derived(ingredientCellErrors(ingredient));
@@ -209,76 +213,94 @@
 	});
 
 	let referenceLookupKey = $derived(
-		JSON.stringify([ingredient.name.trim(), ingredient.codifiedIngredient?.id])
+		JSON.stringify([
+			ingredient.name.trim(),
+			ingredient.referenceRevision,
+			ingredient.codifiedIngredient?.id,
+			ingredient.ciqualCode,
+			ingredient.agribalyseCode
+		])
 	);
 	let settledReferenceKey = $state<string>();
+	let productLookupKey = $derived(
+		JSON.stringify([ingredient.name.trim(), ingredient.referenceRevision])
+	);
 	let settledProductKey = $state<string>();
 	let referencesPending = $derived(
 		ingredient.name.trim().length >= 3 && settledReferenceKey !== referenceLookupKey
 	);
 	let productsPending = $derived(
-		ingredient.name.trim().length >= 3 && settledProductKey !== referenceLookupKey
+		ingredient.name.trim().length >= 3 && settledProductKey !== productLookupKey
 	);
 	let ciqualLoading = $derived(!ingredient.ciqualName && (referencesPending || productsPending));
 	let agribalyseLoading = $derived(!ingredient.agribalyseName && referencesPending);
 	let productLoading = $derived(!ingredient.productName && productsPending);
 
 	$effect(() => {
+		const pending = referencesPending || productsPending;
+		untrack(() => onmatchingchange?.(pending));
+	});
+
+	$effect(() => {
 		const name = ingredient.name.trim();
-		const taxonomyId = ingredient.codifiedIngredient?.id;
+		const taxonomyId = ingredient.codifiedIngredient?.id ?? undefined;
 		const lookupKey = referenceLookupKey;
+		if (lookupKey === untrack(() => settledReferenceKey)) return;
+		const input = {
+			name,
+			ciqualCode: ingredient.ciqualCode,
+			agribalyseCode: ingredient.agribalyseCode
+		};
+		const controller = new AbortController();
+		let cancelled = false;
+		const timer =
+			name.length >= 3 || input.ciqualCode || input.agribalyseCode
+				? setTimeout(() => {
+						void getIngredientReferences(taxonomyId, controller.signal, input)
+							.then((result) => {
+								if (cancelled) return;
+								applyIngredientReferences(ingredient, result);
+								// The response's codes are already resolved; do not search them again.
+								settledReferenceKey = JSON.stringify([
+									name,
+									ingredient.referenceRevision,
+									ingredient.codifiedIngredient?.id,
+									ingredient.ciqualCode,
+									ingredient.agribalyseCode
+								]);
+							})
+							.catch(() => {
+								/* Manual searches remain available on failure. */
+								if (!cancelled) settledReferenceKey = lookupKey;
+							});
+					}, 400)
+				: undefined;
+		return () => {
+			cancelled = true;
+			controller.abort();
+			clearTimeout(timer);
+		};
+	});
+
+	// Product search follows the ingredient name independently of catalog matching.
+	// Filling CIQUAL or Agribalyse metadata must not cancel and restart this request.
+	$effect(() => {
+		const name = ingredient.name.trim();
+		const lookupKey = productLookupKey;
 		productSuggestions = [];
 		const controller = new AbortController();
 		let cancelled = false;
 		const timer =
 			name.length >= 3
 				? setTimeout(() => {
-						if (!taxonomyId)
-							getMatchingTags('ingredients', name, 8)
-								.then((result) => {
-									if (cancelled) return;
-									const exact = findMatchingSuggestion(name, result.suggestions);
-									if (exact?.isInTaxonomy) ingredient.codifiedIngredient = exact;
-								})
-								.catch(() => {
-									/* Leave ambiguous names for the chef to select. */
-								})
-								.finally(() => {
-									if (!cancelled) settledReferenceKey = lookupKey;
-								});
-						if (taxonomyId)
-							getIngredientReferences(taxonomyId, controller.signal)
-								.then((result) => {
-									if (cancelled) return;
-									if (
-										!ingredient.agribalyseCode &&
-										!ingredient.agribalyseName &&
-										result.agribalyse
-									) {
-										ingredient.agribalyseCode = result.agribalyse.code;
-										ingredient.agribalyseName = result.agribalyse.name;
-										ingredient.referenceSource = result.source ?? undefined;
-									}
-									if (!ingredient.ciqualCode && !ingredient.ciqualName && result.ciqual) {
-										ingredient.ciqualCode = result.ciqual.code;
-										ingredient.ciqualName = result.ciqual.name;
-									}
-								})
-								.catch(() => {
-									/* Manual search remains available if matching fails. */
-								})
-								.finally(() => {
-									if (!cancelled) settledReferenceKey = lookupKey;
-								});
-						searchOffProducts(name, 8, controller.signal)
+						void searchOffProducts(name, 8, controller.signal)
 							.then((results) => {
-								if (!cancelled) {
-									productSuggestions = results;
-									suggestOffProduct(ingredient, results);
-								}
+								if (cancelled) return;
+								productSuggestions = results;
+								suggestOffProduct(ingredient, results);
 							})
 							.catch(() => {
-								/* A service failure must not select an invented product. */
+								// A service failure must not select an invented product.
 							})
 							.finally(() => {
 								if (!cancelled) settledProductKey = lookupKey;

@@ -248,5 +248,29 @@
 		"ingredients": "Ingrédients",
 		"unnamed_ingredient": "Ingrédient sans nom",
 		"nutrition": "Valeurs nutritionnelles"
+	},
+	"improvements": {
+		"title": "Améliorer la recette",
+		"description": "Sélectionnez les changements pour améliorer votre recette.",
+		"select_all": "Sélectionner toutes les améliorations",
+		"category": "Catégorie",
+		"before": "Avant",
+		"after": "Après",
+		"loading": "Recherche des améliorations…",
+		"empty": "Les alternatives étudiées n’améliorent aucun des scores disponibles de la recette.",
+		"select_change": "Remplacer {before} par {after}",
+		"off": "Open Food Facts",
+		"ingredient": "Nom de l’ingrédient",
+		"unavailable": "Certaines données alimentaires ou certains services de calcul sont indisponibles. Les suggestions peuvent être incomplètes.",
+		"limited": "Cette recherche a étudié jusqu’à 60 alternatives pour la recette.",
+		"stale": "La recette a changé. Fermez cette fenêtre et relancez la recherche d’améliorations.",
+		"failed": "Impossible de vérifier ces améliorations. Réessayez ; votre recette n’a pas été modifiée.",
+		"selection_unavailable": "Une alternative sélectionnée n’est plus disponible. Fermez cette fenêtre et relancez la recherche ; votre recette n’a pas été modifiée.",
+		"no_combined_gain": "Ces changements n’améliorent pas la recette lorsqu’ils sont combinés. Essayez d’en sélectionner moins ; votre recette n’a pas été modifiée.",
+		"optimize": "Optimiser",
+		"references_missing": "Choisissez des aliments CIQUAL ou des produits Open Food Facts pour les ingrédients, puis réessayez.",
+		"no_candidates": "Aucune substitution n’est encore disponible pour ces références d’ingrédients.",
+		"scores_unavailable": "Les scores ou les données des ingrédients sont indisponibles. Les améliorations n’ont pas pu être vérifiées.",
+		"tradeoffs": "Certaines alternatives améliorent un score mais dégradent l’autre. Les pourcentages négatifs indiquent ce compromis ; ces changements ne sont pas sélectionnés par défaut."
 	}
 }

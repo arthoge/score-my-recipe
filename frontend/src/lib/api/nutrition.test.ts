@@ -103,3 +103,41 @@ it.each([searchCiqualFoods, searchAgribalyseFoods, searchOffProducts])(
 		expect((await search('Empty'))[0].noData).toBe(true);
 	}
 );
+
+it('resolves references from a recipe row without requiring a taxonomy ID', async () => {
+	const { getIngredientReferences } = await import('./nutrition');
+	const fetch = vi
+		.fn()
+		.mockResolvedValue(
+			new Response(JSON.stringify({ ciqual: null, agribalyse: null, source: null }))
+		);
+	vi.stubGlobal('fetch', fetch);
+	const signal = new AbortController().signal;
+	await getIngredientReferences(undefined, signal, {
+		name: 'Butter',
+		ciqualCode: '16400',
+		agribalyseCode: 'green'
+	});
+	const url = new URL(fetch.mock.calls[0][0], 'http://localhost');
+	expect(url.pathname).toBe('/v1/ingredient-references');
+	expect(url.searchParams.get('ciqual_code')).toBe('16400');
+	expect(url.searchParams.get('agribalyse_code')).toBe('green');
+	expect(url.searchParams.get('q')).toBe('Butter');
+	expect(url.searchParams.get('lang')).toBe('fr');
+	expect(url.searchParams.has('taxonomy_id')).toBe(false);
+	expect(fetch.mock.calls[0][1].signal).toBe(signal);
+});
+
+it('carries backend automatic product eligibility to the editor', async () => {
+	vi.stubGlobal(
+		'fetch',
+		vi.fn().mockResolvedValue(
+			new Response(
+				JSON.stringify({
+					foods: [{ code: '123', name: 'Truffes fantaisie', automatic_match: false }]
+				})
+			)
+		)
+	);
+	expect((await searchOffProducts('truffe'))[0].automaticMatch).toBe(false);
+});

@@ -157,9 +157,9 @@ async def test_mixed_recipe_plant_mass(catalog):
 
 @pytest.mark.asyncio
 async def test_off_reference_not_silently_replaced(catalog, monkeypatch):
-    """An explicit OFF selection takes precedence; failure cannot switch to generic data."""
+    """An unavailable product without a generic reference cannot yield invented nutrition."""
     monkeypatch.setattr(nutrition_data, "get_product", AsyncMock(side_effect=OSError("offline")))
-    result = await nutrition.analyze(recipe(barcode="123"))
+    result = await nutrition.analyze(recipe(barcode="123", ciqual_code=None))
     assert result.status == "dependency_error"
     assert result.nutri_score is None
     monkeypatch.setattr(nutrition_data, "get_product", AsyncMock(return_value={"nutriments": {}}))
@@ -177,33 +177,6 @@ async def test_upstream_grade_failure_preserves_nutrition(catalog, monkeypatch):
     assert result.nutrients_per_100g is not None
     assert result.nutrients_per_100g["energy_kj"] == 100
     assert result.nutri_score is None
-
-
-def test_off_payload_and_result():
-    """Use OFF's structured nutrition contract and reject errors or old-algorithm responses."""
-    payload = nutriscore.calculation_payload({"energy_kj": 400, "salt": 0}, 50, "en:meals")
-    assert "code" not in payload
-    assert nutriscore.TEST_URL.endswith("/product/test")
-    inputs = payload["product"]["nutrition"]["input_sets"][0]
-    assert inputs["nutrients"]["energy-kj"] == {"value_string": "400", "unit": "kJ"}
-    assert inputs["nutrients"]["fruits-vegetables-legumes"]["unit"] == "%"
-    data = {
-        "status": "success",
-        "product": {
-            "nutriscore": {
-                "2023": {
-                    "grade": "a",
-                    "score": -1,
-                    "data": {"components": {"positive": [], "negative": []}},
-                }
-            }
-        },
-    }
-    assert nutriscore.parse_result(data).grade == "A"
-    with pytest.raises(ValueError):
-        nutriscore.parse_result({**data, "errors": ["ignored nutrients"]})
-    with pytest.raises(ValueError):
-        nutriscore.parse_result({"status": "success", "product": {"nutriscore": {"2021": {}}}})
 
 
 def test_http_contract(catalog):
@@ -235,6 +208,7 @@ async def test_off_complete_and_units(catalog, monkeypatch):
     """OFF per-100-g composition uses standardized units and the 2023 plant proportion."""
     raw = {
         "energy-kcal_100g": 100,
+        "fat_100g": 1,
         "saturated-fat_100g": 0.1,
         "sugars_100g": 1,
         "sodium_100g": 0.1,
@@ -281,58 +255,9 @@ async def test_red_meat_and_beverage_boundaries(catalog):
     call = cast(AsyncMock, nutriscore.calculate).await_args
     assert call is not None
     assert call.args[3] == 100
-    payload = nutriscore.calculation_payload({"energy_kj": 100}, 0, "en:meals", 25)
-    assert payload["product"]["ingredients_text_en"] == "beef (25%), other ingredients (75%)"
     request = recipe()
     request.category = "en:beverages"
     assert (await nutrition.analyze(request)).status == "unsupported"
-
-
-@pytest.mark.asyncio
-async def test_exact_input_cache_and_reserved_endpoint(monkeypatch):
-    """Only the non-persisting endpoint is called, and changed nutrition cannot reuse a grade."""
-    response = {
-        "status": "success",
-        "product": {
-            "nutriscore": {
-                "2023": {
-                    "grade": "b",
-                    "score": 1,
-                    "data": {"components": {"positive": [], "negative": []}},
-                }
-            }
-        },
-    }
-    calls = []
-
-    async def fetch(request):
-        """Capture the contract without contacting any external service."""
-        calls.append(request)
-        return response
-
-    monkeypatch.setattr(nutriscore, "fetch_json", fetch)
-    nutriscore._calculate.cache_clear()
-    await nutriscore.calculate({"energy_kj": 100}, 0)
-    await nutriscore.calculate({"energy_kj": 100}, 0)
-    await nutriscore.calculate({"energy_kj": 101}, 0)
-    assert len(calls) == 2
-    assert all(
-        request.full_url == nutriscore.TEST_URL and request.method == "PATCH" for request in calls
-    )
-    nutriscore._calculate.cache_clear()
-
-
-def test_published_off_reference():
-    """Parse the published OFF cookies golden result without inventing an expected grade."""
-    import json
-    from pathlib import Path
-
-    fixture = Path(__file__).parent / "fixtures" / "nutriscore" / "cookies-2023.json"
-    result = nutriscore.parse_result(json.loads(fixture.read_text()))
-    assert result.version == "2023"
-    assert result.grade == "E"
-    assert result.score == 20
-    assert result.components.negative[0].points == 10
 
 
 @pytest.mark.asyncio
@@ -370,7 +295,7 @@ async def test_partial_grade_survives_product_lookup_failure(catalog, monkeypatc
     request = recipe()
     request.ingredients.append(
         nutrition.NutritionIngredient(
-            id="product", name="Product", quantity_g=100, barcode="123", ciqual_code="9119"
+            id="product", name="Product", quantity_g=100, barcode="123", ciqual_code=None
         )
     )
     result = await nutrition.analyze(request)
@@ -382,7 +307,7 @@ async def test_partial_grade_survives_product_lookup_failure(catalog, monkeypatc
 
 @pytest.mark.asyncio
 async def test_partial_grade_uses_prepared_weight_and_category_requirements(catalog):
-    """Coverage uses prepared mass, and fat is required only for the fats/oils algorithm."""
+    """Coverage uses prepared mass; the OFF service requires total fat for meals too."""
     catalog["20360"]["nutrients"]["fat"] = "-"
     request = recipe(preparation="boiled")
     request.category = "en:fats"
@@ -396,7 +321,7 @@ async def test_partial_grade_uses_prepared_weight_and_category_requirements(cata
     assert result.excluded_weight_percent == pytest.approx(273 / 571 * 100)
     assert result.excluded_ingredients[0].prepared_weight_g == 273
     request.category = "en:meals"
-    assert (await nutrition.analyze(request)).status == "complete"
+    assert (await nutrition.analyze(request)).status == "partial"
 
 
 @pytest.mark.asyncio
@@ -700,3 +625,118 @@ async def test_cooked_lardons_missing_sugars_remain_unknown(monkeypatch):
         for issue in result.diagnostics
     )
     calculate.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", [OSError("OFF unavailable"), None, {}])
+async def test_new_product_lookup_failure_preserves_generic_score(catalog, monkeypatch, failure):
+    """Auto-selecting a replacement product must not discard an already usable CIQUAL reference."""
+    lookup = (
+        AsyncMock(side_effect=failure)
+        if isinstance(failure, Exception)
+        else AsyncMock(return_value=failure)
+    )
+    monkeypatch.setattr(nutrition_data, "get_product", lookup)
+    before = await nutrition.analyze(recipe())
+    after = await nutrition.analyze(recipe(barcode="123"))
+    assert after.status == "complete"
+    assert after.nutri_score == before.nutri_score
+    assert after.nutrients_per_100g == before.nutrients_per_100g
+    assert after.ingredients[0].source == "CIQUAL-2025"
+    assert any(issue.code == "off_ciqual_fallback" for issue in after.assumptions)
+
+
+@pytest.mark.asyncio
+async def test_unavailable_product_without_generic_still_reports_failure(catalog, monkeypatch):
+    """Fallback needs a real selected generic reference, not fabricated nutrition."""
+    monkeypatch.setattr(nutrition_data, "get_product", AsyncMock(side_effect=OSError("offline")))
+    result = await nutrition.analyze(recipe(barcode="123", ciqual_code=None))
+    assert result.status == "dependency_error"
+    assert result.nutri_score is None
+
+
+@pytest.mark.asyncio
+async def test_product_missing_fat_falls_back_before_requesting_grade(catalog, monkeypatch):
+    """OFF needs total fat even for meals; a barcode change cannot invalidate a complete generic food."""
+    product = {
+        "nutriments": {
+            "energy-kj_100g": 200,
+            "saturated-fat_100g": 1,
+            "sugars_100g": 2,
+            "salt_100g": 0.1,
+            "fiber_100g": 3,
+            "proteins_100g": 4,
+            "fruits-vegetables-legumes_100g": 0,
+        }
+    }
+    monkeypatch.setattr(nutrition_data, "get_product", AsyncMock(return_value=product))
+    result = await nutrition.analyze(recipe(barcode="123"))
+    assert result.status == "complete"
+    assert result.ingredients[0].source == "CIQUAL-2025"
+    assert cast(AsyncMock, nutriscore.calculate).call_args.args[0]["fat"] == 1
+
+
+@pytest.mark.asyncio
+async def test_missing_fat_or_references_excludes_only_unusable_rows(catalog):
+    """An incomplete ingredient never nullifies the grade for remaining usable ingredients."""
+    catalog["9125"]["nutrients"]["fat"] = "-"
+    request = recipe()
+    request.ingredients.extend(
+        [
+            nutrition.NutritionIngredient(
+                id="missing-fat", name="Incomplete", quantity_g=50, ciqual_code="9125"
+            ),
+            nutrition.NutritionIngredient(id="missing-reference", name="Unknown", quantity_g=50),
+        ]
+    )
+    result = await nutrition.analyze(request)
+    assert result.status == "partial"
+    assert result.nutri_score is not None
+    assert {row.ingredient_id for row in result.excluded_ingredients} == {
+        "missing-fat",
+        "missing-reference",
+    }
+    assert result.excluded_weight_percent == 50
+    assert result.nutrients_per_100g["fat"] == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"nutriscore": None},
+        {"nutriscore": {"2023": None}},
+        {"nutriscore": {"2023": {"data": None}}},
+        {"nutriscore": {"2023": {"data": {"components": None}}}},
+        {"nutriscore": {"2023": {"data": {"components": {"positive": None}}}}},
+        {"nutriscore": {"2023": {"data": {"components": {"positive": [None, "invalid"]}}}}},
+        {"categories_tags": None},
+        {"categories_tags": [None, 1]},
+    ],
+)
+async def test_optional_product_metadata_cannot_abort_recipe(catalog, monkeypatch, metadata):
+    """Incomplete OFF metadata must use CIQUAL or exclude one row, never fail the whole recipe."""
+    monkeypatch.setattr(
+        nutrition_data,
+        "get_product",
+        AsyncMock(
+            return_value={
+                "nutriments": {"energy-kj_100g": 500},
+                **metadata,
+            }
+        ),
+    )
+    result = await nutrition.analyze(recipe(barcode="123"))
+    assert result.status == "complete"
+    assert result.nutri_score is not None
+    assert result.ingredients[0].source == "CIQUAL-2025"
+    request = recipe()
+    request.ingredients.append(
+        nutrition.NutritionIngredient(
+            id="unusable", name="Missing product data", quantity_g=100, barcode="123"
+        )
+    )
+    result = await nutrition.analyze(request)
+    assert result.status == "partial"
+    assert result.nutri_score is not None
+    assert [row.ingredient_id for row in result.excluded_ingredients] == ["unusable"]

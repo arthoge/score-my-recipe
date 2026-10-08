@@ -1,18 +1,54 @@
 """Bounded, recipe-level simulations of catalog-discovered alternatives and comparable OFF products."""
 
 import asyncio
+import json
 import logging
 from typing import Literal
 
 from pydantic import BaseModel, Field
+from async_lru import alru_cache
 
 from api import agribalyse, ciqual, nutrition_data, off, references
-from api.improvement_candidates import can_reduce, discover_food_codes
+from api.improvement_candidates import discover_food_codes
 from api.recipe_analysis import ExportIngredient, ExportRecipe, calculate_report
 
 logger = logging.getLogger(__name__)
 MAX_ROWS = 100
 MAX_CANDIDATES = 60
+
+
+class UnavailableSearch(Exception):
+    """Allow unavailable empty searches to be retried instead of caching a failure."""
+
+    def __init__(self, response):
+        """Carry the normal API response without caching it."""
+        self.response = response
+        super().__init__("Improvement search unavailable")
+
+
+@alru_cache(maxsize=128, ttl=300)
+async def _cached_search(payload: str):
+    """Share a five-minute preview for identical recipe inputs, including concurrent clicks."""
+    request = ImprovementRequest.model_validate_json(payload)
+    result = await find_improvements(request)
+    # Retry an unavailable empty preview once, within this same shared request.
+    # A genuine no-improvement result remains stable and needs no retry.
+    if result.unavailable and not result.suggestions:
+        await asyncio.sleep(0.5)
+        result = await find_improvements(request)
+    if result.unavailable and not result.suggestions:
+        raise UnavailableSearch(result)
+    return result
+
+
+async def cached_find_improvements(request):
+    """Return an isolated, stable preview; actual optimization always revalidates scores."""
+    payload = json.dumps(request.model_dump(mode="json"), sort_keys=True)
+    try:
+        result = await _cached_search(payload)
+    except UnavailableSearch as error:
+        result = error.response
+    return result.model_copy(deep=True)
 
 
 class ImprovementRequest(BaseModel):
@@ -152,7 +188,7 @@ def score_changes(before, after) -> tuple[ScoreChange | None, ScoreChange | None
                 after=new_score,
                 before_grade=old_grade,
                 after_grade=new_grade,
-                percent=round(delta / abs(old_score) * 100, 1) if old_score else None,
+                percent=delta / abs(old_score) * 100 if old_score else None,
                 excluded_count=len(old_exclusions),
             )
         )
@@ -234,11 +270,11 @@ def food_candidates(row: ExportIngredient, lang: str) -> list[ImprovementSuggest
     # Catalog preparation compatibility is checked before returning alternatives.
     if row.preparation != "none" or row.prepared_weight_g is not None or row.state != "raw":
         return candidates
-    environmental_scores = {
-        str(item["ciqual_code"]): float(item["score"])
-        for item in agribalyse.get_reference_rows()
-        if item.get("ciqual_code") and item.get("score") is not None
-    }
+    environmental_scores = {}
+    # Use the same stable Agribalyse row when ranking and resolving a candidate.
+    for item in sorted(agribalyse.get_reference_rows(), key=lambda item: str(item["code"])):
+        if item.get("ciqual_code") and item.get("score") is not None:
+            environmental_scores.setdefault(str(item["ciqual_code"]), float(item["score"]))
     codes = discover_food_codes(row.ciqual_code, environmental_scores)
     for code in codes:
         food = ciqual.get_foods().get(code)
@@ -281,31 +317,6 @@ def food_candidates(row: ExportIngredient, lang: str) -> list[ImprovementSuggest
                 nutri_score=None,
             )
         )
-    if row.state == "raw" and row.quantity_g and can_reduce(row.ciqual_code):
-        for fraction in (0.9, 0.8):
-            quantity = round(row.quantity_g * fraction, 2)
-            if not 0 < quantity < row.quantity_g:
-                continue
-            replacement = row.model_copy(
-                deep=True,
-                update={
-                    "quantity_g": quantity,
-                },
-            )
-            candidates.append(
-                ImprovementSuggestion(
-                    id=f"{row.id}:quantity:{fraction}",
-                    ingredient_id=row.id,
-                    category="ingredient",
-                    before=row,
-                    after=replacement,
-                    ciqual_name=ciqual.food_name(ciqual.get_foods()[row.ciqual_code], lang)
-                    if row.ciqual_code in ciqual.get_foods()
-                    else None,
-                    green_score=None,
-                    nutri_score=None,
-                )
-            )
     return candidates
 
 
@@ -439,7 +450,10 @@ async def find_improvements(request: ImprovementRequest) -> ImprovementResponse:
                 response.unavailable = True
                 return []
 
-    rows = [row for row in resolved.ingredients if row.quantity_g and row.quantity_g > 0]
+    rows = sorted(
+        (row for row in resolved.ingredients if row.quantity_g and row.quantity_g > 0),
+        key=lambda row: row.id,
+    )
     lists = await asyncio.gather(*(candidates(row) for row in rows[:MAX_ROWS]))
     # Round-robin prevents the first ingredient from consuming the search budget.
     all_candidates = [
@@ -478,7 +492,12 @@ async def find_improvements(request: ImprovementRequest) -> ImprovementResponse:
             continue
         gain = sum(c.percent or 0 for c in (candidate.green_score, candidate.nutri_score) if c)
         rank = (not has_regression(candidate.green_score, candidate.nutri_score), gain)
-        if candidate.ingredient_id not in best or rank > best[candidate.ingredient_id][0]:
+        previous = best.get(candidate.ingredient_id)
+        if (
+            previous is None
+            or rank > previous[0]
+            or (rank == previous[0] and candidate.id < previous[1].id)
+        ):
             best[candidate.ingredient_id] = (rank, candidate)
     response.suggestions = [value[1] for value in best.values()]
     if not response.suggestions:
@@ -495,19 +514,45 @@ async def find_improvements(request: ImprovementRequest) -> ImprovementResponse:
 
 
 async def optimize_recipe(request: OptimizeRequest) -> OptimizeResponse:
-    """Validate selections and recheck their combined effect before returning a recipe."""
-    available = await find_improvements(request)
-    by_id = {suggestion.id: suggestion for suggestion in available.suggestions}
-    if len(set(request.selected_ids)) != len(request.selected_ids) or any(
-        selection not in by_id for selection in request.selected_ids
-    ):
+    """Resolve selected candidates and verify their combined effect without reranking.
+
+    A preview winner remains a valid choice even if another candidate now ranks
+    higher. Repeating the full search also needlessly depends on unrelated foods
+    and product services. Only the selected replacements need recalculation.
+    """
+    if len(set(request.selected_ids)) != len(request.selected_ids):
         raise ValueError("Selected suggestions are no longer available")
-    replacements = {by_id[key].ingredient_id: by_id[key].after for key in request.selected_ids}
     resolved, _ = await resolve_recipe_references(request.recipe, request.lang)
+    selected = set(request.selected_ids)
+    replacements = {}
+    for row in resolved.ingredients:
+        # Compare complete generated IDs: ingredient IDs can themselves contain colons.
+        if not row.quantity_g or row.quantity_g <= 0:
+            continue
+        if not any(key.startswith(f"{row.id}:") for key in selected):
+            continue
+        candidates = food_candidates(row, request.lang)
+        matches = [candidate for candidate in candidates if candidate.id in selected]
+        if not matches and row.barcode:
+            try:
+                candidates = await asyncio.wait_for(product_candidates(row, request.lang), 15)
+            except (OSError, ValueError, TimeoutError) as error:
+                logger.warning("Selected product candidates unavailable: %s", error)
+                raise ValueError("Selected suggestions are no longer available") from error
+            matches = [candidate for candidate in candidates if candidate.id in selected]
+        if len(matches) > 1:
+            raise ValueError("Selected suggestions are no longer available")
+        if matches:
+            replacements[row.id] = matches[0].after
+            selected.remove(matches[0].id)
+    if selected:
+        raise ValueError("Selected suggestions are no longer available")
     recipe = resolved.model_copy(deep=True)
     recipe.ingredients = [replacements.get(row.id, row) for row in recipe.ingredients]
     before, after = await asyncio.gather(calculate_report(resolved), calculate_report(recipe))
     green, nutri, safe = await compare_reports(before, after)
-    if not safe or not improves(green, nutri):
+    if not safe or (green is None and nutri is None):
+        raise ValueError("Selected changes could not be verified with available score data")
+    if not improves(green, nutri):
         raise ValueError("Selected changes do not improve the combined recipe scores")
     return OptimizeResponse(recipe=recipe)

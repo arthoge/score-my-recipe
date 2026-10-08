@@ -347,7 +347,7 @@ export interface paths {
 		put?: never;
 		/**
 		 * Analyze Nutrition
-		 * @description Analyze one served recipe component with independent algorithm-2023 availability.
+		 * @description Analyze one served recipe component with a local algorithm-2023 calculation.
 		 */
 		post: operations['analyze_nutrition_v1_nutrition_analyze_post'];
 		delete?: never;
@@ -601,6 +601,8 @@ export interface components {
 		 * @description Readable catalog food with its internal identifiers.
 		 */
 		FoodReference: {
+			/** Automatic Match */
+			automatic_match?: boolean | null;
 			/** Code */
 			code: string;
 			/** Name */
@@ -919,7 +921,7 @@ export interface components {
 		};
 		/**
 		 * NutriScore
-		 * @description Versioned algorithm result with the upstream component explanations.
+		 * @description Versioned algorithm result with the component explanations.
 		 */
 		NutriScore: {
 			/**
@@ -2073,9 +2075,12 @@ export interface operations {
 	};
 	ingredient_references_v1_ingredient_references_get: {
 		parameters: {
-			query: {
-				taxonomy_id: string;
+			query?: {
+				taxonomy_id?: string | null;
 				lang?: string;
+				q?: string;
+				ciqual_code?: string | null;
+				agribalyse_code?: string | null;
 			};
 			header?: never;
 			path?: never;

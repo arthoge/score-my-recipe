@@ -174,6 +174,7 @@ async def test_product_missing_data_uses_scoring_conversions(monkeypatch):
                         "sodium_100g": 0,
                         "fiber_100g": 0,
                         "proteins_100g": 1,
+                        "fat_100g": 0,
                     },
                 },
                 {
@@ -186,6 +187,7 @@ async def test_product_missing_data_uses_scoring_conversions(monkeypatch):
                         "salt_100g": 0,
                         "fiber_100g": 0,
                         "proteins_100g": 1,
+                        "fat_100g": 0,
                     },
                 },
                 {"code": "empty", "product_name": "Empty", "nutriments": None},
@@ -199,3 +201,257 @@ async def test_product_missing_data_uses_scoring_conversions(monkeypatch):
     assert not foods[1].no_data
     assert foods[2].missing_data == list(references.nutrition.REQUIRED)
     assert foods[2].no_data
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "query,fallback",
+    [
+        (
+            "Crème ou spécialité à base de crème légère, sans précision sur la teneur en matière grasse, épaisse ou semi-épaisse (aliment moyen)",
+            "crème légère",
+        ),
+        ("Milk, semi-skimmed, pasteurised (average)", "Milk semi-skimmed pasteurised"),
+        ("Lentils, cooked, drained", "Lentils cooked drained"),
+        ("Flour T45 (average)", "Flour T45"),
+    ],
+)
+async def test_catalog_product_search_has_one_bounded_fallback(monkeypatch, query, fallback):
+    """Official labels can find products under ordinary names, across different food families."""
+    search = AsyncMock(side_effect=[[], [{"code": "123", "product_name": fallback}]])
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references(query, "fr", 8)
+    assert result.foods[0].code == "123"
+    assert [call.args[0] for call in search.await_args_list] == [query, fallback]
+
+
+@pytest.mark.asyncio
+async def test_product_fallback_preserves_leading_variant_and_stops_after_one_retry(monkeypatch):
+    """Missing foods cannot trigger an unbounded broad first-word search."""
+    search = AsyncMock(return_value=[])
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references("Beurre à 60-62% MG, doux", "fr", 8)
+    assert not result.foods
+    assert [call.args[0] for call in search.await_args_list] == [
+        "Beurre à 60-62% MG, doux",
+        "Beurre à 60-62% MG doux",
+    ]
+    search.reset_mock()
+    await references.product_references('brands:"Other" rice', "en", 8)
+    assert search.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_chocolate_truffles_are_not_automatic_mushroom_correspondences(monkeypatch):
+    """Product names alone cannot disambiguate confectionery from the cooking ingredient."""
+    monkeypatch.setattr(
+        off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {
+                    "code": "chocolate",
+                    "product_name_fr": "Truffes fantaisie",
+                    "brands": "Favorina",
+                    "categories_tags": ["en:chocolates"],
+                },
+                {
+                    "code": "ambiguous",
+                    "product_name_fr": "Truffes noires",
+                    "categories_tags": ["en:chocolate-truffles"],
+                },
+                {
+                    "code": "mushroom",
+                    "product_name_fr": "Truffes noires",
+                    "categories_tags": ["en:mushrooms"],
+                },
+            ]
+        ),
+    )
+    result = await references.product_references("truffe", "fr", 8)
+    assert result.foods[0].code == "mushroom"
+    assert result.foods[0].automatic_match
+    assert all(not food.automatic_match for food in result.foods[1:])
+
+
+@pytest.mark.asyncio
+async def test_ineligible_first_page_searches_more_candidates(monkeypatch):
+    """A populated first page must not stop lookup when every result is unrelated."""
+    search = AsyncMock(
+        side_effect=[
+            [{"code": "1", "product_name": "Chocolate rice dessert"}],
+            [{"code": "2", "product_name": "Rice"}],
+        ]
+    )
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references("rice", "en", 8)
+    assert result.foods[0].code == "2"
+    assert result.foods[0].automatic_match
+    assert search.await_args_list[1].args == ("Riz blanc", "en", 40)
+
+
+@pytest.mark.asyncio
+async def test_catalog_alternative_spelling_matches_commercial_label(monkeypatch):
+    """Official synonym lists are not mandatory words on a commercial label."""
+    monkeypatch.setattr(
+        off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {"code": "1", "product_name": "Emmental râpé"},
+            ]
+        ),
+    )
+    result = await references.product_references("Emmental ou emmenthal, râpé", "fr", 8)
+    assert result.foods[0].automatic_match
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("query", ["shortcrust dough", "shortcust douch"])
+async def test_english_query_accepts_french_product_via_taxonomy(monkeypatch, query):
+    """Search language does not guarantee the language of an OFF product label."""
+    from tests.helpers import create_taxonomy, create_taxonomy_node
+
+    taxonomy = create_taxonomy(
+        {
+            "en:shortcrust-dough": create_taxonomy_node(
+                "en:shortcrust-dough", names={"en": "shortcrust dough", "fr": "pâte brisée"}
+            )
+        }
+    )
+    monkeypatch.setattr(off, "get_ingredients_taxonomy", AsyncMock(return_value=taxonomy))
+    monkeypatch.setattr(
+        off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {"code": "wrong", "product_name": "Pizza à la pâte brisée"},
+                {"code": "right", "product_name": "Pâte brisée"},
+            ]
+        ),
+    )
+    result = await references.product_references(query, "en", 8)
+    assert result.foods[0].code == "right"
+    assert result.foods[0].automatic_match
+    assert not result.foods[1].automatic_match
+
+
+@pytest.mark.asyncio
+async def test_optimized_catalog_name_accepts_other_language_product(monkeypatch):
+    """A replacement's official English label can select its French commercial equivalent."""
+    monkeypatch.setattr(
+        off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {"code": "cream", "product_name": "Crème fraîche épaisse 30%"},
+                {"code": "light", "product_name": "Crème légère 15%"},
+            ]
+        ),
+    )
+    result = await references.product_references("Cream 30% fat, thick, refrigerated", "en", 8)
+    assert result.foods[0].code == "cream"
+    assert result.foods[0].automatic_match
+    assert not result.foods[1].automatic_match
+
+
+@pytest.mark.asyncio
+async def test_retry_keeps_original_fat_constraints(monkeypatch):
+    """A shorter search expands candidates without making a different variant eligible."""
+    search = AsyncMock(
+        side_effect=[
+            [{"code": "wrong", "product_name": "Chocolate dessert"}],
+            [
+                {"code": "light", "product_name": "Crème légère 15%"},
+                {"code": "whole", "product_name": "Crème fraîche 30%"},
+            ],
+        ]
+    )
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references("Cream 30% fat, thick, refrigerated", "en", 8)
+    assert result.foods[0].code == "whole"
+    assert result.foods[0].automatic_match
+    assert not result.foods[1].automatic_match
+    assert search.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_optimizer_generic_family_label_gets_commercial_fallback(monkeypatch):
+    """Catalog family wording must not be required literally on a product label."""
+    query = "Beurre ou assimilé allégé (léger ou à teneur réduite en matière grasse), doux (aliment moyen)"
+    search = AsyncMock(side_effect=[[], [{"code": "123", "product_name": "Beurre allégé doux"}]])
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references(query, "fr", 8)
+    assert search.await_args_list[1].args[0] == "Beurre allégé doux"
+    assert result.foods[0].automatic_match
+
+
+@pytest.mark.asyncio
+async def test_eligible_product_with_data_precedes_empty_product(monkeypatch):
+    """Search relevance must not promote an empty duplicate over a usable correspondence."""
+    monkeypatch.setattr(
+        off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {"code": "empty", "product_name": "Beurre allégé"},
+                {
+                    "code": "measured",
+                    "product_name": "Beurre allégé",
+                    "nutriments": {"energy-kj_100g": 2200},
+                },
+            ]
+        ),
+    )
+    result = await references.product_references("Beurre allégé", "fr", 8)
+    assert result.foods[0].code == "measured"
+    assert result.foods[0].automatic_match
+
+
+@pytest.mark.asyncio
+async def test_catalog_fat_percentage_can_come_from_product_nutrition(monkeypatch):
+    """Ordinary product names omit percentages supplied in their nutrition table."""
+    search = AsyncMock(
+        return_value=[
+            {"code": "light", "product_name": "Crème semi-épaisse", "nutriments": {"fat_100g": 18}},
+            {"code": "whole", "product_name": "Crème semi-épaisse", "nutriments": {"fat_100g": 30}},
+            {"code": "unknown", "product_name": "Crème semi-épaisse"},
+            {"code": "conflicting", "product_name": "Crème 18%", "nutriments": {"fat_100g": 30}},
+        ]
+    )
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references("Crème 30% MG, semi-épaisse, UHT", "fr", 8)
+    assert result.foods[0].code == "whole"
+    assert result.foods[0].automatic_match
+    assert all(not food.automatic_match for food in result.foods[1:])
+    search.assert_awaited_once()
+
+
+def test_fat_measurements_do_not_supply_unrelated_percentages():
+    """A fat value cannot establish a cocoa percentage or an absent measurement."""
+    assert (
+        references.product_match_name("Chocolat 70% cacao", "Chocolat", {"fat": 70}) == "Chocolat"
+    )
+    assert references.product_match_name("Crème 30% MG", "Crème", {}) == "Crème"
+
+
+@pytest.mark.asyncio
+async def test_fat_query_retry_removes_catalog_units_not_matching_constraints(monkeypatch):
+    """OFF retrieval uses a concise localized query; eligibility keeps the original fat requirement."""
+    search = AsyncMock(
+        side_effect=[
+            [{"code": "wrong", "product_name": "Crème 18%"}],
+            [
+                {
+                    "code": "right",
+                    "product_name": "Crème semi-épaisse UHT",
+                    "nutriments": {"fat_100g": 30},
+                }
+            ],
+        ]
+    )
+    monkeypatch.setattr(off, "search_products", search)
+    result = await references.product_references("Crème 30% MG, semi-épaisse, UHT", "fr", 8)
+    assert search.await_args_list[1].args == ("Crème 30", "fr", 40)
+    assert result.foods[0].code == "right"
+    assert result.foods[0].automatic_match

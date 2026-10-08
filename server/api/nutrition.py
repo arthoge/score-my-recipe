@@ -2,13 +2,18 @@
 
 import asyncio
 import math
+import logging
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from api import nutrition_data, nutriscore, preparation
 
-REQUIRED = ("energy_kj", "saturated_fat", "sugars", "salt", "fiber", "proteins")
+logger = logging.getLogger(__name__)
+
+# OFF requires total fat to consider nutrition complete, including for meals.
+# Validate it before aggregation so missing data falls back or excludes only its row.
+REQUIRED = ("energy_kj", "saturated_fat", "sugars", "salt", "fiber", "proteins", "fat")
 # Reviewed counterparts for the existing dry-food boiling profiles, without added salt.
 PREPARED_FOODS = {
     ("9119", "boiled"): "9125",
@@ -121,6 +126,16 @@ def _ciqual_values(food: dict) -> tuple[dict, list[str]]:
     return values, bounded
 
 
+def _product_score_data(product: dict) -> dict:
+    """Treat absent or malformed optional OFF score metadata as unavailable data."""
+    data = product
+    for key in ("nutriscore", "2023", "data"):
+        if not isinstance(data, dict):
+            return {}
+        data = data.get(key)
+    return data if isinstance(data, dict) else {}
+
+
 def _product_values(product: dict, prepared: bool) -> tuple[dict, float | None]:
     """Read standardized gram/kJ-per-100-g OFF values; never use per-serving numbers."""
     raw = product.get("nutriments", {})
@@ -146,14 +161,17 @@ def _product_values(product: dict, prepared: bool) -> tuple[dict, float | None]:
         plant = None
     if plant is None and not prepared:
         # Reuse the upstream 2023 ingredient analysis, never the older nuts/oils percentage.
-        data = product.get("nutriscore", {}).get("2023", {}).get("data", {})
+        data = _product_score_data(product)
         raw_percent = data.get("fruits_vegetables_legumes")
         if raw_percent is None:
+            components = data.get("components")
+            positive = components.get("positive") if isinstance(components, dict) else None
             raw_percent = next(
                 (
                     component.get("value")
-                    for component in data.get("components", {}).get("positive", [])
-                    if component.get("id") == "fruits_vegetables_legumes"
+                    for component in (positive if isinstance(positive, list) else [])
+                    if isinstance(component, dict)
+                    and component.get("id") == "fruits_vegetables_legumes"
                 ),
                 None,
             )
@@ -266,26 +284,36 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
         cooking = row.state == "raw" and row.preparation != "none"
         bounded = []
         red_meat = 0
-        required = (*REQUIRED, "fat") if request.category == "en:fats" else REQUIRED
+        required = REQUIRED
         fallback = False
         if row.barcode:
             product = products[row.barcode]
             if isinstance(product, BaseException):
                 if not isinstance(product, Exception):
                     raise product
-                dependency_error = True
-                response.diagnostics.append(diagnostic("product_unavailable"))
-                continue
-            if not isinstance(product, dict) or not product:
-                response.diagnostics.append(diagnostic("product_missing"))
-                continue
+                if row.ciqual_code not in foods:
+                    response.diagnostics.append(diagnostic("product_unavailable"))
+                    dependency_error = True
+                    continue
+                response.assumptions.append(diagnostic("product_unavailable"))
+                # A failed lookup has the same fallback as an incomplete product.
+                # Keep the selected barcode, but calculate from the explicit generic food.
+                product = {}
+            elif not isinstance(product, dict) or not product:
+                if row.ciqual_code not in foods:
+                    response.diagnostics.append(diagnostic("product_missing"))
+                    continue
+                response.assumptions.append(diagnostic("product_missing"))
+                product = {}
             # Raw product nutrient values cannot describe nutrients lost/absorbed during cooking.
             values, plant = _product_values(product, cooking)
             source, reference, prepared_reference = "Open Food Facts", row.barcode, row.barcode
-            upstream = product.get("nutriscore", {}).get("2023", {}).get("data", {})
+            upstream = _product_score_data(product)
             # An upstream meat-product flag is not an exact recipe ingredient percentage.
+            categories = product.get("categories_tags")
             if upstream.get("is_red_meat_product") or any(
-                "meat" in tag or "sausage" in tag for tag in product.get("categories_tags", [])
+                isinstance(tag, str) and ("meat" in tag or "sausage" in tag)
+                for tag in (categories if isinstance(categories, list) else [])
             ):
                 red_meat = None
             fallback = bool(row.ciqual_code in foods) and (
@@ -375,7 +403,8 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
     if uncertain_ids:
         try:
             invariant_score = await _red_meat_invariant_score(candidates, request.category)
-        except (OSError, ValueError, TimeoutError):
+        except (OSError, ValueError, TimeoutError) as error:
+            logger.warning("Nutri-Score uncertainty calculation failed: %s", error)
             dependency_error = True
             response.diagnostics.append(Diagnostic(code="calculation_unavailable"))
         if invariant_score is not None:
@@ -457,7 +486,7 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
     response.plant_percent = plant_mass * 100 / mass
     red_meat_percent = red_meat_mass * 100 / mass
     try:
-        # Optional fat/carbohydrate composition may be absent; required score inputs may not.
+        # Carbohydrate composition is optional; all score-service requirements are validated above.
         nutrients = {
             key: value for key, value in response.nutrients_per_100g.items() if value is not None
         }
@@ -465,7 +494,8 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
             nutrients, response.plant_percent, request.category, red_meat_percent
         )
         response.status = "partial" if response.excluded_ingredients else "complete"
-    except (OSError, ValueError, TimeoutError):
+    except (OSError, ValueError, TimeoutError) as error:
+        logger.warning("Nutri-Score recipe calculation failed: %s", error)
         response.status = "dependency_error"
         response.diagnostics.append(Diagnostic(code="calculation_unavailable"))
     return response

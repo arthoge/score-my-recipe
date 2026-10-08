@@ -24,7 +24,7 @@ export function ingredientCellErrors(ingredient: Ingredient) {
 		environmentalReference:
 			populated &&
 			!ingredient.agribalyseCode &&
-			(ingredient.referenceSource === 'manual' ||
+			(['manual', 'unmatched'].includes(ingredient.referenceSource ?? '') ||
 				!(
 					reference?.id &&
 					reference.isInTaxonomy &&

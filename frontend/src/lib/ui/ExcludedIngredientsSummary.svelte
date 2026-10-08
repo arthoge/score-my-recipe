@@ -19,7 +19,7 @@
 	let trigger = $state<HTMLButtonElement>();
 	let menu: HTMLDivElement;
 	let open = $state(false);
-	let position = $state({ left: 0, top: 0, width: 360, height: 320 });
+	let position = $state({ left: 0, top: '0px', bottom: 'auto', width: 360, height: 320 });
 
 	const labels: Record<ExclusionKind, string> = {
 		agribalyse: 'Agribalyse reference',
@@ -41,9 +41,12 @@
 		const below = window.innerHeight - rect.bottom - 12;
 		const above = rect.top - 12;
 		const height = Math.min(320, Math.max(below, above));
+		const opensBelow = below >= Math.min(320, above);
 		position = {
 			left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
-			top: below >= Math.min(320, above) ? rect.bottom + 4 : Math.max(8, rect.top - height - 4),
+			// Anchor the actual bottom edge above the trigger; height is only a maximum.
+			top: opensBelow ? `${rect.bottom + 4}px` : 'auto',
+			bottom: opensBelow ? 'auto' : `${window.innerHeight - rect.top + 4}px`,
 			width,
 			height
 		};
@@ -96,7 +99,8 @@
 	popover="auto"
 	class="bg-base-100 border-base-300 rounded-box fixed inset-auto m-0 overflow-auto border p-2 text-left shadow-lg"
 	style:left="{position.left}px"
-	style:top="{position.top}px"
+	style:top={position.top}
+	style:bottom={position.bottom}
 	style:width="{position.width}px"
 	style:max-height="{position.height}px"
 	aria-labelledby="{id}-title"

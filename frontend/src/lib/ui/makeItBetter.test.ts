@@ -82,8 +82,8 @@ describe('confirmed recipe improvements', () => {
 		expect(formatImprovementPercent(undefined)).toBe('—');
 		expect(formatImprovementPercent(20)).toBe('+20.0%');
 		expect(formatImprovementPercent(0)).toBe('0.0%');
-		expect(formatImprovementPercent(0.01)).toBe('0.0%');
-		expect(formatImprovementPercent(-0.01)).toBe('0.0%');
+		expect(formatImprovementPercent(0.01)).toBe('+<0.1%');
+		expect(formatImprovementPercent(-0.01)).toBe('−<0.1%');
 		expect(formatImprovementPercent(1.5)).toBe('+1.5%');
 		expect(formatImprovementPercent(-1)).toBe('-1.0%');
 	});
@@ -111,12 +111,12 @@ it('recognizes a trade-off even when the percentage baseline is zero', async () 
 	expect(hasScoreRegression(suggestion)).toBe(false);
 });
 
-it('applies a quantity reduction while preserving the selected product identity', () => {
+it('preserves quantities and selected product identity for same-name replacements', () => {
 	const { ingredients, suggestion, result } = fixture();
 	const after = {
 		...result.recipe.ingredients[0],
 		name: ingredients[1].name,
-		quantity_g: 80,
+		quantity_g: 100,
 		barcode: ingredients[1].barcode,
 		ciqual_code: ingredients[1].ciqualCode,
 		agribalyse_code: ingredients[1].agribalyseCode
@@ -125,8 +125,37 @@ it('applies a quantity reduction while preserving the selected product identity'
 	suggestion.product_name = null;
 	result.recipe.ingredients = [after];
 	const updated = applyOptimizedRecipe(ingredients, result, [suggestion]);
-	expect(updated[1].weight).toBe(80);
+	expect(updated[1].weight).toBe(100);
 	expect(updated[1].barcode).toBe('123');
 	expect(updated[1].productName).toBe('Old product');
 	expect(updated[0]).toBe(ingredients[0]);
+});
+
+it('clears unselected draft text and restarts lookup for same-name replacements', () => {
+	const { ingredients, suggestion, result } = fixture();
+	Object.assign(ingredients[1], { barcode: undefined });
+	ingredients[1].productName = 'Unselected draft';
+	result.recipe.ingredients[0].name = ingredients[1].name;
+	const updated = applyOptimizedRecipe(ingredients, result, [suggestion]);
+	expect(updated[1].productName).toBe('');
+	expect(updated[1].referenceRevision).toBe(1);
+	expect(applyOptimizedRecipe(updated, result, [suggestion])[1].referenceRevision).toBe(2);
+});
+
+it('ignores suggestion labels without confirmed codes so automatic lookup can fill the row', async () => {
+	const { ingredients, suggestion, result } = fixture();
+	const { suggestOffProduct } = await import('./nutritionSearch');
+	Object.assign(result.recipe.ingredients[0], {
+		barcode: null,
+		ciqual_code: null,
+		agribalyse_code: null
+	});
+	suggestion.product_name = 'Stale suggestion label';
+	const updated = applyOptimizedRecipe(ingredients, result, [suggestion])[1];
+	expect(updated.ciqualName).toBe('');
+	expect(updated.agribalyseName).toBe('');
+	suggestOffProduct(updated, [
+		{ id: 'verified', label: 'Matched product', isInTaxonomy: true, automaticMatch: true }
+	]);
+	expect(updated.barcode).toBe('verified');
 });
