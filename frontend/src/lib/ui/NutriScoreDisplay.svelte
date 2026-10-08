@@ -3,14 +3,21 @@
 	import { _ } from '$lib/i18n';
 	import type { NutritionAnalysis } from '$lib/api/nutritionAnalysis';
 	import NutriScore from './NutriScore.svelte';
+	import type { Ingredient } from '$lib/types/ingredient';
+	import { nutritionExclusionReasons } from './excludedIngredients';
+	import ExcludedIngredientsSummary from './ExcludedIngredientsSummary.svelte';
 	let dialog: HTMLDialogElement;
 	const dialogId = $props.id();
 	let {
 		analysis = null,
+		ingredients,
+		recipeId,
 		loading = false,
 		portionWeightG = null
 	}: {
 		analysis?: NutritionAnalysis | null;
+		ingredients: Ingredient[];
+		recipeId: string;
 		loading?: boolean;
 		portionWeightG?: number | null;
 	} = $props();
@@ -79,15 +86,12 @@
 			</p>
 		{/if}
 		{#if analysis?.nutri_score && analysis.excluded_ingredients?.length}
-			<p class="text-base-content mt-3 text-sm font-semibold" role="status">
-				{$_('recipe.excluded_summary', {
-					default: '{count} ingredient(s) excluded ({percent}% of recipe weight).',
-					values: {
-						count: analysis.excluded_ingredients.length,
-						percent: Math.round(analysis.excluded_weight_percent)
-					}
-				})}
-			</p>
+			<ExcludedIngredientsSummary
+				{recipeId}
+				count={analysis.excluded_ingredients.length}
+				percent={Math.round(analysis.excluded_weight_percent)}
+				reasons={nutritionExclusionReasons(ingredients, analysis)}
+			/>
 		{/if}
 		{#if analysis?.status === 'unsupported' && !analysis.excluded_ingredients?.length}
 			<p class="text-base-content/70 mt-2 text-sm">

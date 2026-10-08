@@ -124,6 +124,8 @@ def _ciqual_values(food: dict) -> tuple[dict, list[str]]:
 def _product_values(product: dict, prepared: bool) -> tuple[dict, float | None]:
     """Read standardized gram/kJ-per-100-g OFF values; never use per-serving numbers."""
     raw = product.get("nutriments", {})
+    if not isinstance(raw, dict):
+        raw = {}
     suffix = "_prepared_100g" if prepared else "_100g"
     keys = {"energy_kj": "energy-kj", "saturated_fat": "saturated-fat"}
     values = {
@@ -159,6 +161,48 @@ def _product_values(product: dict, prepared: bool) -> tuple[dict, float | None]:
         if plant is not None and plant > 100:
             plant = None
     return values, plant
+
+
+async def _red_meat_invariant_score(
+    traces: list[IngredientTrace], category: str
+) -> nutriscore.NutriScore | None:
+    """Keep complete composition when every possible red-meat share gives the same score.
+
+    The 2023 red-meat rule only caps protein points. Checking both mass-weighted
+    endpoints avoids inventing a percentage for charcuterie or mixed meat foods.
+    https://github.com/openfoodfacts/openfoodfacts-server/blob/main/lib/ProductOpener/Nutriscore.pm
+    """
+    mass = math.fsum(row.prepared_weight_g for row in traces)
+    nutrients = {}
+    for key in nutrition_data.COLUMNS:
+        contributions = []
+        for row in traces:
+            value = row.nutrients_per_100g[key]
+            if value is None:
+                break
+            contributions.append(value * row.prepared_weight_g)
+        else:
+            nutrients[key] = math.fsum(contributions) / mass
+    plant_contributions = []
+    for row in traces:
+        assert row.plant_percent is not None
+        plant_contributions.append(row.plant_percent * row.prepared_weight_g)
+    plant = math.fsum(plant_contributions) / mass
+    known_red_meat = (
+        math.fsum((row.red_meat_percent or 0) * row.prepared_weight_g for row in traces) / mass
+    )
+    unknown_red_meat = (
+        math.fsum(row.prepared_weight_g for row in traces if row.red_meat_percent is None)
+        / mass
+        * 100
+    )
+    lower, upper = await asyncio.gather(
+        nutriscore.calculate(nutrients, plant, category, known_red_meat),
+        nutriscore.calculate(nutrients, plant, category, known_red_meat + unknown_red_meat),
+    )
+    if (lower.version, lower.grade, lower.score) == (upper.version, upper.grade, upper.score):
+        return upper
+    return None
 
 
 async def analyze(request: NutritionRequest) -> NutritionResponse:
@@ -199,6 +243,7 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
         setattr(response, target, sorted(tags))
     unsupported, dependency_error = False, False
     masses: dict[str, float] = {}
+    fallback_ids: set[str] = set()
     for row in request.ingredients:
 
         def diagnostic(code: str, fields: list[str] | None = None) -> Diagnostic:
@@ -301,9 +346,8 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
             response.diagnostics.append(diagnostic("plant_proportion_missing"))
         if red_meat is None:
             response.diagnostics.append(diagnostic("red_meat_proportion_missing"))
-        if fallback and not missing and plant is not None and red_meat is not None:
-            # Use one coherent generic composition, never fill isolated product nutrients with zeros.
-            response.assumptions.append(diagnostic("off_ciqual_fallback"))
+        if fallback:
+            fallback_ids.add(row.id)
         response.ingredients.append(
             IngredientTrace(
                 ingredient_id=row.id,
@@ -318,7 +362,46 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
                 red_meat_percent=red_meat,
             )
         )
+    # An unknown meat proportion is not missing nutrient data. Only exclude it if
+    # that uncertainty can change the grade or numeric score of the usable recipe.
+    other_issues = {
+        issue.ingredient_id
+        for issue in response.diagnostics
+        if issue.code != "red_meat_proportion_missing"
+    }
+    candidates = [row for row in response.ingredients if row.ingredient_id not in other_issues]
+    uncertain_ids = {row.ingredient_id for row in candidates if row.red_meat_percent is None}
+    invariant_score = None
+    if uncertain_ids:
+        try:
+            invariant_score = await _red_meat_invariant_score(candidates, request.category)
+        except (OSError, ValueError, TimeoutError):
+            dependency_error = True
+            response.diagnostics.append(Diagnostic(code="calculation_unavailable"))
+        if invariant_score is not None:
+            response.diagnostics = [
+                issue
+                for issue in response.diagnostics
+                if not (
+                    issue.code == "red_meat_proportion_missing"
+                    and issue.ingredient_id in uncertain_ids
+                )
+            ]
+            response.assumptions.extend(
+                Diagnostic(
+                    code="red_meat_score_invariant", ingredient_id=row.id, ingredient_name=row.name
+                )
+                for row in request.ingredients
+                if row.id in uncertain_ids
+            )
     excluded_ids = {issue.ingredient_id for issue in response.diagnostics if issue.ingredient_id}
+    # Successful fallback describes the whole generic composition, including any
+    # score-invariant uncertainty; incomplete fallbacks cannot claim success.
+    response.assumptions.extend(
+        Diagnostic(code="off_ciqual_fallback", ingredient_id=row.id, ingredient_name=row.name)
+        for row in request.ingredients
+        if row.id in fallback_ids and row.id not in excluded_ids
+    )
     response.excluded_ingredients = [
         ExcludedIngredient(
             ingredient_id=row.id, ingredient_name=row.name, prepared_weight_g=masses[row.id]
@@ -366,9 +449,9 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
         return response
     plant_contributions, red_meat_contributions = [], []
     for trace in usable:
-        assert trace.plant_percent is not None and trace.red_meat_percent is not None
+        assert trace.plant_percent is not None
         plant_contributions.append(trace.plant_percent * trace.prepared_weight_g / 100)
-        red_meat_contributions.append(trace.red_meat_percent * trace.prepared_weight_g / 100)
+        red_meat_contributions.append((trace.red_meat_percent or 0) * trace.prepared_weight_g / 100)
     plant_mass = math.fsum(plant_contributions)
     red_meat_mass = math.fsum(red_meat_contributions)
     response.plant_percent = plant_mass * 100 / mass
@@ -378,7 +461,7 @@ async def analyze(request: NutritionRequest) -> NutritionResponse:
         nutrients = {
             key: value for key, value in response.nutrients_per_100g.items() if value is not None
         }
-        response.nutri_score = await nutriscore.calculate(
+        response.nutri_score = invariant_score or await nutriscore.calculate(
             nutrients, response.plant_percent, request.category, red_meat_percent
         )
         response.status = "partial" if response.excluded_ingredients else "complete"

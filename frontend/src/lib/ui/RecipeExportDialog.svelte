@@ -68,6 +68,11 @@
 		<h2 id="{dialogId}-title" class="mb-4 text-lg font-bold">
 			{$_('recipe.export_recipes', { default: 'Export recipes' })}
 		</h2>
+		<p class="text-base-content/70 mb-4 text-sm">
+			{$_('recipe.export_description', {
+				default: 'Download a PDF with basic information about the selected recipes.'
+			})}
+		</p>
 		<div class="border-base-300 max-h-80 overflow-auto border">
 			<table class="table-sm table">
 				<thead class="bg-base-200">

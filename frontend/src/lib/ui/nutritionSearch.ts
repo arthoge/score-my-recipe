@@ -12,14 +12,13 @@ export function suggestOffProduct(ingredient: Ingredient, suggestions: TaxonomyI
 /** Seed empty searches on load; changing ingredients invalidates previous references. */
 export function syncNutritionSearches(ingredient: Ingredient, previousName?: string) {
 	const changed = previousName !== undefined && previousName !== ingredient.name;
-	if (changed) {
+	if (changed && ingredient.resolvedReferenceName !== ingredient.name) {
 		ingredient.ciqualCode = undefined;
 		ingredient.agribalyseCode = undefined;
 		ingredient.agribalyseName = '';
 		ingredient.referenceSource = undefined;
 		ingredient.barcode = undefined;
-	}
-	if (changed) {
+		ingredient.resolvedReferenceName = undefined;
 		ingredient.ciqualName = '';
 		ingredient.productName = '';
 	}

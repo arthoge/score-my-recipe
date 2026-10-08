@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('$lib/i18n', () => ({ getLocale: () => 'fr-FR' }));
-import { searchCiqualFoods, searchOffProducts } from './nutrition';
+import { searchAgribalyseFoods, searchCiqualFoods, searchOffProducts } from './nutrition';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -51,3 +51,55 @@ describe('nutrition reference searches', () => {
 		await expect(searchOffProducts('Rice')).rejects.toThrow('Product search failed');
 	});
 });
+
+it.each([searchCiqualFoods, searchAgribalyseFoods, searchOffProducts])(
+	'preserves missing-data metadata for reference dropdowns',
+	async (search) => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						foods: [
+							{
+								code: '123',
+								ciqual_code: '123',
+								name: 'Food',
+								missing_data: ['sugars'],
+								no_data: false
+							}
+						]
+					})
+				)
+			)
+		);
+		const result = (await search('Food'))[0];
+		expect(result.missingData).toEqual(['sugars']);
+		expect(result.noData).toBe(false);
+	}
+);
+
+it.each([searchCiqualFoods, searchAgribalyseFoods, searchOffProducts])(
+	'preserves the no-data status for red dropdown warnings',
+	async (search) => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						foods: [
+							{
+								code: '123',
+								ciqual_code: '123',
+								name: 'Empty',
+								no_data: true,
+								missing_data: ['sugars']
+							}
+						]
+					})
+				)
+			)
+		);
+		expect((await search('Empty'))[0].noData).toBe(true);
+	}
+);

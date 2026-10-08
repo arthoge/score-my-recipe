@@ -112,7 +112,7 @@ describe('calculation cell feedback', () => {
 	});
 });
 
-it('shows an info cell only when the backend confirms a usable Ciqual fallback', () => {
+it('warns when the backend confirms a usable Ciqual fallback', () => {
 	const ingredient = {
 		...validIngredient(),
 		barcode: '123',
@@ -121,7 +121,7 @@ it('shows an info cell only when the backend confirms a usable Ciqual fallback',
 		ciqualName: 'Tomatoes'
 	};
 	const cells = ingredientCalculationCells(ingredient, false, [], true);
-	expect(cells.product).toBe('info');
+	expect(cells.product).toBe('warning');
 	expect(cells.ciqual).toBeNull();
 	expect(
 		ingredientCalculationCells(ingredient, false, [{ code: 'nutrients_missing' }]).product
@@ -132,7 +132,7 @@ it('allows zero-weight exclusions when another ingredient has a positive quantit
 	const zero = { ...validIngredient(), weight: 0 };
 	expect(canAutoScore([validIngredient(), zero])).toBe(true);
 	expect(canAutoScore([zero])).toBe(false);
-	expect(ingredientCellErrors(zero).weight).toBe(false);
+	expect(ingredientCellErrors(zero).weight).toBe(true);
 	expect(ingredientCalculationCells(zero, true, [{ code: 'zero_quantity' }]).agribalyse).toBeNull();
 });
 
@@ -141,4 +141,30 @@ it('keeps scoring when a newly populated row has no quantity yet', () => {
 	expect(canAutoScore([validIngredient(), draft])).toBe(true);
 	expect(canAutoScore([draft])).toBe(false);
 	expect(ingredientCellErrors(draft).weight).toBe(true);
+});
+
+it('attaches incomplete generic fallback data to Ciqual rather than the OFF product', () => {
+	const ingredient = {
+		...validIngredient(),
+		barcode: '123',
+		productName: 'Lardons',
+		ciqualCode: '28501',
+		ciqualName: 'Lardoons, plain, raw'
+	};
+	const cells = ingredientCalculationCells(
+		ingredient,
+		false,
+		[{ code: 'red_meat_proportion_missing' }],
+		false,
+		'CIQUAL-2025'
+	);
+	expect(cells.ciqual).toBe('warning');
+	expect(cells.product).toBeNull();
+});
+
+it('shows only a warning for an OFF issue even without a product label', () => {
+	const cells = ingredientCalculationCells({ ...validIngredient(), barcode: '123' }, false, [
+		{ code: 'product_missing' }
+	]);
+	expect(cells.product).toBe('warning');
 });

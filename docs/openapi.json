@@ -844,6 +844,84 @@
           }
         }
       }
+    },
+    "/v1/make-it-better/check": {
+      "post": {
+        "summary": "Check Improvements",
+        "description": "Compare safe ingredient and product substitutions using whole-recipe scores.",
+        "operationId": "check_improvements_v1_make_it_better_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImprovementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImprovementResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/make-it-better/optimize": {
+      "post": {
+        "summary": "Optimize Recipe",
+        "description": "Return only validated replacements whose combined effect improves the recipe.",
+        "operationId": "optimize_recipe_v1_make_it_better_optimize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptimizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptimizeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1248,6 +1326,18 @@
               }
             ],
             "title": "Ciqual Code"
+          },
+          "missing_data": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Data"
+          },
+          "no_data": {
+            "type": "boolean",
+            "title": "No Data",
+            "default": false
           }
         },
         "type": "object",
@@ -1494,6 +1584,157 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ImprovementRequest": {
+        "properties": {
+          "recipe": {
+            "$ref": "#/components/schemas/ExportRecipe"
+          },
+          "lang": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$",
+            "title": "Lang",
+            "default": "en"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe"
+        ],
+        "title": "ImprovementRequest",
+        "description": "Complete recipe inputs, with a language for names and product search."
+      },
+      "ImprovementResponse": {
+        "properties": {
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/ImprovementSuggestion"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          },
+          "unavailable": {
+            "type": "boolean",
+            "title": "Unavailable",
+            "default": false
+          },
+          "limited": {
+            "type": "boolean",
+            "title": "Limited",
+            "default": false
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "no_candidates",
+                  "scores_unavailable",
+                  "no_improvement",
+                  "references_missing"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "title": "ImprovementResponse",
+        "description": "Safe candidates; unavailable dependencies are distinct from an empty search."
+      },
+      "ImprovementSuggestion": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "ingredient_id": {
+            "type": "string",
+            "title": "Ingredient Id"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "ingredient",
+              "open_food_facts"
+            ],
+            "title": "Category"
+          },
+          "before": {
+            "$ref": "#/components/schemas/ExportIngredient"
+          },
+          "after": {
+            "$ref": "#/components/schemas/ExportIngredient"
+          },
+          "ciqual_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciqual Name"
+          },
+          "agribalyse_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agribalyse Name"
+          },
+          "product_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Name"
+          },
+          "green_score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nutri_score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoreChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ingredient_id",
+          "category",
+          "before",
+          "after",
+          "green_score",
+          "nutri_score"
+        ],
+        "title": "ImprovementSuggestion",
+        "description": "A resolved replacement tied to exactly one ingredient row."
       },
       "IngredientReferencesResponse": {
         "properties": {
@@ -2057,6 +2298,48 @@
         ],
         "title": "NutritionResponse",
         "description": "Nutrition remains available if the independent grade dependency fails."
+      },
+      "OptimizeRequest": {
+        "properties": {
+          "recipe": {
+            "$ref": "#/components/schemas/ExportRecipe"
+          },
+          "lang": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$",
+            "title": "Lang",
+            "default": "en"
+          },
+          "selected_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Selected Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe",
+          "selected_ids"
+        ],
+        "title": "OptimizeRequest",
+        "description": "Selected candidate identifiers are validated against the current recipe."
+      },
+      "OptimizeResponse": {
+        "properties": {
+          "recipe": {
+            "$ref": "#/components/schemas/ExportRecipe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipe"
+        ],
+        "title": "OptimizeResponse",
+        "description": "The combined replacement recipe, recalculated before applying any changes."
       },
       "Origin": {
         "properties": {
@@ -2789,6 +3072,52 @@
         "type": "object",
         "title": "ReportTranslations",
         "description": "Bounded presentation text from the website locale; API clients default to English."
+      },
+      "ScoreChange": {
+        "properties": {
+          "before": {
+            "type": "number",
+            "title": "Before"
+          },
+          "after": {
+            "type": "number",
+            "title": "After"
+          },
+          "before_grade": {
+            "type": "string",
+            "title": "Before Grade"
+          },
+          "after_grade": {
+            "type": "string",
+            "title": "After Grade"
+          },
+          "percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent"
+          },
+          "excluded_count": {
+            "type": "integer",
+            "title": "Excluded Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "before",
+          "after",
+          "before_grade",
+          "after_grade",
+          "percent"
+        ],
+        "title": "ScoreChange",
+        "description": "Directional numeric-score change; null percentage when the baseline is zero.\n\nGreen Score increases; Nutri-Score points decrease. Percent uses the absolute\nbaseline so negative Nutri-Score points retain the correct improvement sign."
       },
       "ScoreComponent": {
         "properties": {

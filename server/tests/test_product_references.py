@@ -154,3 +154,48 @@ async def test_cleaner_is_skipped_before_selecting_a_food(monkeypatch):
         assert [(food.code, food.name) for food in result.foods] == [("123", "Rice")]
     finally:
         off.search_products.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_product_missing_data_uses_scoring_conversions(monkeypatch):
+    """Search warnings honor zero values, kcal and sodium, but reject missing measurements."""
+    monkeypatch.setattr(
+        off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {
+                    "code": "complete",
+                    "product_name": "Complete",
+                    "nutriments": {
+                        "energy-kcal_100g": 100,
+                        "saturated-fat_100g": 0,
+                        "sugars_100g": 0,
+                        "sodium_100g": 0,
+                        "fiber_100g": 0,
+                        "proteins_100g": 1,
+                    },
+                },
+                {
+                    "code": "partial",
+                    "product_name": "Partial",
+                    "nutriments": {
+                        "energy-kj_100g": 100,
+                        "saturated-fat_100g": 0,
+                        "sugars_100g": "traces",
+                        "salt_100g": 0,
+                        "fiber_100g": 0,
+                        "proteins_100g": 1,
+                    },
+                },
+                {"code": "empty", "product_name": "Empty", "nutriments": None},
+            ]
+        ),
+    )
+    foods = (await references.product_references("food", "en", 8)).foods
+    assert foods[0].missing_data == []
+    assert not foods[0].no_data
+    assert foods[1].missing_data == ["sugars"]
+    assert not foods[1].no_data
+    assert foods[2].missing_data == list(references.nutrition.REQUIRED)
+    assert foods[2].no_data

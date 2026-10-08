@@ -1,6 +1,7 @@
 <!-- A fixed-height cell editor with autocomplete in the browser's top layer. -->
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import ReferenceSearchOption from './ReferenceSearchOption.svelte';
 	import { _ } from '$lib/i18n';
 	import { getMatchingTags } from '$lib/api/taxonomy';
 	import { findMatchingSuggestion } from '$lib/utils/taxonomyMatch';
@@ -19,12 +20,17 @@
 		label: string;
 		multiple?: boolean;
 		invalid?: boolean;
+		/** Use DaisyUI form controls outside the table's compact cell layout. */
+		inputStyle?: 'cell' | 'form';
+		warning?: boolean;
 		/** The ingredient name is being matched before this reference has a value. */
 		backgroundLoading?: boolean;
 		/** Background suggestions can be shown even before this cell has been edited. */
 		initialSuggestions?: TaxonomyItem[];
 		searchTerm?: string;
 		onchange: (tags: TaxonomyItem[]) => void;
+		/** Let sibling feedback yield to the autocomplete while its menu is open. */
+		onopenchange?: (open: boolean) => void;
 	};
 	let {
 		id,
@@ -34,10 +40,13 @@
 		label,
 		multiple = false,
 		invalid = false,
+		inputStyle = 'cell',
+		warning = false,
 		backgroundLoading = false,
 		initialSuggestions = [],
 		searchTerm = '',
-		onchange
+		onchange,
+		onopenchange
 	}: Props = $props();
 	let input = $state<HTMLInputElement>();
 	let menu = $state<HTMLDivElement>();
@@ -52,6 +61,11 @@
 	let position = $state({ left: 0, top: 0, width: 0, height: 240 });
 	let query = $derived((multiple ? (value.split(',').at(-1) ?? '') : value || searchTerm).trim());
 	let menuOpen = $derived(focused && !dismissed && (suggestions.length > 0 || loading || searched));
+
+	$effect(() => {
+		const open = menuOpen;
+		untrack(() => onopenchange?.(open));
+	});
 
 	$effect(() => {
 		// Keep imported references visible without overwriting an in-progress edit.
@@ -188,12 +202,14 @@
 	}
 </script>
 
-<div class="relative h-[43px]">
+<div class={inputStyle === 'cell' ? 'relative h-[43px]' : 'relative'}>
 	<input
 		bind:this={input}
 		{id}
 		type="text"
-		class="cell-input"
+		class={inputStyle === 'cell' ? 'cell-input' : 'input w-full'}
+		class:input-error={inputStyle === 'form' && invalid}
+		class:input-warning={inputStyle === 'form' && warning}
 		{value}
 		aria-label={label}
 		aria-invalid={invalid}
@@ -237,19 +253,12 @@
 >
 	<div id="{id}-options" role="listbox" aria-label={label}>
 		{#each suggestions as suggestion, index (`${suggestion.id}-${index}`)}
-			<button
+			<ReferenceSearchOption
 				id="{id}-option-{index}"
-				type="button"
-				role="option"
-				aria-selected={index === activeIndex}
-				class="hover:bg-base-200 w-full rounded px-3 py-2 text-left text-sm"
-				class:bg-base-200={index === activeIndex}
-				tabindex="-1"
-				onpointerdown={(event) => event.preventDefault()}
-				onclick={() => choose(suggestion)}
-			>
-				{suggestion.label}
-			</button>
+				{suggestion}
+				active={index === activeIndex}
+				onchoose={choose}
+			/>
 		{/each}
 	</div>
 	{#if suggestions.length === 0 && (loading || searched)}

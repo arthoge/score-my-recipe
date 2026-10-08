@@ -28,6 +28,7 @@
 		missingIngredientIds?: string[];
 		nutritionDiagnostics?: NutritionDiagnostic[];
 		nutritionFallbackIds?: string[];
+		nutritionSources?: Record<string, string>;
 		/** Recipe name used to identify the table to assistive technology. */
 		title: string;
 		id: string;
@@ -38,6 +39,7 @@
 		missingIngredientIds = [],
 		nutritionDiagnostics = [],
 		nutritionFallbackIds = [],
+		nutritionSources = {},
 		title,
 		id
 	}: Props = $props();
@@ -86,57 +88,45 @@
 	const columns = [
 		{
 			key: 'ingredient_name',
-			width: 192,
+			width: 280,
 			label: 'Ingredient name'
 		},
 		{
-			key: 'ciqual_food',
-			width: 192,
-			label: 'Ciqual',
-			help: 'Generic food from the French Ciqual database, providing nutrition values for this ingredient.'
-		},
-		{
-			key: 'agribalyse_food',
-			width: 192,
-			label: 'Agribalyse',
-			help: 'Food from the Agribalyse environmental database, used to calculate the Green Score.'
-		},
-		{
 			key: 'off_product',
-			width: 208,
-			label: 'Open Food Facts',
+			width: 280,
+			label: 'Open Food Facts product',
 			help: 'Packaged product used as the nutrition reference. When empty, the generic Ciqual food is used.'
 		},
 		{
 			key: 'quantity_grams',
-			width: 144,
+			width: 180,
 			label: 'Quantity'
 		},
 		{
 			key: 'state',
-			width: 176,
+			width: 180,
 			label: 'State when weighed'
 		},
 		{
 			key: 'preparation_profile',
-			width: 176,
+			width: 180,
 			label: 'Preparation'
 		},
 		{
 			key: 'prepared_weight_grams',
-			width: 176,
+			width: 180,
 			label: 'Prepared weight',
 			help: 'Weight of this ingredient as served. Uses documented cooking yields where available, otherwise the entered quantity.'
 		},
 		{
 			key: 'labels',
-			width: 224,
-			label: 'Labels',
+			width: 220,
+			label: 'Certifications',
 			help: 'Certifications carried by this ingredient, such as organic or fair trade. These can affect the Green Score.'
 		},
 		{
 			key: 'origin',
-			width: 160,
+			width: 180,
 			label: 'Origin',
 			help: 'Country where this ingredient was produced. When World is selected, conservative penalties for origin and transport are used.'
 		},
@@ -152,7 +142,7 @@
 			label: 'In season',
 			help: 'Whether this fresh fruit or vegetable is in season at the place and time the recipe is prepared.'
 		},
-		{ key: 'action', label: 'Action', width: 56 }
+		{ key: 'action', label: 'Action', width: 112 }
 	];
 	const tableWidth = columns.reduce((total, column) => total + column.width, 0);
 </script>
@@ -210,6 +200,7 @@
 						{missingIngredientIds}
 						{nutritionDiagnostics}
 						{nutritionFallbackIds}
+						{nutritionSources}
 						{originOptions}
 						{labelOptions}
 						{originsStatus}
@@ -301,9 +292,7 @@
 	:global(.ingredient-table td:focus-within) {
 		box-shadow: inset 0 0 0 1px var(--color-primary);
 	}
-	:global(.ingredient-table td[data-info='true']:not(:focus-within)) {
-		background: color-mix(in oklab, var(--color-info) 15%, var(--color-base-100));
-	}
+
 	:global(.ingredient-table td[data-warning='true']:not(:focus-within)) {
 		background: color-mix(in oklab, var(--color-warning) 15%, var(--color-base-100));
 	}

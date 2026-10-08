@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { _ } from '$lib/i18n';
 	import GreenScore from './GreenScore.svelte';
+	import type { Ingredient } from '$lib/types/ingredient';
+	import { greenExclusionReasons } from './excludedIngredients';
+	import ExcludedIngredientsSummary from './ExcludedIngredientsSummary.svelte';
 	import type { GreenScoreResponse } from '$lib/api/recipe';
 
 	type Props = {
@@ -8,12 +11,16 @@
 		isLoading?: boolean;
 		error?: string | null;
 		excludedWeightPercent?: number;
+		ingredients: Ingredient[];
+		recipeId: string;
 	};
 
 	let {
 		score = null,
 		isLoading = false,
 		error = null,
+		ingredients,
+		recipeId,
 		excludedWeightPercent = 0
 	}: Props = $props();
 </script>
@@ -45,11 +52,11 @@
 		</p>
 	{/if}
 	{#if !isLoading && !error && score?.letterGrade && score.missingIngredientIds.length > 0}
-		<p class="text-base-content mt-3 text-sm font-semibold" role="status">
-			{$_('recipe.excluded_summary', {
-				default: '{count} ingredient(s) excluded ({percent}% of recipe weight).',
-				values: { count: score?.missingIngredientIds.length ?? 0, percent: excludedWeightPercent }
-			})}
-		</p>
+		<ExcludedIngredientsSummary
+			{recipeId}
+			count={score.missingIngredientIds.length}
+			percent={excludedWeightPercent}
+			reasons={greenExclusionReasons(ingredients, score.missingIngredientIds)}
+		/>
 	{/if}
 </div>

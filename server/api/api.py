@@ -25,6 +25,7 @@ import api.units as units
 import api.preparation as preparation
 import api.nutrition as nutrition
 import api.pdf_export as pdf_export
+import api.improvements as improvements
 from api.settings import get_settings
 from api.warmup import warmup as warmup_caches
 
@@ -301,3 +302,20 @@ async def export_recipes(request: pdf_export.ExportRequest) -> Response:
             "Cache-Control": "no-store",
         },
     )
+
+
+@app.post("/v1/make-it-better/check")
+async def check_improvements(
+    request: improvements.ImprovementRequest,
+) -> improvements.ImprovementResponse:
+    """Compare safe ingredient and product substitutions using whole-recipe scores."""
+    return await improvements.find_improvements(request)
+
+
+@app.post("/v1/make-it-better/optimize")
+async def optimize_recipe(request: improvements.OptimizeRequest) -> improvements.OptimizeResponse:
+    """Return only validated replacements whose combined effect improves the recipe."""
+    try:
+        return await improvements.optimize_recipe(request)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error

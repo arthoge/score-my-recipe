@@ -566,3 +566,137 @@ async def test_missing_product_tags_are_not_invented(catalog, monkeypatch, produ
     result = await nutrition.analyze(recipe(barcode="123"))
     assert result.additives == []
     assert result.allergens == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("code", ["28501", "28720", "28725"])
+async def test_charcuterie_complete_composition_with_invariant_score(monkeypatch, code):
+    """Real lardon references retain nutrients when the unknown meat share cannot change the score."""
+    calculate = AsyncMock(
+        return_value=nutriscore.NutriScore(
+            grade="E", score=23, components=nutriscore.ScoreComponents(negative=[], positive=[])
+        )
+    )
+    monkeypatch.setattr(nutriscore, "calculate", calculate)
+    result = await nutrition.analyze(recipe(ciqual_code=code))
+    assert result.status == "complete"
+    assert result.excluded_ingredients == []
+    assert result.ingredients[0].red_meat_percent is None
+    assert not result.diagnostics
+    assert [issue.code for issue in result.assumptions] == ["red_meat_score_invariant"]
+    assert calculate.await_count == 2
+    calls = calculate.await_args_list
+    assert [call.args[3] for call in calls] == [0, 100]
+    assert all(call.args[0][key] is not None for call in calls for key in nutrition.REQUIRED)
+    if code == "28501":
+        assert result.nutrients_per_100g["energy_kj"] == 1120
+        assert result.nutrients_per_100g["proteins"] == 16.6
+        assert result.nutrients_per_100g["salt"] == 2.72
+
+
+@pytest.mark.asyncio
+async def test_red_meat_bounds_are_weighted_on_the_whole_usable_recipe(catalog):
+    """Bounds include known red meat and omit incomplete rows rather than testing each food alone."""
+    catalog["20359"].update(group="04", subgroup="0403", detail_group="040308")
+    catalog["4008"].update(group="04", subgroup="0401", detail_group="040101")
+    request = recipe()
+    request.ingredients.extend(
+        [
+            nutrition.NutritionIngredient(id="processed", quantity_g=200, ciqual_code="20359"),
+            nutrition.NutritionIngredient(id="beef", quantity_g=100, ciqual_code="4008"),
+            nutrition.NutritionIngredient(id="missing", quantity_g=100),
+        ]
+    )
+    result = await nutrition.analyze(request)
+    assert result.status == "partial"
+    assert result.prepared_weight_g == 400
+    assert [row.ingredient_id for row in result.excluded_ingredients] == ["missing"]
+    calls = cast(AsyncMock, nutriscore.calculate).await_args_list
+    assert [call.args[3] for call in calls] == [25, 75]
+    assert result.plant_percent == 0
+
+
+@pytest.mark.asyncio
+async def test_red_meat_uncertainty_keeps_exclusion_when_numeric_scores_differ(catalog):
+    """Matching letters alone are insufficient; keep the known subset when scores differ."""
+    catalog["20359"].update(group="04", subgroup="0403", detail_group="040308")
+    calculate = cast(AsyncMock, nutriscore.calculate)
+    calculate.side_effect = [
+        nutriscore.NutriScore(
+            grade="B", score=1, components=nutriscore.ScoreComponents(negative=[], positive=[])
+        ),
+        nutriscore.NutriScore(
+            grade="B", score=2, components=nutriscore.ScoreComponents(negative=[], positive=[])
+        ),
+        nutriscore.NutriScore(
+            grade="B", score=1, components=nutriscore.ScoreComponents(negative=[], positive=[])
+        ),
+    ]
+    request = recipe()
+    request.ingredients.append(
+        nutrition.NutritionIngredient(id="processed", quantity_g=100, ciqual_code="20359")
+    )
+    result = await nutrition.analyze(request)
+    assert result.status == "partial"
+    assert result.prepared_weight_g == 100
+    assert result.excluded_ingredients[0].ingredient_id == "processed"
+    assert result.diagnostics[0].code == "red_meat_proportion_missing"
+    assert not any(issue.code == "red_meat_score_invariant" for issue in result.assumptions)
+    assert calculate.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_score_invariant_ciqual_fallback_still_reported(catalog, monkeypatch):
+    """An incomplete OFF meat product can use complete generic nutrition without false missing-data errors."""
+    catalog["9119"].update(group="04", subgroup="0403", detail_group="040308")
+    monkeypatch.setattr(nutrition_data, "get_product", AsyncMock(return_value={"nutriments": {}}))
+    result = await nutrition.analyze(recipe(barcode="123"))
+    assert result.status == "complete"
+    assert not result.diagnostics
+    assert result.ingredients[0].source == "CIQUAL-2025"
+    assert {issue.code for issue in result.assumptions} == {
+        "red_meat_score_invariant",
+        "off_ciqual_fallback",
+    }
+
+
+@pytest.mark.asyncio
+async def test_meat_bounds_do_not_override_missing_nutrients(catalog):
+    """A missing required nutrient remains unknown even when meat sensitivity could be bounded."""
+    catalog["9119"].update(group="04", subgroup="0403", detail_group="040308")
+    catalog["9119"]["nutrients"]["fiber"] = "-"
+    result = await nutrition.analyze(recipe())
+    assert result.status == "incomplete"
+    assert result.nutri_score is None
+    assert result.nutrients_per_100g["fiber"] is None
+    cast(AsyncMock, nutriscore.calculate).assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_meat_bounds_calculation_failure_preserves_nutrition(catalog, monkeypatch):
+    """Unavailable grade comparisons must not discard known nutrient data or claim certainty."""
+    catalog["9119"].update(group="04", subgroup="0403", detail_group="040308")
+    monkeypatch.setattr(nutriscore, "calculate", AsyncMock(side_effect=OSError("offline")))
+    result = await nutrition.analyze(recipe())
+    assert result.status == "dependency_error"
+    assert result.nutri_score is None
+    assert result.nutrients_per_100g["energy_kj"] == 100
+    assert {issue.code for issue in result.diagnostics} == {
+        "red_meat_proportion_missing",
+        "calculation_unavailable",
+    }
+
+
+@pytest.mark.asyncio
+async def test_cooked_lardons_missing_sugars_remain_unknown(monkeypatch):
+    """The distinct cooked reference really lacks sugars; raw composition cannot replace it."""
+    calculate = AsyncMock()
+    monkeypatch.setattr(nutriscore, "calculate", calculate)
+    result = await nutrition.analyze(recipe(ciqual_code="28504", state="cooked"))
+    assert result.status == "incomplete"
+    assert result.nutrients_per_100g["sugars"] is None
+    assert any(
+        issue.code == "nutrients_missing" and issue.fields == ["sugars"]
+        for issue in result.diagnostics
+    )
+    calculate.assert_not_awaited()

@@ -4,9 +4,9 @@ from difflib import SequenceMatcher
 from typing import Optional
 import unicodedata
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from api import agribalyse, off, ciqual
+from api import agribalyse, off, ciqual, nutrition, nutrition_data
 
 
 class FoodReference(BaseModel):
@@ -15,6 +15,8 @@ class FoodReference(BaseModel):
     code: str
     name: str
     ciqual_code: Optional[str] = None
+    missing_data: list[str] = Field(default_factory=list)
+    no_data: bool = False
 
 
 class FoodReferencesResponse(BaseModel):
@@ -34,6 +36,8 @@ class IngredientReferencesResponse(BaseModel):
 def _reference(row: dict) -> FoodReference:
     """Keep catalog identifiers separate from food names displayed to the chef."""
     return FoodReference(
+        missing_data=["environmental_data"] if row.get("score") is None else [],
+        no_data=row.get("score") is None,
         code=str(row["code"]),
         name=str(row.get("name_fr") or row.get("lci_name") or row["code"]),
         ciqual_code=str(row["ciqual_code"]) if row.get("ciqual_code") else None,
@@ -83,8 +87,14 @@ def search_foods(
 
 def _ciqual_reference(food: dict[str, str], lang: str) -> FoodReference:
     """Return an official CIQUAL food identity, independently of its environmental row."""
+    composition = nutrition_data.get_foods().get(food["code"])
+    values = nutrition._ciqual_values(composition)[0] if composition else {}
     return FoodReference(
-        code=food["code"], ciqual_code=food["code"], name=ciqual.food_name(food, lang)
+        code=food["code"],
+        ciqual_code=food["code"],
+        name=ciqual.food_name(food, lang),
+        missing_data=[key for key in nutrition.REQUIRED if values.get(key) is None],
+        no_data=all(values.get(key) is None for key in nutrition.REQUIRED),
     )
 
 
@@ -104,11 +114,21 @@ async def ingredient_references(taxonomy_id: str, lang: str = "en") -> Ingredien
     node = taxonomy[taxonomy_id] if taxonomy_id in taxonomy else None
     _, source, row = agribalyse.find_agribalyse_row(node)
     environmental = _reference(row) if row else None
-    food = (
-        ciqual.get_foods().get(environmental.ciqual_code)
-        if environmental and environmental.ciqual_code
-        else None
-    )
+    # Nutrition references exist independently of Agribalyse coverage. In
+    # particular fresh cream has a valid CIQUAL code but no environmental row;
+    # fuzzy searching its label would incorrectly suggest fresh cream cheese.
+    food = None
+    if node:
+        for member in off._node_chain(node):
+            for prop in ("ciqual_food_code", "ciqual_proxy_food_code"):
+                code = off._property_value(member, prop)
+                if code and code in ciqual.get_foods():
+                    food = ciqual.get_foods()[code]
+                    break
+            if food:
+                break
+    if food is None and environmental and environmental.ciqual_code:
+        food = ciqual.get_foods().get(environmental.ciqual_code)
     if food is None and node:
         # Taxonomy codes can refer to retired entries. Search the current catalog instead.
         label = node.names.get(lang, node.names.get("en", node.names.get("fr", "")))
@@ -144,5 +164,13 @@ async def product_references(query: str, lang: str, limit: int) -> FoodReference
             if isinstance(brands, str) and brands.strip()
             else name.strip()
         )
-        foods.append(FoodReference(code=code, name=label))
+        values, _ = nutrition._product_values(product, prepared=False)
+        foods.append(
+            FoodReference(
+                code=code,
+                name=label,
+                missing_data=[key for key in nutrition.REQUIRED if values.get(key) is None],
+                no_data=all(values.get(key) is None for key in nutrition.REQUIRED),
+            )
+        )
     return FoodReferencesResponse(foods=foods[:limit])

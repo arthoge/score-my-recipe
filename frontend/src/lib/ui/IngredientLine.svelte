@@ -1,27 +1,18 @@
-<!-- Fixed-height ingredient cells; all environmental and preparation fields stay visible. -->
+<!-- Fixed-height ingredient cells; reference details are edited in a modal. -->
 <script lang="ts">
 	import type { NutritionDiagnostic } from '$lib/api/nutritionAnalysis';
 	import CellTooltip from './CellTooltip.svelte';
 	import { _ } from '$lib/i18n';
 	import { untrack } from 'svelte';
-	import {
-		searchCiqualFoods,
-		searchOffProducts,
-		searchAgribalyseFoods,
-		getIngredientReferences
-	} from '$lib/api/nutrition';
+	import { searchOffProducts, getIngredientReferences } from '$lib/api/nutrition';
 	import { syncNutritionSearches, suggestOffProduct } from './nutritionSearch';
 	import { getMatchingTags } from '$lib/api/taxonomy';
 	import { findMatchingSuggestion } from '$lib/utils/taxonomyMatch';
 	import TaxonomyCell from './TaxonomyCell.svelte';
+	import IngredientDetailsDialog from './IngredientDetailsDialog.svelte';
 	import LabelsCell from './LabelsCell.svelte';
 	import IconMdiDelete from '@iconify-svelte/mdi/delete';
-	import {
-		isIngredientNotEmpty,
-		PREPARATION_OPTIONS,
-		type Ingredient,
-		type TaxonomyItem
-	} from '$lib/types/ingredient';
+	import { PREPARATION_OPTIONS, type Ingredient, type TaxonomyItem } from '$lib/types/ingredient';
 	import {
 		ingredientCellErrors,
 		ingredientCalculationCells,
@@ -37,6 +28,7 @@
 		missingIngredientIds?: string[];
 		nutritionDiagnostics?: NutritionDiagnostic[];
 		nutritionFallbackIds?: string[];
+		nutritionSources?: Record<string, string>;
 		originOptions: TaxonomyItem[];
 		labelOptions: TaxonomyItem[];
 		originsStatus: 'loading' | 'ready' | 'failed';
@@ -50,6 +42,7 @@
 		missingIngredientIds = [],
 		nutritionDiagnostics = [],
 		nutritionFallbackIds = [],
+		nutritionSources = {},
 		originOptions,
 		labelOptions,
 		originsStatus,
@@ -169,18 +162,42 @@
 			ingredient,
 			missingIngredientIds.includes(ingredient.id),
 			rowDiagnostics,
-			nutritionFallbackIds.includes(ingredient.id)
+			nutritionFallbackIds.includes(ingredient.id),
+			nutritionSources[ingredient.id]
 		)
 	);
-	let nutritionIssueTitle = $derived(
-		rowDiagnostics.length > 0
+	let nutritionIssueTitle = $derived.by(() => {
+		const missingNutrients = rowDiagnostics.find((issue) => issue.code === 'nutrients_missing');
+		if (missingNutrients?.fields?.length)
+			return $_('recipe.missing_nutrition_values', {
+				default: 'Missing values required for Nutri-Score: {fields}.',
+				values: {
+					fields: missingNutrients.fields
+						.map((field) =>
+							$_(`nutrition.nutrients.${field}`, {
+								default: field.replaceAll('_', ' ')
+							})
+						)
+						.join(', ')
+				}
+			});
+		if (rowDiagnostics.some((issue) => issue.code === 'red_meat_proportion_missing'))
+			return $_('recipe.red_meat_proportion_missing', {
+				default:
+					'Nutrition values are available, but the unknown red-meat proportion can change the Nutri-Score.'
+			});
+		if (rowDiagnostics.some((issue) => issue.code === 'plant_proportion_missing'))
+			return $_('recipe.plant_proportion_missing', {
+				default: 'The fruit, vegetable and legume proportion is missing for Nutri-Score.'
+			});
+		return rowDiagnostics.length > 0
 			? $_('recipe.incomplete_nutrition_reference', {
 					default: 'This reference is missing data required for Nutri-Score.'
 				})
 			: $_('recipe.required_nutrition_reference', {
 					default: 'Choose a Ciqual food or an Open Food Facts product for nutrition calculations.'
-				})
-	);
+				});
+	});
 
 	let previousName: string | undefined;
 	let productSuggestions = $state<TaxonomyItem[]>([]);
@@ -304,78 +321,7 @@
 			}}
 		/>
 	</td>
-	<td
-		data-invalid={!ciqualLoading && calculationCells.ciqual === 'error'}
-		data-warning={!ciqualLoading && calculationCells.ciqual === 'warning'}
-	>
-		<TaxonomyCell
-			invalid={!ciqualLoading && calculationCells.ciqual === 'error'}
-			id="ingredient-ciqual-{rowId}"
-			backgroundLoading={ciqualLoading}
-			getSuggestions={searchCiqualFoods}
-			searchTerm={ingredient.name}
-			label={$_('recipe.ciqual_food', { default: 'Ciqual food' })}
-			tags={ingredient.ciqualName
-				? [
-						{
-							id: ingredient.ciqualCode ?? null,
-							label: ingredient.ciqualName,
-							isInTaxonomy: !!ingredient.ciqualCode
-						}
-					]
-				: []}
-			onchange={(tags) => {
-				const selected = tags[0];
-				const code = selected?.isInTaxonomy ? (selected.id ?? undefined) : undefined;
-				ingredient.ciqualName = selected?.label ?? '';
-				ingredient.ciqualCode = code;
-			}}
-		/>
-
-		<CellTooltip
-			tip={!ciqualLoading && calculationCells.ciqual ? nutritionIssueTitle : undefined}
-		/>
-	</td>
-	<td
-		data-invalid={!agribalyseLoading && calculationCells.agribalyse === 'error'}
-		data-warning={!agribalyseLoading && calculationCells.agribalyse === 'warning'}
-	>
-		<TaxonomyCell
-			id="ingredient-reference-{rowId}"
-			backgroundLoading={agribalyseLoading}
-			getSuggestions={searchAgribalyseFoods}
-			searchTerm={ingredient.name}
-			label={$_('recipe.agribalyse_food', { default: 'Agribalyse correspondence' })}
-			tags={ingredient.agribalyseName
-				? [
-						{
-							id: ingredient.agribalyseCode ?? null,
-							label: ingredient.agribalyseName,
-							isInTaxonomy: !!ingredient.agribalyseCode
-						}
-					]
-				: []}
-			invalid={!agribalyseLoading && calculationCells.agribalyse === 'error'}
-			onchange={(tags) => {
-				ingredient.agribalyseName = tags[0]?.label ?? '';
-				ingredient.agribalyseCode = tags[0]?.isInTaxonomy ? (tags[0].id ?? undefined) : undefined;
-				ingredient.referenceSource = 'manual';
-			}}
-		/>
-
-		<CellTooltip
-			tip={!agribalyseLoading && calculationCells.agribalyse
-				? $_('recipe.incomplete_environmental_reference', {
-						default: 'This reference has no usable environmental data for Green Score.'
-					})
-				: undefined}
-		/>
-	</td>
-	<td
-		data-invalid={!productLoading && calculationCells.product === 'error'}
-		data-warning={!productLoading && calculationCells.product === 'warning'}
-		data-info={!productLoading && calculationCells.product === 'info'}
-	>
+	<td data-invalid={!productLoading && calculationCells.product === 'error'}>
 		<TaxonomyCell
 			invalid={!productLoading && calculationCells.product === 'error'}
 			id="ingredient-product-{rowId}"
@@ -400,29 +346,12 @@
 				ingredient.barcode = code;
 			}}
 		/>
-
-		<CellTooltip
-			tip={!productLoading && calculationCells.product === 'info'
-				? $_('recipe.off_ciqual_fallback', {
-						default: 'Open Food Facts nutrition data is incomplete. Ciqual values are used instead.'
-					})
-				: !productLoading && calculationCells.product
-					? nutritionIssueTitle
-					: undefined}
-		/>
 	</td>
-	<td
-		data-invalid={errors.weight}
-		data-warning={ingredient.weight === 0 && isIngredientNotEmpty(ingredient)}
-	>
+	<td data-invalid={errors.weight}>
 		<CellTooltip
 			tip={errors.weight
-				? $_('recipe.invalid_quantity', { default: 'Enter a valid quantity.' })
-				: ingredient.weight === 0 && isIngredientNotEmpty(ingredient)
-					? $_('recipe.zero_quantity', {
-							default: 'Excluded from the calculation because the quantity is 0 grams.'
-						})
-					: undefined}
+				? $_('recipe.invalid_quantity', { default: 'Enter a quantity greater than 0.' })
+				: undefined}
 		/>
 		<div class="relative flex h-[43px] min-w-0 items-center">
 			<input
@@ -476,6 +405,7 @@
 	</td>
 	<td data-warning={calculationCells.preparation === 'warning'}>
 		<select
+			id="ingredient-preparation-{rowId}"
 			class="cell-input"
 			bind:value={ingredient.preparationProfile}
 			aria-label={$_('recipe.preparation_profile', { default: 'Preparation' })}
@@ -592,14 +522,24 @@
 		</select>
 	</td>
 	<td class="text-center">
-		<button
-			type="button"
-			class="btn btn-ghost btn-square btn-sm text-error disabled:text-base-content/30 disabled:bg-transparent disabled:opacity-50"
-			disabled={isOnlyItem}
-			onclick={() => onDelete?.(ingredient.id)}
-			aria-label={$_('recipe.delete_ingredient', { default: 'Delete ingredient' })}
-		>
-			<IconMdiDelete class="h-4 w-4" aria-hidden="true" />
-		</button>
+		<div class="flex items-center justify-center gap-1">
+			<IngredientDetailsDialog
+				bind:ingredient
+				{rowId}
+				{ciqualLoading}
+				{agribalyseLoading}
+				{calculationCells}
+				{nutritionIssueTitle}
+			/>
+			<button
+				type="button"
+				class="btn btn-ghost btn-square btn-sm text-error disabled:text-base-content/30 disabled:bg-transparent disabled:opacity-50"
+				disabled={isOnlyItem}
+				onclick={() => onDelete?.(ingredient.id)}
+				aria-label={$_('recipe.delete_ingredient', { default: 'Delete ingredient' })}
+			>
+				<IconMdiDelete class="h-4 w-4" aria-hidden="true" />
+			</button>
+		</div>
 	</td>
 </tr>

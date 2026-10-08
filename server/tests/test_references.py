@@ -116,3 +116,76 @@ async def test_retired_ciqual_link_uses_current_catalog(agribalyse_index, monkey
         assert result.ciqual.name == "Apple, raw"
         monkeypatch.setattr(ciqual, "get_foods", lambda: {})
         assert (await references.ingredient_references("en:apple")).ciqual is None
+
+
+@pytest.mark.asyncio
+async def test_direct_ciqual_reference_does_not_require_agribalyse(monkeypatch):
+    """Fresh cream must not become fresh cream cheese when Agribalyse has no cream row."""
+    monkeypatch.setattr(
+        ciqual,
+        "get_foods",
+        lambda: {
+            "19402": {"code": "19402", "name_en": "Cream (average)", "name_fr": "Crème"},
+            "19663": {"code": "19663", "name_en": "Fresh cream cheese", "name_fr": "Petit suisse"},
+        },
+    )
+    taxonomy = create_taxonomy(
+        {
+            "en:fresh-cream": create_taxonomy_node(
+                "en:fresh-cream",
+                names={"en": "fresh cream"},
+                properties={"ciqual_food_code": {"en": "19402"}},
+            ),
+        }
+    )
+    with patch_ingredients_taxonomy(taxonomy):
+        result = await references.ingredient_references("en:fresh-cream")
+    assert result.agribalyse is None
+    assert result.ciqual.code == "19402"
+
+
+@pytest.mark.asyncio
+async def test_direct_ciqual_code_has_priority_over_an_environmental_proxy(agribalyse_index):
+    """A valid explicit nutrition correspondence must survive an environmental proxy."""
+    taxonomy = create_taxonomy(
+        {
+            "en:test": create_taxonomy_node(
+                "en:test",
+                properties={
+                    "agribalyse_food_code": {"en": "10001"},
+                    "ciqual_food_code": {"en": "90001"},
+                },
+            ),
+        }
+    )
+    with patch_ingredients_taxonomy(taxonomy):
+        result = await references.ingredient_references("en:test")
+    assert result.agribalyse.code == "10001"
+    assert result.ciqual.code == "90001"
+
+
+@pytest.mark.parametrize("code, missing", [("12118", ["sugars"]), ("28501", [])])
+def test_ciqual_missing_data_matches_bundled_composition(code, missing):
+    """Warn for unknown Emmental sugars without flagging complete raw lardons."""
+    food = {"code": code, "name_en": "Food", "name_fr": "Aliment"}
+    reference = references._ciqual_reference(food, "en")
+    assert reference.missing_data == missing
+    assert not reference.no_data
+
+
+def test_missing_ciqual_composition_reports_all_required_fields():
+    """An identity without composition cannot promise a usable nutrition reference."""
+    food = {"code": "unknown", "name_en": "Food", "name_fr": "Aliment"}
+    assert references._ciqual_reference(food, "en").missing_data == list(
+        references.nutrition.REQUIRED
+    )
+
+
+def test_agribalyse_missing_environmental_data():
+    """Only absent environmental scores need a warning; zero is a valid score."""
+    assert references._reference({"code": "1", "score": None}).missing_data == [
+        "environmental_data"
+    ]
+    assert references._reference({"code": "1", "score": 0}).missing_data == []
+    assert references._reference({"code": "1", "score": None}).no_data
+    assert not references._reference({"code": "1", "score": 0}).no_data

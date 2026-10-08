@@ -7,6 +7,7 @@
 	import RecipeNameEditor from '$lib/ui/RecipeNameEditor.svelte';
 	import ScoreDisplay from '$lib/ui/ScoreDisplay.svelte';
 	import NutriScoreDisplay from '$lib/ui/NutriScoreDisplay.svelte';
+	import MakeItBetter from '$lib/ui/MakeItBetter.svelte';
 	import {
 		analyzeNutrition,
 		nutritionInputs,
@@ -166,6 +167,14 @@
 			(issue) => issue.ingredient_id && unchangedNutritionIds.has(issue.ingredient_id)
 		)
 	);
+	let nutritionSources = $derived(
+		Object.fromEntries(
+			(nutrition?.ingredients ?? [])
+				.filter((row) => unchangedNutritionIds.has(row.ingredient_id))
+				.map((row) => [row.ingredient_id, row.source])
+		)
+	);
+
 	let nutritionFallbackIds = $derived(
 		(nutrition?.assumptions ?? [])
 			.filter(
@@ -321,23 +330,31 @@
 		{missingIngredientIds}
 		{nutritionDiagnostics}
 		{nutritionFallbackIds}
+		{nutritionSources}
 		{title}
 		{id}
 	/>
 
 	<div class="mt-6 flex flex-wrap items-stretch gap-4">
 		<ScoreDisplay
+			recipeId={id}
+			{ingredients}
 			score={greenScore}
 			isLoading={isScoreLoading}
 			error={scoreError}
 			excludedWeightPercent={excludedGreenPercent}
 		/>
 		<NutriScoreDisplay
+			recipeId={id}
+			{ingredients}
 			analysis={nutrition}
 			loading={nutritionLoading}
 			portionWeightG={isPositiveAmount(portions) && finalPreparedWeight != null
 				? finalPreparedWeight / portions!
 				: null}
 		/>
+	</div>
+	<div class="mt-4">
+		<MakeItBetter {id} name={title} bind:ingredients {portions} {country} />
 	</div>
 </section>

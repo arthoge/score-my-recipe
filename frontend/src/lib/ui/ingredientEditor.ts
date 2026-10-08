@@ -17,7 +17,7 @@ export function ingredientCellErrors(ingredient: Ingredient) {
 	const reference = ingredient.codifiedIngredient;
 	return {
 		name: populated && !ingredient.name.trim(),
-		weight: populated && !isNonNegativeAmount(ingredient.weight),
+		weight: populated && !isPositiveAmount(ingredient.weight),
 		preparedWeight:
 			ingredient.measuredPreparedWeightG != null &&
 			!isPositiveAmount(ingredient.measuredPreparedWeightG),
@@ -57,12 +57,14 @@ export function ingredientCalculationCells(
 	ingredient: Ingredient,
 	environmentalMissing: boolean,
 	diagnostics: { code: string; fields?: string[] }[],
-	usesCiqualFallback = false
+	usesCiqualFallback = false,
+	nutritionSource?: string
 ) {
 	if (ingredient.weight == null || ingredient.weight === 0)
 		return { agribalyse: null, ciqual: null, product: null, preparation: null, state: null };
 	const populated = isIngredientNotEmpty(ingredient);
 	const usesProduct = !!ingredient.barcode;
+	const usesCiqual = nutritionSource === 'CIQUAL-2025' || !usesProduct;
 	const sourceIssues = diagnostics.filter(
 		(issue) => !['unsupported_preparation', 'prepared_reference_required'].includes(issue.code)
 	);
@@ -73,13 +75,13 @@ export function ingredientCalculationCells(
 				? severity(!!ingredient.agribalyseName?.trim())
 				: null,
 		ciqual:
-			!usesProduct && (sourceIssues.length > 0 || (populated && !ingredient.ciqualCode))
+			usesCiqual && (sourceIssues.length > 0 || (populated && !ingredient.ciqualCode))
 				? severity(!!ingredient.ciqualName?.trim())
 				: null,
 		product: usesCiqualFallback
-			? 'info'
-			: usesProduct && sourceIssues.length > 0
-				? severity(!!ingredient.productName?.trim())
+			? 'warning'
+			: usesProduct && !usesCiqual && sourceIssues.length > 0
+				? 'warning'
 				: null,
 		preparation: diagnostics.some((issue) => issue.code === 'unsupported_preparation')
 			? 'warning'

@@ -376,6 +376,46 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/v1/make-it-better/check': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Check Improvements
+		 * @description Compare safe ingredient and product substitutions using whole-recipe scores.
+		 */
+		post: operations['check_improvements_v1_make_it_better_check_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/v1/make-it-better/optimize': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Optimize Recipe
+		 * @description Return only validated replacements whose combined effect improves the recipe.
+		 */
+		post: operations['optimize_recipe_v1_make_it_better_optimize_post'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -567,6 +607,13 @@ export interface components {
 			name: string;
 			/** Ciqual Code */
 			ciqual_code?: string | null;
+			/** Missing Data */
+			missing_data?: string[];
+			/**
+			 * No Data
+			 * @default false
+			 */
+			no_data: boolean;
 		};
 		/**
 		 * FoodReferencesResponse
@@ -700,6 +747,65 @@ export interface components {
 		HTTPValidationError: {
 			/** Detail */
 			detail?: components['schemas']['ValidationError'][];
+		};
+		/**
+		 * ImprovementRequest
+		 * @description Complete recipe inputs, with a language for names and product search.
+		 */
+		ImprovementRequest: {
+			recipe: components['schemas']['ExportRecipe'];
+			/**
+			 * Lang
+			 * @default en
+			 */
+			lang: string;
+		};
+		/**
+		 * ImprovementResponse
+		 * @description Safe candidates; unavailable dependencies are distinct from an empty search.
+		 */
+		ImprovementResponse: {
+			/** Suggestions */
+			suggestions?: components['schemas']['ImprovementSuggestion'][];
+			/**
+			 * Unavailable
+			 * @default false
+			 */
+			unavailable: boolean;
+			/**
+			 * Limited
+			 * @default false
+			 */
+			limited: boolean;
+			/** Reason */
+			reason?:
+				| ('no_candidates' | 'scores_unavailable' | 'no_improvement' | 'references_missing')
+				| null;
+		};
+		/**
+		 * ImprovementSuggestion
+		 * @description A resolved replacement tied to exactly one ingredient row.
+		 */
+		ImprovementSuggestion: {
+			/** Id */
+			id: string;
+			/** Ingredient Id */
+			ingredient_id: string;
+			/**
+			 * Category
+			 * @enum {string}
+			 */
+			category: 'ingredient' | 'open_food_facts';
+			before: components['schemas']['ExportIngredient'];
+			after: components['schemas']['ExportIngredient'];
+			/** Ciqual Name */
+			ciqual_name?: string | null;
+			/** Agribalyse Name */
+			agribalyse_name?: string | null;
+			/** Product Name */
+			product_name?: string | null;
+			green_score: components['schemas']['ScoreChange'] | null;
+			nutri_score: components['schemas']['ScoreChange'] | null;
 		};
 		/**
 		 * IngredientReferencesResponse
@@ -935,6 +1041,27 @@ export interface components {
 			 * @default CIQUAL-2025
 			 */
 			data_version: string;
+		};
+		/**
+		 * OptimizeRequest
+		 * @description Selected candidate identifiers are validated against the current recipe.
+		 */
+		OptimizeRequest: {
+			recipe: components['schemas']['ExportRecipe'];
+			/**
+			 * Lang
+			 * @default en
+			 */
+			lang: string;
+			/** Selected Ids */
+			selected_ids: string[];
+		};
+		/**
+		 * OptimizeResponse
+		 * @description The combined replacement recipe, recalculated before applying any changes.
+		 */
+		OptimizeResponse: {
+			recipe: components['schemas']['ExportRecipe'];
 		};
 		/**
 		 * Origin
@@ -1397,6 +1524,30 @@ export interface components {
 			 * @default Salt
 			 */
 			salt: string;
+		};
+		/**
+		 * ScoreChange
+		 * @description Directional numeric-score change; null percentage when the baseline is zero.
+		 *
+		 *     Green Score increases; Nutri-Score points decrease. Percent uses the absolute
+		 *     baseline so negative Nutri-Score points retain the correct improvement sign.
+		 */
+		ScoreChange: {
+			/** Before */
+			before: number;
+			/** After */
+			after: number;
+			/** Before Grade */
+			before_grade: string;
+			/** After Grade */
+			after_grade: string;
+			/** Percent */
+			percent: number | null;
+			/**
+			 * Excluded Count
+			 * @default 0
+			 */
+			excluded_count: number;
 		};
 		/**
 		 * ScoreComponent
@@ -2202,6 +2353,72 @@ export interface operations {
 				};
 				content: {
 					'application/pdf': string;
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	check_improvements_v1_make_it_better_check_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['ImprovementRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ImprovementResponse'];
+				};
+			};
+			/** @description Validation Error */
+			422: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HTTPValidationError'];
+				};
+			};
+		};
+	};
+	optimize_recipe_v1_make_it_better_optimize_post: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['OptimizeRequest'];
+			};
+		};
+		responses: {
+			/** @description Successful Response */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['OptimizeResponse'];
 				};
 			};
 			/** @description Validation Error */

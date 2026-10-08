@@ -19,6 +19,10 @@ export interface TaxonomyItem {
 	isInTaxonomy: boolean;
 	/** Synonyms in the current language (used for matching; may be empty) */
 	synonyms?: string[];
+	/** Required data absent from this reference, as reported by the search API. */
+	missingData?: string[];
+	/** The reference has no usable measurements for its score. */
+	noData?: boolean;
 }
 
 /**
@@ -70,6 +74,8 @@ export interface Ingredient {
 	id: string;
 	/** Display name of the ingredient */
 	name: string;
+	/** Name whose references were resolved together by a confirmed server replacement. */
+	resolvedReferenceName?: string;
 	/** Weight in grams (null if not specified) */
 	weight: number | null;
 	/** Codified ingredient from taxonomy */

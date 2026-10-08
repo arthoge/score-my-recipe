@@ -5,7 +5,14 @@ import type { TaxonomyItem } from '$lib/types/ingredient';
 
 /** Official CIQUAL food identities; composition data is separate. */
 type FoodSearchResponse = {
-	foods: { code?: string; ciqual_code: string; name: string; synonyms?: string[] }[];
+	foods: {
+		code?: string;
+		ciqual_code: string;
+		name: string;
+		synonyms?: string[];
+		missing_data?: string[];
+		no_data?: boolean;
+	}[];
 };
 
 /** Search the bundled ANSES CIQUAL 2025 food catalog by its official names. */
@@ -25,7 +32,9 @@ export async function searchCiqualFoods(query: string, limit = 8, signal?: Abort
 			id: String(food.ciqual_code),
 			label: food.name,
 			isInTaxonomy: true,
-			synonyms: food.synonyms
+			synonyms: food.synonyms,
+			missingData: food.missing_data,
+			noData: food.no_data
 		})
 	);
 }
@@ -37,9 +46,17 @@ export async function searchAgribalyseFoods(query: string, limit = 8, signal?: A
 		signal
 	});
 	if (!response.ok) throw new Error(`Agribalyse search failed: ${response.status}`);
-	const data: { foods: { code: string; name: string }[] } = await response.json();
+	const data: {
+		foods: { code: string; name: string; missing_data?: string[]; no_data?: boolean }[];
+	} = await response.json();
 	return data.foods.map(
-		(food): TaxonomyItem => ({ id: food.code, label: food.name, isInTaxonomy: true })
+		(food): TaxonomyItem => ({
+			id: food.code,
+			label: food.name,
+			isInTaxonomy: true,
+			missingData: food.missing_data,
+			noData: food.no_data
+		})
 	);
 }
 
@@ -70,8 +87,16 @@ export async function searchOffProducts(query: string, limit = 8, signal?: Abort
 		{ signal }
 	);
 	if (!response.ok) throw new Error(`Product search failed: ${response.status}`);
-	const data: { foods: { code: string; name: string }[] } = await response.json();
-	return data.foods
-		.slice(0, limit)
-		.map((food): TaxonomyItem => ({ id: food.code, label: food.name, isInTaxonomy: true }));
+	const data: {
+		foods: { code: string; name: string; missing_data?: string[]; no_data?: boolean }[];
+	} = await response.json();
+	return data.foods.slice(0, limit).map(
+		(food): TaxonomyItem => ({
+			id: food.code,
+			label: food.name,
+			isInTaxonomy: true,
+			missingData: food.missing_data,
+			noData: food.no_data
+		})
+	);
 }

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { tick } from 'svelte';
 	import { _, getLocale } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { parseRecipeText, apiIngredientsToIngredients } from '$lib/api/recipe';
@@ -8,27 +7,17 @@
 	import RecipeExamples from '$lib/ui/RecipeExamples.svelte';
 	import type { RecipeDraft } from '$lib/types/recipeDraft';
 
-	let recipeInputs = $state([{ id: 0, text: '' }]);
-	let nextRecipeId = 1;
-	const nonEmptyRecipes = $derived(recipeInputs.filter((recipe) => recipe.text.trim()));
+	let recipeText = $state('');
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 
 	let onboardingRef = $state<ReturnType<typeof OnboardingBanner> | null>(null);
 	let isOnboardingDismissed = $state(true);
 
-	/** Add an independent recipe input and focus it once it is rendered. */
-	async function addRecipe() {
-		const id = nextRecipeId++;
-		recipeInputs.push({ id, text: '' });
-		await tick();
-		document.getElementById(`recipe-text-${id}`)?.focus();
-	}
-
-	/** Parse each non-empty input into its own recipe editor, preserving input order. */
+	/** Parse the single recipe input into its recipe editor. */
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
-		if (isLoading || !nonEmptyRecipes.length) return;
+		if (isLoading || !recipeText.trim()) return;
 		isLoading = true;
 		error = null;
 
@@ -36,16 +25,14 @@
 			// the recipe text is most likely written in the language of the
 			// interface, the API expects a 2-letter language code (eg. "fr")
 			const lang = getLocale().split('-')[0];
-			const recipes: RecipeDraft[] = await Promise.all(
-				nonEmptyRecipes.map(async (recipe) => {
-					const result = await parseRecipeText(recipe.text, lang);
-					return {
-						id: `recipe-${recipe.id}`,
-						name: '',
-						ingredients: apiIngredientsToIngredients(result.ingredients)
-					};
-				})
-			);
+			const result = await parseRecipeText(recipeText, lang);
+			const recipes: RecipeDraft[] = [
+				{
+					id: 'recipe-0',
+					name: '',
+					ingredients: apiIngredientsToIngredients(result.ingredients)
+				}
+			];
 			await goto('/score', { state: { recipes } });
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Une erreur est survenue';
@@ -116,84 +103,25 @@
 			</label>
 
 			<!-- Example recipe shortcuts (honors UI language) -->
-			<RecipeExamples onselect={(text) => (recipeInputs[0].text = text)} />
+			<RecipeExamples onselect={(text) => (recipeText = text)} />
 
-			{#each recipeInputs as recipe, index (recipe.id)}
-				<div class="relative">
-					<textarea
-						id={`recipe-text-${recipe.id}`}
-						bind:value={recipe.text}
-						class="textarea textarea-bordered block min-h-64 w-full text-base"
-						class:pr-12={index > 0}
-						aria-label={$_('recipe.untitled', {
-							default: 'Recipe {number}',
-							values: { number: index + 1 }
-						})}
-						placeholder={$_('add.recipe_placeholder', {
-							default:
-								'Entrez votre recette ici...\n\nExemple:\n200g de farine\n3 œufs\n100g de sucre'
-						})}
-						disabled={isLoading}
-					></textarea>
-					{#if index > 0}
-						<button
-							type="button"
-							class="btn btn-ghost btn-square btn-sm text-base-content/50 hover:text-error absolute top-2 right-2"
-							aria-label={$_('add.remove_recipe', {
-								default: 'Remove recipe {number}',
-								values: { number: index + 1 }
-							})}
-							disabled={isLoading}
-							onclick={() =>
-								(recipeInputs = recipeInputs.filter((input) => input.id !== recipe.id))}
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								class="h-5 w-5"
-								aria-hidden="true"
-							>
-								<path stroke-linecap="round" d="m6 6 12 12M6 18 18 6" />
-							</svg>
-						</button>
-					{/if}
-				</div>
-			{/each}
-
-			<button
-				type="button"
-				class="btn btn-outline border-base-content/30 text-base-content/60 hover:border-primary hover:bg-base-200 hover:text-primary w-full border-dashed"
-				aria-label={$_('add.add_recipe', { default: 'Add another recipe' })}
+			<textarea
+				id="recipe-text-0"
+				bind:value={recipeText}
+				class="textarea textarea-bordered block min-h-64 w-full text-base"
+				placeholder={$_('add.recipe_placeholder', {
+					default: 'Entrez votre recette ici...\n\nExemple:\n200g de farine\n3 œufs\n100g de sucre'
+				})}
 				disabled={isLoading}
-				onclick={addRecipe}
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					class="h-6 w-6"
-					aria-hidden="true"
-				>
-					<path stroke-linecap="round" d="M12 5v14M5 12h14" />
-				</svg>
-			</button>
+			></textarea>
 		</div>
 
-		<button
-			type="submit"
-			class="btn btn-primary btn-lg"
-			disabled={isLoading || !nonEmptyRecipes.length}
-		>
+		<button type="submit" class="btn btn-primary btn-lg" disabled={isLoading || !recipeText.trim()}>
 			{#if isLoading}
 				<span class="loading loading-spinner"></span>
 				{$_('add.loading', { default: 'Calcul en cours...' })}
 			{:else}
-				{$_('add.score_button', { default: 'Score' })}
+				{$_('add.score_button', { default: 'Score recipe' })}
 			{/if}
 		</button>
 	</form>

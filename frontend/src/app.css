@@ -6,6 +6,8 @@
 
 @theme {
 	--font-sans: 'Plus Jakarta Sans Variable', system-ui, sans-serif;
+	/* Stronger green for recipe improvement actions and positive score changes. */
+	--color-success-strong: oklch(from var(--color-success) calc(l * 0.7) c h);
 }
 
 @plugin 'daisyui/theme' {
