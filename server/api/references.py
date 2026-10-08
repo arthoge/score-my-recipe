@@ -258,7 +258,8 @@ async def product_references(
         # Catalog suffixes contain bookkeeping and alternative preparations that
         # commercial labels do not repeat. Compare primary identities as well.
         automatic = bool(
-            any(
+            not food_matching.composition_conflict(query, name)
+            and any(
                 food_matching.automatic_rank(alias, product_match_name(alias, name, values))
                 for alias in aliases
             )

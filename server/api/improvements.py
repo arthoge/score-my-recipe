@@ -18,7 +18,7 @@ MAX_CANDIDATES = 60
 
 
 class UnavailableSearch(Exception):
-    """Allow unavailable empty searches to be retried instead of caching a failure."""
+    """Return incomplete previews without pinning a temporary failure in the cache."""
 
     def __init__(self, response):
         """Carry the normal API response without caching it."""
@@ -36,7 +36,7 @@ async def _cached_search(payload: str):
     if result.unavailable and not result.suggestions:
         await asyncio.sleep(0.5)
         result = await find_improvements(request)
-    if result.unavailable and not result.suggestions:
+    if result.unavailable:
         raise UnavailableSearch(result)
     return result
 

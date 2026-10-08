@@ -455,3 +455,24 @@ async def test_fat_query_retry_removes_catalog_units_not_matching_constraints(mo
     assert search.await_args_list[1].args == ("Crème 30", "fr", 40)
     assert result.foods[0].code == "right"
     assert result.foods[0].automatic_match
+
+
+@pytest.mark.asyncio
+async def test_broad_alias_cannot_erase_an_explicit_product_qualifier(monkeypatch):
+    """Translated/catalog aliases must not allow whole milk to select a skimmed product."""
+    monkeypatch.setattr(references, "product_aliases", AsyncMock(return_value=["milk"]))
+    monkeypatch.setattr(
+        off,
+        "search_products",
+        AsyncMock(
+            return_value=[
+                {"code": "123", "product_name": "Milk, skimmed"},
+                {"code": "456", "product_name": "Milk, whole"},
+            ]
+        ),
+    )
+    result = await references.product_references("whole milk", "en", 8)
+    assert [(food.code, food.automatic_match) for food in result.foods] == [
+        ("456", True),
+        ("123", False),
+    ]

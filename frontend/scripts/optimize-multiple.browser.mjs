@@ -3,12 +3,14 @@
  * All food-service calls are mocked; requires a local dev server and isolated Chromium.
  * Start Vite on port 5185 and Chromium with --remote-debugging-port=9227 and a temporary
  * --user-data-dir, then run: node scripts/recipe-refresh.browser.mjs
+ * TEST_SELECTED_PRODUCT=1 also verifies that a preselected replacement skips its OFF search.
  * Override APP_URL / BROWSER_DEBUG_URL for different local ports; TEST_LOCALE=fr-FR tests French.
  */
 import assert from 'node:assert/strict';
 const browserUrl = process.env.BROWSER_DEBUG_URL ?? 'http://127.0.0.1:9227';
 const appUrl = process.env.APP_URL ?? 'http://127.0.0.1:5185';
 const locale = process.env.TEST_LOCALE ?? 'en-US';
+const selectedProduct = process.env.TEST_SELECTED_PRODUCT === '1';
 const labels = locale.startsWith('fr')
 	? { add: 'Ajouter des ingrédients', better: 'Améliorer la recette', optimize: 'Optimiser' }
 	: { add: 'Add ingredients', better: 'Make it better', optimize: 'Optimize' };
@@ -81,8 +83,8 @@ window.fetch=async (input,init)=>{
  if(url.includes('/v1/nutrition/analyze'))return send({status:'complete',nutri_score:{grade:body.ingredients[0].ciqual_code==='19593'?'a':'d',score:body.ingredients[0].ciqual_code==='19593'?0:12,components:{positive:[],negative:[]}},ingredients:[],diagnostics:[],assumptions:[],excluded_ingredients:[],excluded_weight_percent:0,additives:[],allergens:[]});
  if(url.includes('/v1/make-it-better/check')) {
   const recipe=body.recipe;window.reviewRecipe=recipe;
-  window.reviewAfter=recipe.ingredients.map((before,i)=>({...before,name:i===0?'Yaourt nature':'Crème 30% MG, semi-épaisse, UHT',ciqual_code:i===0?'19593':'19415',barcode:null,agribalyse_code:i===0?'19593':'19415',codified_ingredient:null,labels:[],origin:null}));
-  return send({suggestions:window.reviewAfter.map((after,i)=>({id:after.id+':swap',ingredient_id:after.id,category:'ingredient',before:recipe.ingredients[i],after,ciqual_name:after.name+' CIQUAL',agribalyse_name:after.name+' Agribalyse',green_score:{before:50,after:80,percent:60},nutri_score:{before:12,after:0,percent:100}}))});
+  window.reviewAfter=recipe.ingredients.map((before,i)=>({...before,name:i===0?'Yaourt nature':'Crème 30% MG, semi-épaisse, UHT',ciqual_code:i===0?'19593':'19415',barcode:${selectedProduct} && i===0?'333':null,agribalyse_code:i===0?'19593':'19415',codified_ingredient:null,labels:[],origin:null}));
+  return send({suggestions:window.reviewAfter.map((after,i)=>({id:after.id+':swap',ingredient_id:after.id,category:'ingredient',before:recipe.ingredients[i],after,product_name:after.barcode?after.name+' OFF':null,ciqual_name:after.name+' CIQUAL',agribalyse_name:after.name+' Agribalyse',green_score:{before:50,after:80,percent:60},nutri_score:{before:12,after:0,percent:100}}))});
  }
  if(url.includes('/v1/make-it-better/optimize'))return send({recipe:{...window.reviewRecipe,ingredients:window.reviewAfter}});
  return send({suggestions:[],foods:[],ingredients:[],origins:[]});
@@ -182,6 +184,13 @@ try {
 		),
 		true,
 		'Nutrition must wait for both replacement lookups to settle'
+	);
+	assert.equal(
+		await evaluate(
+			`window.calls.filter(c=>c.url==='/v1/nutrition/products' && c.q==='Yaourt nature').length`
+		),
+		selectedProduct ? 0 : 1,
+		'A replacement with a selected product must not start another OFF lookup'
 	);
 	console.log('PASS second optimized row independently completes its slower OFF lookup');
 	await until(

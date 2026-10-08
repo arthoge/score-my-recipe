@@ -175,3 +175,43 @@ def test_catalog_fat_range_accepts_a_product_within_the_range(name, expected):
 def test_uht_request_rejects_explicit_fresh_variant():
     """Declared processing conflicts are rejected in both directions."""
     assert food_matching.automatic_rank("Crème 30% MG, UHT", "Crème fraîche 30%") == 0
+
+
+@pytest.mark.parametrize(
+    "query,name",
+    [
+        ("Milk, whole", "Milk, skimmed"),
+        ("whole milk", "Milk, semi-skimmed"),
+        ("lait entier", "Lait écrémé"),
+        ("lait demi-écrémé", "Lait entier"),
+        ("Butter, unsalted", "Butter, salted"),
+        ("unsalted butter", "Salted butter"),
+        ("Beurre, doux", "Beurre, demi-sel"),
+        ("beurre salé", "Beurre doux"),
+        ("olive oil", "Olive oil with lemon"),
+        ("huile d'olive", "Huile d'olive au citron"),
+        ("yogurt, plain", "Yogurt with strawberries"),
+    ],
+)
+def test_automatic_correspondences_preserve_explicit_composition(query, name):
+    """A correspondence must not silently turn an ingredient into a dietary alternative."""
+    assert food_matching.automatic_rank(query, name) == 0
+
+
+@pytest.mark.parametrize(
+    "query,name",
+    [
+        ("whole milk", "Milk, whole"),
+        ("semi-skimmed milk", "Milk, semi-skimmed"),
+        ("unsalted butter", "Butter, unsalted"),
+        ("beurre doux", "Beurre, doux"),
+        ("olive oil with lemon", "Olive oil with lemon"),
+        ("huile d'olive au citron", "Huile d'olive au citron"),
+        ("apple", "Apple with skin, raw"),
+        ("Beurre à 60-62% MG, à teneur réduite en matière grasse, doux", "Beurre 62%"),
+        ("Crème 30% MG, semi-épaisse, UHT", "Crème 30% UHT"),
+    ],
+)
+def test_compatible_qualifiers_and_existing_replacements_still_match(query, name):
+    """Equivalent wording and unlabelled qualifiers keep the established matching behavior."""
+    assert food_matching.automatic_rank(query, name) > 0

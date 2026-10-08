@@ -230,7 +230,9 @@
 		ingredient.name.trim().length >= 3 && settledReferenceKey !== referenceLookupKey
 	);
 	let productsPending = $derived(
-		ingredient.name.trim().length >= 3 && settledProductKey !== productLookupKey
+		!ingredient.barcode &&
+			ingredient.name.trim().length >= 3 &&
+			settledProductKey !== productLookupKey
 	);
 	let ciqualLoading = $derived(!ingredient.ciqualName && (referencesPending || productsPending));
 	let agribalyseLoading = $derived(!ingredient.agribalyseName && referencesPending);
@@ -287,6 +289,9 @@
 	$effect(() => {
 		const name = ingredient.name.trim();
 		const lookupKey = productLookupKey;
+		// A selected product already supplies the reference. Name edits and catalog
+		// replacements clear its barcode, so their independent lookup still runs.
+		if (ingredient.barcode) return;
 		productSuggestions = [];
 		const controller = new AbortController();
 		let cancelled = false;

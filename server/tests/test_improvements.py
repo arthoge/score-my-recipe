@@ -891,3 +891,31 @@ async def test_old_quantity_suggestion_cannot_be_applied(monkeypatch):
             improvements.OptimizeRequest(recipe=item, selected_ids=["sugar:quantity:0.9"])
         )
     calculator.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_partial_preview_is_returned_but_not_cached(monkeypatch, catalogs):
+    """Useful partial suggestions survive this click; reopening can recover missing ones."""
+    improvements._cached_search.cache_clear()
+    request = improvements.ImprovementRequest(recipe=recipe())
+    first = improvements.food_candidates(request.recipe.ingredients[0], "en")[0]
+    second = improvements.food_candidates(request.recipe.ingredients[1], "en")[0]
+    search = AsyncMock(
+        side_effect=[
+            improvements.ImprovementResponse(unavailable=True, suggestions=[first]),
+            improvements.ImprovementResponse(suggestions=[first, second]),
+        ]
+    )
+    monkeypatch.setattr(improvements, "find_improvements", search)
+    try:
+        partial = await improvements.cached_find_improvements(request)
+        assert partial.unavailable
+        assert [s.id for s in partial.suggestions] == [first.id]
+        assert search.await_count == 1
+        recovered = await improvements.cached_find_improvements(request)
+        assert not recovered.unavailable
+        assert len(recovered.suggestions) == 2
+        assert await improvements.cached_find_improvements(request) == recovered
+        assert search.await_count == 2
+    finally:
+        improvements._cached_search.cache_clear()

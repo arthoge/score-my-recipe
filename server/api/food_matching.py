@@ -6,6 +6,7 @@ import unicodedata
 
 STOP_WORDS = frozenset("de du des la le les a au aux et en d l of the with and ou or mg".split())
 DESCRIPTORS = frozenset(
+    "salted unsalted sale salee doux douce skimmed skim ecreme ecremee "
     "saute sautee poele poelee fried sauteed roasted baked roti rotie "
     "raw cru crue cooked cuit cuite bouilli bouillie fresh frais fraiche refrigerated chilled dried dry sec seche "
     "light legere leger reduced reduit reduite allege allegee epaisse epais fluide semi entier whole average aliment moyen "
@@ -65,9 +66,60 @@ def features(text: str) -> tuple[tuple[str, ...], frozenset[str], frozenset[str]
     return identity, all_words, all_words & DESCRIPTORS
 
 
+@lru_cache(maxsize=8192)
+def composition_qualifiers(text: str) -> tuple[str | None, str | None]:
+    """Read explicit fat and salt variants without inventing missing qualifiers."""
+    text = normalize(text)
+    fat = None
+    if re.search(r"\b(?:semi|demi)[ -]+(?:skimmed|ecreme[e]?)\b", text):
+        fat = "semi"
+    elif re.search(r"\b(?:skimmed|skim|ecreme[e]?)\b", text):
+        fat = "skimmed"
+    elif re.search(r"\b(?:whole|entier[e]?|full[ -]fat)\b", text):
+        fat = "whole"
+    salt = None
+    if re.search(
+        r"\b(?:unsalted|doux|douce|sans sel|no added salt|without (?:added )?salt)\b", text
+    ):
+        salt = "unsalted"
+    elif re.search(r"\b(?:salted|sale[e]?|demi[ -]sel|with (?:added )?salt)\b", text):
+        salt = "salted"
+    return fat, salt
+
+
+def composition_conflict(query: str, name: str) -> bool:
+    """Reject explicit contradictions even when a translated search alias is broader."""
+    return any(
+        a is not None and b is not None and a != b
+        for a, b in zip(composition_qualifiers(query), composition_qualifiers(name))
+    )
+
+
+@lru_cache(maxsize=8192)
+def added_flavour_terms(text: str) -> frozenset[str]:
+    """Recognize added flavour phrases, excluding preparation and nutrition metadata."""
+    tails = re.findall(
+        r"\b(?:with|au|aux|a la|a l'|aromatise[e]?|flavou?red|infused)\s+([^,;()]+)",
+        normalize(text),
+    )
+    metadata = frozenset(
+        "skin peel peau rind bone boneless os salt sel fat sugar sucre added ajoute teneur matiere grasse sans reduced reduction".split()
+    )
+    return frozenset(
+        word
+        for tail in tails
+        for word in words(tail)
+        if word not in DESCRIPTORS | metadata and not re.fullmatch(r"\d+(?:\.\d+)?", word)
+    )
+
+
 def automatic_rank(query: str, name: str) -> float:
     """Reject different primary foods and conflicting preparations before ranking plausible variants."""
     if not query.strip() or not name.strip():
+        return 0.0
+    if composition_conflict(query, name):
+        return 0.0
+    if added_flavour_terms(name) - frozenset(words(query)):
         return 0.0
     if normalize(query) == normalize(name):
         return 1.0
